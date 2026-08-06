@@ -104,11 +104,14 @@ trusted, Fabrica-controlled infrastructure the generated code never touches
 directly — the same trust boundary as the tool-namespace shim already
 described in `isolation.md`.
 
-**Not yet verified:** whether `libzmq` is viable inside a minimal Firecracker
-guest image without pulling in dependencies that work against the
-minimal-rootfs goal from the Firecracker spike. A sanity-check spike is
-planned as the next step — this resolves the *architecture*, not yet
-implementation feasibility.
+**Sanity-checked:** [SPIKE-zmq-sandbox-channel-feasibility.md](../specs/archive/spikes/SPIKE-zmq-sandbox-channel-feasibility.md)
+confirmed Tier 0/1's half of this — `pyzmq` bundles its own statically-compiled
+`libzmq` (1.6MB, self-contained, no system dependency chain needed), and a real
+`ipc://` round trip measured **0.73ms**, negligible overhead. **Still not
+verified:** the Tier 2 relay bridge itself (`vsock`/`VZVirtioSocketDevice`/
+`AF_HYPERV`) and behavior inside an actual booted guest rather than the same
+OS/arch on bare metal — the harder half of this design, deliberately left for
+its own dedicated spike rather than attempted alongside the easier half.
 
 ---
 
