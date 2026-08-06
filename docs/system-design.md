@@ -26,6 +26,21 @@ per-manager would silently reintroduce the bug that unification fixed. Same logi
 for `SandboxPool` — one pool, drawn from by both code-mode tool execution and
 skill script execution, not two pools competing for the same host resources.
 
+**Why `ToolManager` and `SkillManager` stay separate classes, not one generic
+manager:** they look similar (both register into `Retriever`, both run things in
+`SandboxPool`) but differ in ways that matter — `ToolManager` registers
+developer-authored namespaces and executes *arbitrary, freshly-generated* code;
+`SkillManager` parses the `SKILL.md` file format and executes *pre-written,
+author-trusted* scripts by name with structured args. Forcing one class to cover
+both would mean branching on `kind` inside what should be a clean abstraction.
+**What they do share — composition, not inheritance:** the orchestration around
+execution (check grant → acquire sandbox → run → release → handle errors → emit
+spans) is identical regardless of what's being executed. Both call a single
+shared helper, `execute_in_sandbox(presidium_client, sandbox_pool, action, ...)`,
+for that part — the same dependency-injection pattern `Retriever` and
+`SandboxPool` already use, extended to the one piece of logic that was actual
+copy-paste risk, without conflating two different trust models into one class.
+
 **Why `CivitasBridge` and `PresidiumClient` are separate objects**, not methods
 on `Fabrica` itself: they're the only two places this system talks to something
 outside itself. Isolating them means every outbound call — to the runtime, to
@@ -120,8 +135,8 @@ its own dedicated spike rather than attempted alongside the easier half.
 | Component | Owns | Depends on | Library mode | Service mode |
 |---|---|---|---|---|
 | `Fabrica` | top-level config, wiring | all managers | plain object | plain object (always — it's the entry point, never itself a GenServer) |
-| `ToolManager` | `ToolNamespace` registration, code-mode orchestration | `Retriever`, `SandboxPool`, `PresidiumClient` | in-process | GenServer |
-| `SkillManager` | `SKILL.md` loading, skill execution orchestration | `Retriever`, `SandboxPool`, `PresidiumClient` | in-process | GenServer |
+| `ToolManager` | `ToolNamespace` registration, code-mode orchestration | `Retriever`, `SandboxPool`, `PresidiumClient`, shared `execute_in_sandbox` helper | in-process | GenServer |
+| `SkillManager` | `SKILL.md` loading, skill execution orchestration | `Retriever`, `SandboxPool`, `PresidiumClient`, shared `execute_in_sandbox` helper | in-process | GenServer |
 | `MemoryManager` | adapter lifecycle (Mem0 etc.) | configured `MemoryStore` adapter | in-process | GenServer, shared across a fleet |
 | `PromptManager` | `PromptStore` | Civitas `StateStore` | in-process | GenServer |
 | `Retriever` | index, search | `KeywordBackend` (default) or an adapter | in-process, local index | GenServer, one shared index fleet-wide |
@@ -222,10 +237,12 @@ known list, not silent assumptions:
    / `AF_HYPERV`) for Tier 2. Implementation feasibility (e.g. `libzmq` inside a
    minimal Firecracker guest) still needs a sanity-check spike — the
    architecture is decided, the build artifact isn't yet proven.
-4. **Should `ToolManager` and `SkillManager` actually be separate classes?** They
-   have near-identical shapes (both use `Retriever` and `SandboxPool` the same way).
-   Worth asking directly before contracts lock in two classes that should be one
-   generic one.
+4. ~~Should `ToolManager` and `SkillManager` be one generic class?~~ **Resolved —
+   composition, not inheritance, and not a merge.** They stay separate classes:
+   their loading (`SKILL.md` parsing vs. namespace registration) and trust models
+   (author-trusted named scripts vs. freshly-generated arbitrary code) genuinely
+   differ. What's actually shared — the execute-in-sandbox orchestration — is one
+   small helper both call, not a base class both inherit.
 5. **Mode-switching granularity** — one flag for the whole `Fabrica` instance, or
    can `Retriever` be service-mode while `SandboxPool` stays library-mode? The
    diagrams above assume all-or-nothing; that's an assumption, not a decision.
