@@ -69,6 +69,51 @@ AGENTS.md under the Linux Foundation Agentic AI Foundation (Anthropic/Google/
 Microsoft/OpenAI). Progressive disclosure is the shared pattern. **No agent runtime
 owns skill loading** → Fabrica's strongest near-term product; conform to `SKILL.md`.
 
+## 3a. Cross-platform isolation — the current tiers are Linux-only, and that's a real gap
+
+**Reframing, from a direct product conversation:** Fabrica's isolation story
+should not be "we use Firecracker." It should be "users get well-isolated
+sandbox execution on whatever platform they're on" — nobody adopting Fabrica
+cares which specific VMM or sandboxing primitive is underneath, only that
+their problem (safe execution of model-generated/tool code) is solved. The
+`Sandbox` protocol in [isolation.md](isolation.md) is already backend-pluggable
+by design — this section is about what actually plugs in on each OS.
+
+**The uncomfortable finding: Tier 1 (gVisor) is Linux-only too, not just
+Tier 2 (Firecracker).** gVisor reimplements Linux syscalls in a user-space
+application kernel — there is no macOS or Windows syscall surface for it to
+intercept. This means the *entire* tiered design beyond Tier 0 (bare
+subprocess, no real isolation) is currently Linux-specific. A Priya-persona
+developer on a Mac laptop has no upgrade path today beyond Tier 0 as
+currently written.
+
+**What actually exists per platform** (research, not yet spiked/measured):
+
+| Platform | Tier-1-equivalent (lightweight syscall/access control) | Tier-2-equivalent (microVM-class isolation) |
+|---|---|---|
+| **Linux** | gVisor (validated — see landscape §3 above) | Firecracker (validated — see [SPIKE-firecracker-boot-restore-latency.md](../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)) |
+| **macOS** | `sandbox-exec` / Seatbelt profiles — deny-by-default, VFS-layer interception. **Real precedent**: CrowdStrike already uses Seatbelt specifically for AI-agent code sandboxing. | **libkrun** (open source, `Virtualization.framework`-based, explicitly positioned for AI/agent isolation with "VM-level security, container-like footprint") or Apple's own **Containerization framework** (runs Linux containers in lightweight Apple Silicon VMs, described as similar in isolation strength to Kata) |
+| **Windows** | No clean equivalent found. Windows containers/job objects are not in the same isolation class as gVisor/Seatbelt — an open gap. | Hyper-V isolation / Windows Sandbox — real and hypervisor-backed, but meaningfully heavier/slower to boot than Firecracker or libkrun (seconds-to-minutes, not milliseconds, per earlier research) |
+
+Also relevant: **SlicerVM** — not a new primitive, but proof the underlying
+philosophy (fast, real-Linux-kernel microVMs) is portable: it's built
+directly on Firecracker for Linux, and re-hosted on Apple's
+`Virtualization.framework` for Mac, and WSL2 for local Windows dev.
+
+**Implication for `isolation.md` (flagged, not yet applied):** the `Sandbox`
+protocol's tier table should be reframed as platform-dispatched rather than
+naming Firecracker/gVisor as *the* Tier 1/2 implementations — e.g. "Tier 2:
+microVM-class isolation (Firecracker on Linux, libkrun on macOS, Hyper-V
+isolation on Windows as the current best-available, unresolved gap for
+a Tier-1 equivalent)." The Windows Tier-1 gap in particular has no answer
+yet and should be named as an open problem, not silently skipped.
+
+**What was NOT explored:** none of the macOS/Windows options above have been
+spiked or measured — this is desk research via search grounding, same
+methodology as the rest of this doc, not hands-on validation like the Linux
+Firecracker spike. Treat as a prioritized list of what to spike next if
+cross-platform isolation becomes a real requirement, not a validated claim.
+
 ## 6. Tool search / retrieval backends — a two-tier market
 
 Distinct from the "MCP gateway" question (section 2) — this is specifically about
