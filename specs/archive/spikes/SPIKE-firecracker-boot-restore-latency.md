@@ -4,7 +4,7 @@
 
 Does a minimal Firecracker microVM — booted bare, without jailer — hit boot
 times and snapshot/restore latencies in the range cited in
-[docs/isolation.md](../../docs/isolation.md) (~125ms boot, single-digit-ms
+[docs/isolation.md](../../../docs/isolation.md) (~125ms boot, single-digit-ms
 restore), when measured on real hardware rather than cited from research?
 
 Previously blocked (no KVM-capable environment available). Unblocked via

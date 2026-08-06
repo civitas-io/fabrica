@@ -14,8 +14,8 @@ semantic-search engine has reusable value for tool search, before building
 anything from scratch.
 
 Tests the cross-cutting disambiguation open question flagged in
-[docs/skills-gateway.md](../../docs/skills-gateway.md#open-questions) and
-[docs/tool-execution.md](../../docs/tool-execution.md#open-questions).
+[docs/skills-gateway.md](../../../docs/skills-gateway.md#open-questions) and
+[docs/tool-execution.md](../../../docs/tool-execution.md#open-questions).
 
 ## Result
 
@@ -91,7 +91,7 @@ expected and isolating the semantic contribution cleanly.
   would blur prx's own scope — its consumer is a human/coding-agent at a
   terminal, not a model mid-inference inside a governed Civitas process (the
   exact distinction already codified in
-  [tool-execution.md](../../docs/tool-execution.md#why-this-lives-in-fabrica-not-the-rust-toolchain-prxtessera)).
+  [tool-execution.md](../../../docs/tool-execution.md#why-this-lives-in-fabrica-not-the-rust-toolchain-prxtessera)).
   The right shape is **Fabrica wrapping prx's engine as one backend behind its
   own `find_tools` interface**, not prx growing a new persona.
 - **Rank-based selection, not threshold-based, is now a hard requirement** for

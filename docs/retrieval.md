@@ -46,7 +46,14 @@ class Retriever(Protocol):
 
 @dataclass
 class Indexable:
-    id: str
+    id: str                            # STABLE, DETERMINISTIC identity — must not
+                                        # change across index rebuilds for the same
+                                        # underlying tool/skill. SPIKE-tool-retrieval-
+                                        # token-overhead.md found a matcher can drift
+                                        # between near-duplicate variants of the same
+                                        # capability as the registry grows; `id`
+                                        # (not `name`, which authors may reuse loosely)
+                                        # is the field callers key caching/audit on.
     kind: Literal["tool", "skill"]     # memory is intentionally excluded, see below
     name: str
     description: str                   # the text actually embedded/matched
@@ -108,7 +115,7 @@ irrelevant — that's the whole point of wrapping.
   restarts automatically rather than needing a fresh subprocess per call.
 - **Presidium**: grants filter what's *indexable* in the first place — an agent
   without a grant for a tool/skill never sees it in `find` results, same governance
-  seam already documented for `find_tools`/`SkillStore` individually.
+  seam already documented for `find`/`SkillStore` individually.
 - **Fabrica**: owns the `Retriever` protocol and the default `KeywordBackend`
   implementation only; every other backend is an adapter over someone else's engine.
 

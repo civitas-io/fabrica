@@ -16,7 +16,7 @@ blocks everyone else if unsolved goes first.
 
 ```
 1. Priya   — Agent Builder                — P1 gate (nobody else matters without agents built on this)
-2. Marcus  — Platform/Production Engineer — P2 gate (the stated differentiator; without it it's "just find_tools")
+2. Marcus  — Platform/Production Engineer — P2 gate (the stated differentiator; without it it's "just retrieval, no execution")
 3. Elena   — Security/Governance Engineer — governance seams, can lag slightly (Presidium covers policy)
 4. Devon   — Skill/Tool Author            — fast-follow, rides the SKILL.md wave
 5. Alicia  — Engineering Decision Maker   — aggregator persona, not new build scope
@@ -140,7 +140,7 @@ with clear discovery, so it gets used correctly and only when relevant.*
 |---|---|
 | Write once, run anywhere | a `SKILL.md` package loads unmodified across any Fabrica-based agent |
 | Discovery precision | correct skill surfaces in top-3 candidates for a benchmark task set |
-| Flat index cost | loading the skill index (names + descriptions only) stays token-bounded regardless of skill count |
+| Flat index cost | loading the skill index (names + descriptions only) stays token-bounded regardless of skill count — achieved via the shared `find` primitive in [retrieval.md](retrieval.md), not the original per-skill-index design (correction logged in [critique.md](critique.md)) |
 | Time to first invocation | a new `SKILL.md` is loadable and callable in minutes, no custom glue code |
 
 **Non-goals**
@@ -196,16 +196,31 @@ isn't lost.
 
 | Decision | Where it's captured |
 |---|---|
-| Build the `find_tools` interface/aggregation layer (real gap); wrap Tier-1 embedding engines (LlamaIndex/LangChain) rather than reimplementing retrieval; never operate it as a hosted multi-tenant service | [tool-execution.md](tool-execution.md#build-vs-wrap-the-retrieval-backend), [landscape.md](landscape.md#6-tool-search--retrieval-backends--a-two-tier-market) |
-| `find_tools`/tools-as-code lives in **Fabrica**, not the Rust toolchain (prx/tessera) — different consumer (the model, mid-inference) and governance/supervision needs that the toolchain doesn't have | [tool-execution.md](tool-execution.md#why-this-lives-in-fabrica-not-the-rust-toolchain-prxtessera) |
+| Build the `find` interface/aggregation layer (real gap); wrap Tier-1 embedding engines (LlamaIndex/LangChain, later prx) rather than reimplementing retrieval; never operate it as a hosted multi-tenant service | [tool-execution.md](tool-execution.md), [retrieval.md](retrieval.md), [landscape.md](landscape.md#6-tool-search--retrieval-backends--a-two-tier-market) |
+| `find`/tools-as-code lives in **Fabrica**, not the Rust toolchain (prx/tessera) — different consumer (the model, mid-inference) and governance/supervision needs that the toolchain doesn't have | [tool-execution.md](tool-execution.md#why-this-lives-in-fabrica-not-the-rust-toolchain-prxtessera) |
 | Usage/budget ceilings split into **metering** (Fabrica emits) vs **enforcement** (Presidium decides) — not a fourth system, an extension of Presidium's already-claimed cost-tracking scope | [civitas-presidium-integration.md](civitas-presidium-integration.md#usage--budget-ceilings--metering-vs-enforcement) |
 | `Scope` gains `team_id`, shared between `MemoryStore` and the usage ledger | [memory.md](memory.md), [civitas-presidium-integration.md](civitas-presidium-integration.md) |
-| Disambiguation among overlapping tools/skills/memory results is **one** cross-cutting unsolved design question, not several ad hoc fixes — deferred to a dedicated pass before P3 ships broadly | [skills-gateway.md](skills-gateway.md#open-questions), [tool-execution.md](tool-execution.md#open-questions) |
+| Disambiguation among overlapping tools/skills is **resolved by unification** (one `Retriever` engine, one `find(query, kind)` surface), not deferred — memory search intentionally kept separate (different semantics) but shares the same engine | [retrieval.md](retrieval.md) |
 | Two **deferred-not-dropped** items on the same footing: log tamper-evidence (Elena) and skill trust/signing (Devon) — both supply-chain-adjacent, both wait until the base feature works | this doc, \u00a73 and \u00a74 |
+| **Post-Define, surfaced during Validate/Critique:** code-mode (the actual headline, not just the `find` fallback) is empirically validated — lower token cost *and* better correctness than direct tool-calling | [SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md), [critique.md](critique.md) |
+| **Post-Define:** isolation backend is platform-dispatched (auto-detected per host OS) and deliberately hidden from users — a stated exception to how Civitas normally exposes config | [isolation.md](isolation.md), [critique.md](critique.md) |
+| **Post-Define:** engineering principle — where Fabrica *builds* compute internals, Rust with a Python binding, not pure Python; wrapped libraries (Mem0, prx, LlamaIndex) are unaffected | [context-layer.md](context-layer.md#engineering-principle-rust-for-compute-python-for-interface) |
 
 ---
 
 ## What's next
+
+**Update — this section is stale in its original form and kept for the historical
+record.** At the time this was written, Validate hadn't started. It has since
+happened: seven spikes tested exactly the riskiest claims here, including Priya's
+P1 slice (tools-as-code + `find` fallback — both validated,
+[SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md))
+and Marcus's P2 slice (Firecracker restore latency, real hardware,
+[SPIKE-firecracker-boot-restore-latency.md](../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)).
+Full results, corrections, and remaining open decisions are in
+[critique.md](critique.md), not repeated here. Next real step now: `plan-work`.
+
+Original text below, preserved:
 
 Per the lifecycle: **Design** is already partially drafted (context-layer.md,
 tool-execution.md, isolation.md, skills-gateway.md, memory.md) — this Define pass
@@ -213,6 +228,7 @@ was partly a validation of that earlier work, and it held up (e.g. the tiered
 `Sandbox` protocol directly resolves the Priya-vs-Marcus/Elena tension named in
 personas.md).
 
-Next real step: **Validate** — a spike against Priya's actual workflow (P1 slice:
-tools-as-code + `find_tools` fallback) to test the success metrics above against
-reality before locking the build roadmap.
+*(Original next-step line preserved for the record, superseded by the update at the
+top of this section: "Next real step: Validate — a spike against Priya's actual
+workflow... to test the success metrics above against reality before locking the
+build roadmap." That validation is now done — see the update above.)*

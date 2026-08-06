@@ -4,8 +4,11 @@
 
 Part of the [Civitas](https://github.com/civitas-io/python-civitas) platform.
 
-> **Status:** Pre-alpha — thesis & design. This repo currently hosts the vision and
-> design docs. Code lands after the scope in [`docs/`](docs/) is agreed.
+> **Status:** Pre-alpha — thesis, design, and validation. Seven spikes
+> ([`specs/archive/spikes/`](specs/archive/spikes/)) tested the riskiest claims
+> against real hardware and real API calls — see [`docs/critique.md`](docs/critique.md)
+> for what held up, what got corrected, and what's still open. Code lands after
+> `plan-work` turns this into an implementation plan.
 
 ---
 
@@ -85,8 +88,12 @@ So Fabrica delivers the whole context loop:
 
 1. **Tool access as code, not schemas.** Tools become a code-API namespace with
    progressive disclosure. The agent writes code; Fabrica runs it in an isolated
-   process; only the result returns to the window. A simple `find_tools` retrieval
-   mode remains as the fallback for models that don't do code mode.
+   process; only the result returns to the window — **validated**, not just
+   proposed: [a real spike](specs/archive/spikes/SPIKE-code-mode-execution.md)
+   measured ~79% lower token cost *and* better correctness than the traditional
+   tool-calling loop. A simple `find` retrieval mode remains as the fallback for
+   models that don't do code mode — shared with skill discovery, see
+   [`docs/retrieval.md`](docs/retrieval.md).
 2. **A skills gateway** that conforms to the open **`SKILL.md`** standard — runtime-native
    skill loading with progressive disclosure.
 3. **A memory interface** — a `MemoryStore` protocol with adapters for the mature
@@ -99,23 +106,29 @@ All four are **interface-first**: protocols + defaults in `fabrica`, adapters in
 
 ---
 
-## The differentiator: tiered isolation, up to microVMs
+## The differentiator: tiered isolation, up to microVMs — on any platform
 
 Running model-generated code demands real isolation. Fabrica treats isolation as a
 **pluggable, tiered `Sandbox` protocol** — start cheap in dev, harden for production
-without changing agent code:
+without changing agent code. **The backend is auto-detected per host OS, not a
+user-facing config choice** — users don't care whether Firecracker, `srt`, or
+libkrun is underneath, only that the problem is solved:
 
-| Tier | Backend | Isolation | Cold start | Use when |
-|---|---|---|---|---|
-| 0 | In-process / subprocess | none / OS user | ~0 | trusted code, local dev |
-| 1 | **gVisor** | user-space kernel | ~100 ms | multi-tenant, compute-heavy |
-| 2 | **Firecracker microVM** | hardware (KVM) | ~125 ms boot, ~4 ms restore from snapshot | **untrusted agent code, prod** |
-| 3 | **Kata Containers** | microVM in Kubernetes | ~60–150 ms | k8s-native multi-tenant |
+| Tier | Linux | macOS | Use when |
+|---|---|---|---|
+| 0 | subprocess, ~0ms | *(same)* | trusted code, local dev |
+| 1 | **gVisor**, ~100ms | **`srt`** (Anthropic's Sandbox Runtime), measured p50 152ms | multi-tenant, compute-heavy |
+| 2 | **Firecracker** — VMM-ready ~10.5ms, restore from snapshot **8.1–10.7ms measured on real hardware** | **libkrun** — works, but cold-boot-only (no snapshot/restore exists on this path, a permanent ceiling, not a bug) | **untrusted agent code, prod** |
 
-Firecracker is the production target: its own kernel per microVM, `jailer`
-defence-in-depth (cgroups + namespaces + seccomp + chroot), and snapshot/restore warm
-pools (E2B reports sub-30 ms starts from snapshots). Fabrica orchestrates the pool;
-the agent just calls a tool. See [`docs/isolation.md`](docs/isolation.md).
+(Windows: real but slower options exist — Hyper-V isolation for Tier 2, an
+untested `srt` Windows mode for Tier 1. Deliberately deferred: small segment,
+revisit only if a real gap surfaces. Full detail in
+[`docs/isolation.md`](docs/isolation.md).)
+
+Firecracker is the Linux production target: its own kernel per microVM, `jailer`
+defence-in-depth, and snapshot/restore warm pools — real restore latency measured,
+not cited (see [the Firecracker spike](specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)).
+Fabrica orchestrates the pool; the agent just calls a tool.
 
 ---
 
@@ -138,7 +151,7 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | Phase | Deliverable |
 |---|---|
 | **P0 — Thesis** (now) | This README + `docs/`. Supersede RFC 0001. Agree scope. |
-| **P1 — Tools** | `find_tools` fallback + tools-as-code namespace; Tier 0/1 sandbox. |
+| **P1 — Tools** | `find` fallback + tools-as-code namespace (**both validated by spike**); Tier 0/1 sandbox. |
 | **P2 — Isolation** | `Sandbox` protocol; Firecracker (Tier 2) backend + warm pools. |
 | **P3 — Skills** | `SKILL.md`-conformant skills gateway with progressive disclosure. |
 | **P4 — Memory & Prompts** | `MemoryStore` protocol + adapters; versioned `PromptStore`. |

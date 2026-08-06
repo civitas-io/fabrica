@@ -10,7 +10,7 @@ genuinely overlapping real descriptions (not synthetic ones) when given only
 the index?
 
 Tests Devon's "flat index cost" and "discovery precision" success metrics in
-[docs/problem-definition.md](../../docs/problem-definition.md).
+[docs/problem-definition.md](../../../docs/problem-definition.md).
 
 ## Result
 

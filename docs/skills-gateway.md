@@ -31,7 +31,7 @@ This rides a standardizing wave instead of fighting it.
 
 1. **Runtime-native discovery via the shared retrieval engine.** A `SkillStore`
    registers each skill's frontmatter (name + description) as an `Indexable` with
-   the `Retriever` from [retrieval.md](retrieval.md) — the same engine `find_tools`
+   the `Retriever` from [retrieval.md](retrieval.md) — the same engine tool discovery
    uses, not a parallel mechanism. **Correction from measurement:** an earlier
    design (index dumped directly into model context) was **not** O(1) — see
    [SPIKE-skill-progressive-disclosure.md](../specs/archive/spikes/SPIKE-skill-progressive-disclosure.md),

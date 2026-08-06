@@ -11,7 +11,7 @@ integrate cleanly with Civitas's process-oriented `Sandbox` protocol, or does
 it need a different shape?
 
 Follow-up to the cross-platform isolation gap flagged in
-[landscape.md §3a](../../docs/landscape.md). Reframed mid-conversation from a
+[landscape.md §3a](../../../docs/landscape.md). Reframed mid-conversation from a
 hand-rolled `sandbox-exec` profile to Anthropic's own `srt`, after confirming
 `sandbox-exec` is deprecated-but-functional and Anthropic already ships a
 production tool built on it.

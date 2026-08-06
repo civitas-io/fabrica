@@ -9,7 +9,7 @@
 Fabrica is developer infrastructure. Nobody "buys a persona" — they hire the product
 to do a job. Each persona below is a **role**, paired with the job they're hiring
 Fabrica to do. One nuance specific to this product category: **the model itself is a
-primary consumer** of several Fabrica interfaces (`find_tools`, the code-mode
+primary consumer** of several Fabrica interfaces (`find`, the code-mode
 namespace, skill discovery). It doesn't configure or adopt anything, but its behavior
 constrains API design — it must self-serve from descriptions alone, tolerate "no
 match," and need no SDK-specific glue. Tracked separately from the human personas.
@@ -23,7 +23,7 @@ match," and need no SDK-specific glue. Tracked separately from the human persona
 - **Role:** Python developer building agents on Civitas.
 - **JTBD:** *"When I add a capability to my agent, I want it to just work without me
   hand-managing token budgets, so I can ship without babysitting the context window."*
-- **Touches:** `fabrica` library mode — tools-as-code, `find_tools` fallback, skills,
+- **Touches:** `fabrica` library mode — tools-as-code, `find` fallback, skills,
   memory. Wants zero-infra defaults (`pip install fabrica` and go).
 - **Fear:** infrastructure ceremony getting in the way of shipping.
 
@@ -70,7 +70,7 @@ match," and need no SDK-specific glue. Tracked separately from the human persona
 
 ### The Model — the LLM inside the agent
 
-- **Consumes directly:** `find_tools`, the code-mode namespace/stubs, the skill index.
+- **Consumes directly:** `find`, the code-mode namespace/stubs, the skill index.
 - **Constraint it imposes:** every interface must be self-descriptive from names +
   descriptions alone (progressive disclosure), must degrade gracefully on "no match,"
   and must require no model-specific SDK glue to use.
@@ -97,7 +97,7 @@ Whoever's job we solve *first* determines what P1 actually is. Candidates, ranke
 1. **Priya** — if the library isn't trivially adoptable, nobody else's persona matters
    (no agents built on it to secure or govern).
 2. **Marcus** — production isolation is Fabrica's stated differentiator; without it,
-   the product is "yet another find_tools wrapper."
+   the product is "yet another retrieval wrapper."
 3. **Elena** — governance seams can lag slightly since Presidium already covers policy
    at the platform level; Fabrica's job is to expose the hooks, not lead with them.
 4. **Devon** — skills are the "fast-follow" bet (rides the `SKILL.md` wave) but not
@@ -105,6 +105,6 @@ Whoever's job we solve *first* determines what P1 actually is. Candidates, ranke
 5. **Alicia** — influenced by all of the above being genuinely true, not a separate
    build track.
 
-This suggests **P1 = Priya's job done well** (tools-as-code + `find_tools` fallback,
+This suggests **P1 = Priya's job done well** (tools-as-code + `find` fallback,
 trivially easy), with **Marcus's isolation tiers as P2** arriving before any real
 production claim is made — matching the phase order already sketched in the README.

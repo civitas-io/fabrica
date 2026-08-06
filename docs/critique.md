@@ -1,11 +1,14 @@
 # Critique: Design vs. Evidence
 
-**Status:** Review · **Last updated:** 2026-08
+**Status:** Review, largely resolved · **Last updated:** 2026-08
 **Method:** every claim in the design docs (`context-layer.md`, `tool-execution.md`,
 `isolation.md`, `skills-gateway.md`, `memory.md`, `civitas-presidium-integration.md`,
-`landscape.md`, `problem-definition.md`) checked against the six spikes in
-`specs/archive/spikes/`. Corrections below are proposals, **not yet applied** to the
-docs they reference — this is the critique pass itself.
+`landscape.md`, `problem-definition.md`) checked against the spikes in
+`specs/archive/spikes/` (seven by the end, not six — the code-mode spike was added
+mid-critique, see §B). **Update:** this doc originally proposed corrections without
+applying them. All 11 items in §A and all 5 items in §C are now marked Resolved and
+**have been applied** to the docs they reference — the table entries below keep the
+original finding for the reasoning trail, with a Resolved note added, not deleted.
 
 ---
 
@@ -13,11 +16,13 @@ docs they reference — this is the critique pass itself.
 
 The thesis holds — code-mode's token-savings argument, the platform-primitives
 differentiation, and the interface-first package split all survive contact with real
-measurement. But **the single most important unresolved gap isn't a wrong number —
-it's that the actual headline mechanism was never tested.** Six spikes went deep on
-the fallback (`find_tools` retrieval) and the isolation substrate, and zero went near
-"model writes code against a `ToolNamespace`, runs it in a sandbox, gets a result
-back" — the thing `tool-execution.md` explicitly calls the pitch, not the fallback.
+measurement. **The one gap this critique originally flagged as most important —
+the headline mechanism (code-mode) had never been tested — has since been closed**
+(§B): a seventh spike validated it directly, with a stronger result than expected
+(lower cost *and* better correctness than the traditional approach). Six earlier
+spikes had gone deep on the fallback (`find` retrieval, now unified with skills —
+see `retrieval.md`) and the isolation substrate; none had touched the pitch itself
+until this gap was named and closed.
 That should be resolved or explicitly re-scoped before writing an implementation plan,
 not discovered during it.
 
@@ -40,11 +45,11 @@ Each row: the doc's current claim, what the spike found, and the fix.
 | A4 | `isolation.md` tier table has no platform dimension; reads as OS-agnostic | gVisor **and** Firecracker are Linux-only. `srt` (real numbers: p50 152ms) is the macOS Tier-1 candidate; `libkrun`/`krunvm` is the macOS Tier-2 candidate **with no snapshot/restore at all**; Windows has no validated Tier-1 candidate. | **Resolved** — `isolation.md`'s tier table is now platform-dispatched (auto-detected, not user-configured — a deliberate exception to how transport works). Windows Tier-1 deferred (small segment; `srt`'s claimed Windows support untested but not blocking). macOS Tier 2's cold-boot-only ceiling accepted explicitly ("snapshot/restore is great to have, not a must"). |
 | A5 | `tool-execution.md`'s "vendor-neutral... hardenable to microVMs" framed as a general platform claim | True and validated on Linux only. macOS: Tier 1 works but ~50% slower than Linux gVisor and has no restore-based warm pool at Tier 2. Windows: unvalidated, real gap. | **Resolved** — `isolation.md` now states per-platform reality directly rather than implying uniform readiness. |
 | A6 | `problem-definition.md` Devon metric: "Flat index cost... stays token-bounded regardless of skill count" | Measured: index cost grew **linearly** (1,478→6,248 tokens, N=10→81) because the current `SkillStore.index()` design puts the whole index in the model's own context — no server-side search step like `find_tools` has. Not flat. | **Resolved** — [retrieval.md](retrieval.md): a shared `Retriever` engine + `find(query, kind)` surface makes tools and skills both O(1), no duplicated infrastructure. See C1. |
-| A7 | `tool-execution.md` "build vs. wrap" backend list names LlamaIndex/LangChain only | `prx`'s off-the-shelf, code-tuned embedding model hit **100% precision@3** on a 12-tool disambiguation benchmark with zero fine-tuning — same-org, zero-dependency, Apache 2.0. | Add `prx` as a named candidate backend. |
-| A8 | No doc states a rank-vs-threshold requirement for retrieval backends | Every embedding score observed (prx: 0.01–0.04; correct hits and near-misses both landed in this band) was low in absolute terms but reliable in **rank**. A threshold rule would have silently discarded every correct answer. | Add "select by rank, never absolute threshold" as a hard interface requirement wherever retrieval backends are specified. |
-| A9 | No doc mentions tool-identity stability | Spike 1's turn-2 cost drifted slightly because the matcher could flip between near-duplicate tool variants for the same capability as N grew. | Add a stable/deterministic tool-identity requirement to the `ToolSchema`/matcher design. |
-| A10 | No doc states the prx integration shape | Fresh subprocess per call: p50 74.9ms. Persistent process (`prx mcp`, Civitas-supervised): p50 37.0ms, and the *true* cold-start cost (~260ms) is paid once, not per call. | If prx is adopted, state explicitly: persistent supervised child, not subprocess-per-call. |
-| A11 | `landscape.md §3a` names "sandbox-exec / Seatbelt" generically for macOS Tier 1 | The concrete, validated candidate is Anthropic's own `srt`, built on `sandbox-exec`, with real measured overhead and a **Windows mode** (`srt-sandbox` user + WFP filters) that's a plausible fix for the previously-flagged Windows Tier-1 gap. | Update `landscape.md §3a` and `isolation.md` to name `srt` specifically, with numbers, and flag its Windows mode as the leading unresolved lead. |
+| A7 | `tool-execution.md` "build vs. wrap" backend list names LlamaIndex/LangChain only | `prx`'s off-the-shelf, code-tuned embedding model hit **100% precision@3** on a 12-tool disambiguation benchmark with zero fine-tuning — same-org, zero-dependency, Apache 2.0. | **Resolved** — `retrieval.md` names `PrxBackend` explicitly as a candidate. |
+| A8 | No doc states a rank-vs-threshold requirement for retrieval backends | Every embedding score observed (prx: 0.01–0.04; correct hits and near-misses both landed in this band) was low in absolute terms but reliable in **rank**. A threshold rule would have silently discarded every correct answer. | **Resolved** — `retrieval.md`'s `Retriever` protocol states this as a hard requirement in its own docstring. |
+| A9 | No doc mentions tool-identity stability | Spike 1's turn-2 cost drifted slightly because the matcher could flip between near-duplicate tool variants for the same capability as N grew. | **Resolved** — `retrieval.md`'s `Indexable.id` is now documented as the stable, deterministic key callers must key on, distinct from `name`. |
+| A10 | No doc states the prx integration shape | Fresh subprocess per call: p50 74.9ms. Persistent process (`prx mcp`, Civitas-supervised): p50 37.0ms, and the *true* cold-start cost (~260ms) is paid once, not per call. | **Resolved** — `retrieval.md`'s `PrxBackend` entry states persistent-process integration explicitly. |
+| A11 | `landscape.md §3a` names "sandbox-exec / Seatbelt" generically for macOS Tier 1 | The concrete, validated candidate is Anthropic's own `srt`, built on `sandbox-exec`, with real measured overhead and a **Windows mode** (`srt-sandbox` user + WFP filters) that's a plausible fix for the previously-flagged Windows Tier-1 gap. | **Resolved** — `landscape.md §3a` and `isolation.md` now name `srt` specifically with real numbers; Windows mode flagged as a deferred, unverified lead (per direction: small segment, test only if a gap forces it). |
 
 ---
 
@@ -140,21 +145,27 @@ Worth stating plainly so the critique doesn't read as "everything is uncertain":
 
 ## E. Phase-by-phase readiness vs. the original P0–P4 plan
 
-| Phase | Original scope | Readiness after 6 spikes |
+| Phase | Original scope | Readiness after all seven spikes + this critique's fixes |
 |---|---|---|
-| P0 — Thesis | docs + personas + problem definition | Done; this critique is part of closing it out. |
-| P1 — Tools | `find_tools` fallback + tools-as-code namespace | **Fallback well-validated. Headline mechanism (code-mode execution) untested — see §B.** |
-| P2 — Isolation | `Sandbox` protocol; Firecracker backend + warm pools | Linux: strong (real numbers, real hardware). macOS: partial (Tier 1 real, Tier 2 structurally weaker). Windows: research-only, unvalidated. |
-| P3 — Skills | `SKILL.md`-conformant gateway with progressive disclosure | Retrieval/disambiguation validated on real data. **O(1)-vs-linear architecture decision open (C1).** Conformance validated only against bigpowers' dialect of `SKILL.md`, not Anthropic's native format — worth a direct check before calling this "conformant." |
-| P4 — Memory & Prompts | `MemoryStore` protocol + adapters; `PromptStore` | **Zero spikes touched this phase.** Entirely design-only, no empirical work at all yet. |
+| P0 — Thesis | docs + personas + problem definition | Done. |
+| P1 — Tools | `find` fallback + tools-as-code namespace | **Both validated.** Headline mechanism (code-mode) proven — lower cost *and* better correctness than the traditional loop, 3/3 runs (§B). Fallback unified with skills under one `Retriever` engine (`retrieval.md`). |
+| P2 — Isolation | `Sandbox` protocol; Firecracker backend + warm pools | Linux: strong, real hardware. macOS: Tier 1 real (`srt`, measured), Tier 2 real but permanently cold-boot-only (libkrun, accepted per direction — "great to have, not a must"). Windows: deliberately deferred, not blocking. Platform dispatch is now auto-detected and hidden from users, a stated architecture decision, not an afterthought. |
+| P3 — Skills | `SKILL.md`-conformant gateway with progressive disclosure | Retrieval/disambiguation validated on real data (4/4 exact picks, genuine ambiguity). **O(1)-vs-linear resolved** via unification with tools, not accepted as a limitation. Conformance still validated only against bigpowers' dialect of `SKILL.md`, not Anthropic's native format — the one item in this whole critique that remains genuinely unchecked, not just deferred by decision. |
+| P4 — Memory & Prompts | `MemoryStore` protocol + adapters; `PromptStore` | **Still zero empirical work.** Untouched by any spike or this critique's fixes — the most honest gap remaining in the whole doc set. |
 
 ---
 
 ## What this critique is not
 
-It's not a verdict that anything built so far is wrong — the corrections in §A are
-mostly precision fixes (a number was imprecise, a caveat was missing), not reversals.
-The one thing worth real attention before moving to an implementation plan is §B: the
-differentiated headline mechanism has had zero hands-on validation while its fallback
-got six spikes' worth. Worth deciding deliberately whether that's acceptable risk for
-P1 or worth one more targeted spike before locking a plan.
+It was never a verdict that anything built so far was wrong — the corrections in §A
+turned out to be mostly precision fixes (a number was imprecise, a caveat was
+missing), not reversals, and every one of them is now applied. The one thing that
+genuinely mattered — §B's finding that the differentiated headline mechanism had
+zero hands-on validation — got closed by running the spike rather than accepting the
+risk, and the result came back stronger than the question asked for.
+
+**What's actually left, honestly:** P4 (memory & prompts) has had no empirical work
+at all, and P3's `SKILL.md` conformance has only been checked against one tool's
+dialect of the format, not Anthropic's native one. Those are the two real remaining
+gaps in this doc set — everything else raised here has a resolution applied, not
+just proposed.

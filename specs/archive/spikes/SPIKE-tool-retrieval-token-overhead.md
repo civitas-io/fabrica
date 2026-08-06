@@ -8,7 +8,7 @@ against **real** Claude-on-Vertex token usage — versus sending all N schemas
 upfront?
 
 Tests Priya's "flat index cost" success metric in
-[docs/problem-definition.md](../../docs/problem-definition.md).
+[docs/problem-definition.md](../../../docs/problem-definition.md).
 
 ## Result
 

@@ -37,7 +37,7 @@ process substrate) and is *governed by* Presidium (which decides what it may do)
 |---|---|
 | `AgentProcess` / `GenServer` | run the sandbox pool + skill/memory services as supervised children |
 | Supervision tree | a crashed sandbox pool restarts automatically |
-| `ToolProvider` / `MCPClient` | one `ToolSource` for the tool namespace / `find_tools` |
+| `ToolProvider` / `MCPClient` | one `ToolSource` for the tool namespace / shared `find` retrieval |
 | `StateStore` | persistence for the default memory + prompt stores |
 | OTEL tracing | every tool call, code-mode run, skill load, memory op emits a span |
 | Transport / bus | service-mode components addressable fleet-wide |
@@ -98,7 +98,7 @@ so a session/user/team has **one** budget, not two disconnected ones.
 | Component | Consumption events |
 |---|---|
 | `Sandbox` ([isolation.md](isolation.md)) | cpu-seconds, wall-clock duration, memory bytes — per run |
-| `ToolNamespace` / `find_tools` ([tool-execution.md](tool-execution.md)) | call count, latency — per tool per call |
+| `ToolNamespace` / `find` ([tool-execution.md](tool-execution.md), [retrieval.md](retrieval.md)) | call count, latency — per tool per call |
 | `MemoryStore` ([memory.md](memory.md)) | read/write volume — per scope |
 | `SkillStore` ([skills-gateway.md](skills-gateway.md)) | invocation count — per skill |
 

@@ -11,7 +11,7 @@ loop, where the same task forces intermediate results through the model's
 context across multiple turns?
 
 Directly answers the gap named as most consequential in
-[docs/critique.md §B](../../docs/critique.md#b-the-gap-that-matters-more-than-any-single-number):
+[docs/critique.md §B](../../../docs/critique.md#b-the-gap-that-matters-more-than-any-single-number):
 every prior tool-related spike tested the `find_tools` fallback or the
 isolation substrate; none tested the actual headline mechanism
 (`tool-execution.md`'s "tools-as-code + sandboxed execution"). Deliberately

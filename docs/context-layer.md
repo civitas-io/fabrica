@@ -23,9 +23,12 @@ consolidates them into one product family with one thesis.
 Everything that governs **the content and execution of the context window**:
 
 1. **Tool access** — how tools reach the model and where tool code runs.
-   Headline: tools-as-code + sandboxed execution. Fallback: `find_tools` retrieval.
+   Headline: tools-as-code + sandboxed execution (**validated** — see the
+   [code-mode spike](../specs/archive/spikes/SPIKE-code-mode-execution.md)).
+   Fallback: `find` retrieval, shared with skills — see [retrieval.md](retrieval.md).
 2. **Skills** — packaged, reusable agent capabilities, loaded on demand, conformant
-   to the open `SKILL.md` standard.
+   to the open `SKILL.md` standard. Discovery shares the same `Retriever` engine as
+   tools — see [retrieval.md](retrieval.md).
 3. **Memory** — session and long-term recall, via a protocol with adapters for
    mature backends (not a reimplementation).
 4. **Prompts** — versioned, addressable prompt management.
@@ -53,14 +56,15 @@ permission (Presidium). It **emits** the spans and audit events those layers con
 
 ```
 fabrica/            # protocols + lightweight defaults, depends only on civitas
-  ToolNamespace, Sandbox, SkillStore, MemoryStore, PromptStore  (protocols)
-  find_tools fallback, subprocess sandbox, filesystem skill loader  (defaults)
+  ToolNamespace, Sandbox, SkillStore, MemoryStore, PromptStore, Retriever  (protocols)
+  find fallback (KeywordBackend: Rust+PyO3), subprocess sandbox,
+  filesystem skill loader  (defaults)
 
 fabrica-contrib/    # adapters, opt-in extras
-  [firecracker] [gvisor] [kata]        # sandbox backends
+  [firecracker] [srt] [libkrun] [gvisor] [kata]  # sandbox backends, platform-dispatched
+  [prx] [llamaindex] [langchain]       # Retriever embedding backends
   [mem0] [zep] [letta] [cognee]        # memory backends
   [mcp]                                # MCP tool source
-  [search]                             # embedding retrieval fallback
 ```
 
 `pip install fabrica` gives you working defaults with zero infrastructure.
