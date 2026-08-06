@@ -1,0 +1,228 @@
+# Contract: `PresidiumClient.check_grant`, `execute_in_sandbox`, `ToolManager`, `SkillManager`
+
+**Status:** Contract — implementation-ready · **Last updated:** 2026-08
+**Depends on:** [contracts/retriever.md](retriever.md), [contracts/sandbox.md](sandbox.md),
+[system-design.md](../system-design.md) §1 (composition-over-inheritance resolution)
+
+Four things in one doc because they're genuinely coupled: the shared helper is
+the primary consumer of the grant check, and both managers are thin wrappers
+around the helper. Splitting them into separate files would fragment content
+that only makes sense read together.
+
+---
+
+## `PresidiumClient.check_grant` — the one method `PresidiumClient` has
+
+Never previously given a real signature — `system-design.md` only established
+*that* it's synchronous, REST+mTLS, circuit-breaker protected, fail-closed.
+
+```python
+@dataclass(frozen=True)
+class GrantResult:
+    decision: Literal["allow", "deny", "require_approval"]
+    reason: str | None = None
+    approval_context: dict | None = None
+    """Opaque payload passed through to Civitas's durable-suspension
+    mechanism when decision == "require_approval". This contract does not
+    interpret it — HITL suspend/resume is a Civitas/Presidium primitive
+    out of scope here (civitas-presidium-integration.md)."""
+
+
+class PresidiumClient:
+    async def check_grant(
+        self, *, agent_id: str, action: str, scope: Scope
+    ) -> GrantResult:
+        """`action` is a free-form string Presidium interprets — e.g.
+        "code_mode", "skill_run:skill_name". `scope` is the same Scope
+        used by MemoryStore and the usage-ledger span attributes
+        (memory.md, system-design.md §7) — one Scope type, reused, not
+        redefined per surface.
+
+        CRITICAL: never raises for a Presidium-unreachable condition.
+        Returns GrantResult(decision="deny") instead — fail-closed must
+        be a plain return value the caller is forced to check, not an
+        exception a broad `except:` somewhere upstream could
+        accidentally swallow and treat as permissive. An exception here
+        would risk inverting the entire fail-closed guarantee by
+        accident, not by design.
+
+        Circuit-breaker protected: after N consecutive failures, trips
+        open and returns deny immediately (no fresh timeout wait per
+        call) until a cooldown elapses, then half-opens to test recovery
+        — system-design.md §6.
+        """
+```
+
+---
+
+## `execute_in_sandbox` — the shared orchestration, in exactly one place
+
+```python
+class GrantDeniedError(Exception):
+    """Raised by execute_in_sandbox after check_grant explicitly
+    returned deny. Distinct from check_grant's own contract (which never
+    raises) — by the time this is raised, the check has already
+    happened deterministically; there's no ambiguity to accidentally
+    swallow."""
+    def __init__(self, reason: str | None) -> None: ...
+
+
+class ApprovalRequiredError(Exception):
+    """Raised when check_grant returns require_approval. Carries
+    approval_context through for the caller to hand to Civitas's
+    durable-suspension mechanism — implementing that mechanism is out
+    of scope for this contract."""
+    def __init__(self, approval_context: dict | None) -> None: ...
+
+
+async def execute_in_sandbox(
+    *,
+    presidium_client: PresidiumClient,
+    sandbox_pool: SandboxPool,
+    action: str,
+    agent_id: str,
+    scope: Scope,
+    code: str,
+    on_tool_call: ToolCallCallback,
+    timeout: float = 30.0,
+) -> RunResult:
+    """The one implementation of check_grant -> acquire -> run -> release
+    -> span, used by both ToolManager.run_code() and SkillManager.run()
+    (system-design.md §1's composition-over-inheritance resolution — this
+    function is the "composition," not a base class).
+
+    Sequence:
+    1. check_grant(agent_id, action, scope) — raises GrantDeniedError or
+       ApprovalRequiredError immediately on deny/require_approval; no
+       sandbox is ever acquired for a denied or pending action.
+    2. sandbox_pool.acquire() — may raise SandboxPoolExhaustedError.
+    3. sandbox_pool.run(handle, code, on_tool_call=..., timeout=timeout)
+       — may raise SandboxTimeoutError or SandboxCrashedError.
+    4. sandbox_pool.release(handle) — ALWAYS called, via try/finally,
+       regardless of whether step 3 succeeded, returned success=False,
+       or raised. A released handle's instance is always terminated
+       (contracts/sandbox.md) — this function never attempts to reuse it.
+    5. Emits fabrica.tool.code_mode.run (or the skill-execution
+       equivalent), with Scope fields as span attributes — this is how
+       usage reaches Presidium (system-design.md §7), not a separate
+       call this function makes.
+
+    Sandbox-level exceptions (steps 2–3) propagate unchanged — this
+    function does not wrap them in a new error type, keeping the error
+    hierarchy flat rather than adding a redundant layer.
+    """
+```
+
+---
+
+## `ToolManager`
+
+```python
+class ToolManager:
+    def __init__(
+        self, retriever: Retriever, sandbox_pool: SandboxPool,
+        presidium_client: PresidiumClient,
+    ) -> None: ...
+
+    def register(self, namespace: ToolNamespace) -> None:
+        """Registers every tool in namespace as Indexable(kind="tool")
+        with the shared Retriever. Delegates idempotency to
+        Retriever.register — re-registering an identical namespace is a
+        no-op, not an error."""
+
+    async def find(self, query: str, *, limit: int = 5) -> list[RankedMatch]:
+        """The find() fallback (tool-execution.md) for hosts that can't
+        run code-mode. Thin delegation to
+        retriever.search(query, kind="tool", limit=limit) — no logic of
+        its own beyond fixing kind="tool"."""
+
+    async def run_code(
+        self, code: str, *, agent_id: str, scope: Scope, timeout: float = 30.0,
+    ) -> RunResult:
+        """The code-mode headline path. Delegates to execute_in_sandbox
+        with action="code_mode" and on_tool_call wired to actually
+        invoke the registered ToolNamespace's real functions — this is
+        where "real tool access" is implemented, not inside
+        execute_in_sandbox itself, which knows nothing about what a
+        tool call actually does."""
+```
+
+---
+
+## `SkillManager`
+
+```python
+class SkillParseError(Exception):
+    """Raised by load() on a malformed SKILL.md — missing required
+    frontmatter fields, name charset violation, or description over
+    1024 chars, per the real-spec field-by-field check in
+    skills-gateway.md."""
+
+
+class SkillNotFoundError(Exception):
+    """Raised by run() when name isn't a registered skill."""
+
+
+class SkillManager:
+    def __init__(
+        self, retriever: Retriever, sandbox_pool: SandboxPool,
+        presidium_client: PresidiumClient,
+    ) -> None: ...
+
+    def load(self, skill_dir: Path) -> None:
+        """Parses a SKILL.md package (frontmatter + body + optional
+        scripts/assets/references — skills-gateway.md's real-spec
+        check found zero bigpowers skills exercising the bundled-file
+        path, so this is genuinely less-tested ground than frontmatter
+        parsing). Registers as Indexable(kind="skill").
+
+        Raises:
+            SkillParseError: malformed frontmatter.
+        """
+
+    async def find(self, query: str, *, limit: int = 5) -> list[RankedMatch]:
+        """Thin delegation to retriever.search(query, kind="skill", ...)
+        — same shape as ToolManager.find(), different kind."""
+
+    async def run(
+        self, name: str, args: dict, *, agent_id: str, scope: Scope,
+        timeout: float = 30.0,
+    ) -> RunResult:
+        """Runs a NAMED, pre-written, author-trusted script — not
+        arbitrary generated code, the genuine difference from
+        run_code() that justified keeping these as separate classes
+        (system-design.md §1). Delegates to execute_in_sandbox with
+        action=f"skill_run:{name}".
+
+        Raises:
+            SkillNotFoundError: name isn't registered.
+        """
+```
+
+---
+
+## What this contract deliberately does not cover
+
+- **The actual durable-suspension/HITL resume flow** triggered by
+  `ApprovalRequiredError` — a Civitas/Presidium primitive
+  (`civitas-presidium-integration.md`), not implemented here. This contract's
+  job ends at raising the error with enough context to act on.
+- **`ToolNamespace`'s own shape** (`stubs()`/`open()`/`call()`) — `tool-execution.md`'s
+  concern, referenced here as a dependency, not redefined.
+- **`SKILL.md` parsing internals** — this contract specifies `load()`'s error
+  behavior, not the YAML/Markdown parsing implementation itself.
+
+## Open items for implementation
+
+1. Should `find()` on both managers accept a `kind` override, or is fixing it
+   (`"tool"` for `ToolManager`, `"skill"` for `SkillManager`) always correct?
+   Fixing it seems right given each manager's own identity, but not stress-tested
+   against a real caller needing "search everything" through a single manager.
+2. ~~Span-naming convention for skills vs. tools~~ **Resolved while writing this
+   contract** — `system-design.md §7` was missing a `SkillManager` row entirely,
+   not just an inconsistent name. Added `fabrica.skill.find` and
+   `fabrica.skill.run`, mirroring `ToolManager`'s pair.
+3. Whether `SkillManager.load()` should be async (file I/O, possibly reading
+   large bundled assets) — specified as sync above for parity with
+   `ToolManager.register()`, but worth reconsidering given skills can bundle
+   arbitrarily large `references/` content.

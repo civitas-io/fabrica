@@ -196,6 +196,8 @@ something breaks. Six real decisions, one flagged as a real availability tradeof
 |---|---|---|
 | `ToolManager` | `fabrica.tool.find` | query, kind, result_count |
 | `ToolManager` | `fabrica.tool.code_mode.run` | agent_id, code_hash, duration_ms, tool_call_count |
+| `SkillManager` | `fabrica.skill.find` | query, result_count |
+| `SkillManager` | `fabrica.skill.run` | agent_id, skill_name, duration_ms |
 | `SandboxPool` | `fabrica.sandbox.acquire` | tier, warm_hit, wait_ms |
 | `SandboxPool` | `fabrica.sandbox.run` | tier, duration_ms, cpu_seconds, exit_status |
 | `Retriever` | `fabrica.retriever.search` | backend, query, limit, top_rank |
