@@ -1,0 +1,88 @@
+<svg viewBox="0 0 740 460" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF"/>
+    </marker>
+  </defs>
+
+  <text x="370" y="24" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Isolation: Platform-Dispatched, Not One Technology</text>
+
+  <!-- Sandbox factory node -->
+  <rect x="275" y="38" width="190" height="42" rx="21" fill="#111827"/>
+  <text x="370" y="56" text-anchor="middle" font-size="10" font-weight="700" fill="white">Sandbox factory</text>
+  <text x="370" y="70" text-anchor="middle" font-size="8" fill="#9CA3AF">auto-detects host OS</text>
+
+  <line x1="320" y1="80" x2="140" y2="105" stroke="#9CA3AF" stroke-width="1.3" marker-end="url(#arr)"/>
+  <line x1="370" y1="80" x2="370" y2="105" stroke="#9CA3AF" stroke-width="1.3" marker-end="url(#arr)"/>
+  <line x1="420" y1="80" x2="605" y2="105" stroke="#9CA3AF" stroke-width="1.3" marker-end="url(#arr)"/>
+
+  <!-- Linux column -->
+  <rect x="30" y="108" width="220" height="235" rx="8" fill="#111827" stroke="#2563EB" stroke-width="2"/>
+  <text x="140" y="130" text-anchor="middle" font-size="12" font-weight="700" fill="#60A5FA">Linux</text>
+
+  <rect x="45" y="140" width="190" height="26" rx="4" fill="#1E3A5F"/>
+  <text x="140" y="157" text-anchor="middle" font-size="8" fill="white">Tier 0: subprocess — ~0ms</text>
+
+  <rect x="45" y="172" width="190" height="26" rx="4" fill="#1E3A5F"/>
+  <text x="140" y="189" text-anchor="middle" font-size="8" fill="white">Tier 1: gVisor — ~100ms</text>
+
+  <rect x="45" y="204" width="190" height="56" rx="4" fill="#1E3A5F"/>
+  <text x="140" y="220" text-anchor="middle" font-size="8" font-weight="700" fill="white">Tier 2: Firecracker</text>
+  <text x="140" y="234" text-anchor="middle" font-size="7" fill="#93C5FD">restore: 8–11ms, measured</text>
+  <text x="140" y="246" text-anchor="middle" font-size="7" fill="#93C5FD">real bare-metal hardware</text>
+
+  <rect x="45" y="266" width="190" height="26" rx="4" fill="#1E3A5F"/>
+  <text x="140" y="283" text-anchor="middle" font-size="8" fill="white">Tier 3: Kata — k8s multi-tenant</text>
+
+  <rect x="45" y="300" width="190" height="35" rx="4" fill="#1F2937"/>
+  <text x="140" y="315" text-anchor="middle" font-size="7" font-weight="700" fill="#60A5FA">Production target</text>
+  <text x="140" y="327" text-anchor="middle" font-size="7" fill="#93C5FD">full tier ladder, validated</text>
+
+  <!-- macOS column -->
+  <rect x="260" y="108" width="220" height="235" rx="8" fill="#111827" stroke="#D97706" stroke-width="2"/>
+  <text x="370" y="130" text-anchor="middle" font-size="12" font-weight="700" fill="#FBBF24">macOS</text>
+
+  <rect x="275" y="140" width="190" height="26" rx="4" fill="#92400E"/>
+  <text x="370" y="157" text-anchor="middle" font-size="8" fill="white">Tier 0: subprocess — ~0ms</text>
+
+  <rect x="275" y="172" width="190" height="42" rx="4" fill="#92400E"/>
+  <text x="370" y="187" text-anchor="middle" font-size="8" font-weight="700" fill="white">Tier 1: srt</text>
+  <text x="370" y="200" text-anchor="middle" font-size="7" fill="#FDE68A">p50 152ms, measured — real</text>
+  <text x="370" y="210" text-anchor="middle" font-size="7" fill="#FDE68A">write/network denial confirmed</text>
+
+  <rect x="275" y="218" width="190" height="56" rx="4" fill="#92400E"/>
+  <text x="370" y="234" text-anchor="middle" font-size="8" font-weight="700" fill="white">Tier 2: libkrun</text>
+  <text x="370" y="247" text-anchor="middle" font-size="7" fill="#FDE68A">works, but cold-boot only,</text>
+  <text x="370" y="259" text-anchor="middle" font-size="7" fill="#FDE68A">permanently (no snapshot/restore)</text>
+
+  <rect x="275" y="300" width="190" height="35" rx="4" fill="#1F2937"/>
+  <text x="370" y="315" text-anchor="middle" font-size="7" font-weight="700" fill="#FBBF24">"Great to have, not a must"</text>
+  <text x="370" y="327" text-anchor="middle" font-size="7" fill="#FDE68A">ships despite the cold-boot ceiling</text>
+
+  <!-- Windows column -->
+  <rect x="490" y="108" width="220" height="235" rx="8" fill="#111827" stroke="#6B7280" stroke-width="2"/>
+  <text x="600" y="130" text-anchor="middle" font-size="12" font-weight="700" fill="#D1D5DB">Windows</text>
+  <text x="600" y="143" text-anchor="middle" font-size="7" fill="#9CA3AF">deliberately deferred</text>
+
+  <rect x="505" y="150" width="190" height="26" rx="4" fill="#374151"/>
+  <text x="600" y="167" text-anchor="middle" font-size="8" fill="white">Tier 0: subprocess</text>
+
+  <rect x="505" y="182" width="190" height="36" rx="4" fill="#374151"/>
+  <text x="600" y="198" text-anchor="middle" font-size="8" font-weight="700" fill="white">Tier 1: srt Windows mode</text>
+  <text x="600" y="210" text-anchor="middle" font-size="7" fill="#D1D5DB">claimed, untested</text>
+
+  <rect x="505" y="224" width="190" height="36" rx="4" fill="#374151"/>
+  <text x="600" y="240" text-anchor="middle" font-size="8" font-weight="700" fill="white">Tier 2: Hyper-V</text>
+  <text x="600" y="252" text-anchor="middle" font-size="7" fill="#D1D5DB">real, but slow (s–min)</text>
+
+  <rect x="505" y="300" width="190" height="35" rx="4" fill="#1F2937"/>
+  <text x="600" y="315" text-anchor="middle" font-size="7" font-weight="700" fill="#D1D5DB">Small segment</text>
+  <text x="600" y="327" text-anchor="middle" font-size="7" fill="#9CA3AF">revisit only if a real gap forces it</text>
+
+  <!-- Footer -->
+  <rect x="60" y="352" width="620" height="90" rx="6" fill="#111827"/>
+  <text x="370" y="373" text-anchor="middle" font-size="9" font-weight="700" fill="#FBBF24">The backend is auto-detected and hidden from users —</text>
+  <text x="370" y="388" text-anchor="middle" font-size="9" fill="#D1D5DB">a deliberate exception to how Civitas normally exposes config</text>
+  <text x="370" y="410" text-anchor="middle" font-size="8" fill="#9CA3AF">(transport selection IS a user choice; isolation backend is not)</text>
+  <text x="370" y="428" text-anchor="middle" font-size="8" fill="#9CA3AF">Two decisions made explicitly, not by default: macOS Tier 2 ships anyway; Windows stays under-invested.</text>
+</svg>

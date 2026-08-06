@@ -1,0 +1,73 @@
+<svg viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF"/>
+    </marker>
+  </defs>
+
+  <text x="350" y="26" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">The Shared Retrieval Engine — Tools + Skills, Unified</text>
+
+  <!-- Tool / Skill sources (left) -->
+  <rect x="30" y="60" width="130" height="42" rx="6" fill="#92400E"/>
+  <text x="95" y="78" text-anchor="middle" font-size="10" font-weight="600" fill="white">Tool</text>
+  <text x="95" y="92" text-anchor="middle" font-size="8" fill="#FDE68A">Indexable, kind=tool</text>
+
+  <rect x="30" y="112" width="130" height="42" rx="6" fill="#92400E"/>
+  <text x="95" y="130" text-anchor="middle" font-size="10" font-weight="600" fill="white">Skill</text>
+  <text x="95" y="144" text-anchor="middle" font-size="8" fill="#FDE68A">Indexable, kind=skill</text>
+
+  <!-- Memory, dashed connection (different semantics) -->
+  <rect x="30" y="164" width="130" height="42" rx="6" fill="#F9FAFB" stroke="#D1D5DB"/>
+  <text x="95" y="182" text-anchor="middle" font-size="9" font-weight="600" fill="#374151">Memory</text>
+  <text x="95" y="196" text-anchor="middle" font-size="7" fill="#6B7280">scoped, not a registry</text>
+
+  <!-- Retriever engine (center) -->
+  <rect x="260" y="100" width="180" height="80" rx="10" fill="#111827" stroke="#D97706" stroke-width="2.5"/>
+  <text x="350" y="132" text-anchor="middle" font-size="13" font-weight="700" fill="#FBBF24">Retriever</text>
+  <text x="350" y="148" text-anchor="middle" font-size="9" fill="#FDE68A">engine</text>
+  <text x="350" y="165" text-anchor="middle" font-size="8" fill="#D97706">rank-ordered results only</text>
+
+  <!-- Arrows in -->
+  <line x1="160" y1="81" x2="258" y2="120" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="160" y1="133" x2="258" y2="138" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="160" y1="185" x2="258" y2="165" stroke="#9CA3AF" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+  <text x="205" y="195" font-size="7" fill="#6B7280">shares the engine</text>
+
+  <!-- Model -->
+  <rect x="580" y="60" width="100" height="44" rx="20" fill="#111827"/>
+  <text x="630" y="86" text-anchor="middle" font-size="11" font-weight="700" fill="white">Model</text>
+
+  <line x1="580" y1="90" x2="443" y2="128" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="530" y="102" text-anchor="middle" font-size="8" fill="#374151">find(query, kind, limit)</text>
+
+  <line x1="443" y1="152" x2="580" y2="140" stroke="#9CA3AF" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+  <text x="530" y="168" text-anchor="middle" font-size="8" fill="#374151">RankedMatch list</text>
+  <text x="530" y="180" text-anchor="middle" font-size="7" fill="#9CA3AF">(rank only — never score)</text>
+
+  <!-- Backends (below) -->
+  <text x="350" y="222" text-anchor="middle" font-size="10" font-weight="700" fill="#374151">Backends</text>
+
+  <rect x="70" y="235" width="170" height="60" rx="6" fill="#1E3A5F"/>
+  <text x="155" y="256" text-anchor="middle" font-size="10" font-weight="700" fill="white">KeywordBackend</text>
+  <text x="155" y="271" text-anchor="middle" font-size="8" fill="#BFDBFE">Rust + PyO3 — default</text>
+  <text x="155" y="284" text-anchor="middle" font-size="7" fill="#93C5FD">zero external dependency</text>
+
+  <rect x="265" y="235" width="170" height="60" rx="6" fill="#4C1D95"/>
+  <text x="350" y="256" text-anchor="middle" font-size="10" font-weight="700" fill="white">PrxBackend</text>
+  <text x="350" y="271" text-anchor="middle" font-size="8" fill="#DDD6FE">fabrica-contrib[prx]</text>
+  <text x="350" y="284" text-anchor="middle" font-size="7" fill="#C4B5FD">validated: 100% precision@3</text>
+
+  <rect x="460" y="235" width="170" height="60" rx="6" fill="#374151"/>
+  <text x="545" y="256" text-anchor="middle" font-size="10" font-weight="700" fill="white">LlamaIndex / LangChain</text>
+  <text x="545" y="271" text-anchor="middle" font-size="8" fill="#D1D5DB">fabrica-contrib[...]</text>
+  <text x="545" y="284" text-anchor="middle" font-size="7" fill="#9CA3AF">wrapped, not reimplemented</text>
+
+  <line x1="155" y1="235" x2="330" y2="180" stroke="#9CA3AF" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="350" y1="235" x2="350" y2="180" stroke="#9CA3AF" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="545" y1="235" x2="380" y2="180" stroke="#9CA3AF" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <!-- Footer -->
+  <rect x="60" y="315" width="580" height="50" rx="6" fill="#111827"/>
+  <text x="350" y="335" text-anchor="middle" font-size="9" fill="#FBBF24">Two hard rules baked into the protocol, both surfaced by spike:</text>
+  <text x="350" y="350" text-anchor="middle" font-size="8" fill="#D1D5DB">1. Rank, never absolute threshold   ·   2. Persistent-process integration, not subprocess-per-call</text>
+</svg>

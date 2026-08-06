@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 400" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF"/>
+    </marker>
+  </defs>
+
+  <text x="350" y="24" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Code-Mode Execution, Step by Step</text>
+
+  <!-- Participant boxes -->
+  <rect x="20" y="40" width="120" height="38" rx="6" fill="#374151"/>
+  <text x="80" y="55" text-anchor="middle" font-size="10" font-weight="600" fill="white">Model</text>
+  <text x="80" y="70" text-anchor="middle" font-size="8" fill="#D1D5DB">the caller</text>
+
+  <rect x="215" y="40" width="120" height="38" rx="6" fill="#92400E"/>
+  <text x="275" y="55" text-anchor="middle" font-size="10" font-weight="600" fill="white">Fabrica</text>
+  <text x="275" y="70" text-anchor="middle" font-size="8" fill="#FDE68A">ToolNamespace</text>
+
+  <rect x="410" y="40" width="130" height="38" rx="6" fill="#111827" stroke="#D97706" stroke-width="1.5"/>
+  <text x="475" y="55" text-anchor="middle" font-size="10" font-weight="600" fill="#FBBF24">Sandbox</text>
+  <text x="475" y="70" text-anchor="middle" font-size="8" fill="#D97706">tiered isolation</text>
+
+  <rect x="595" y="40" width="90" height="38" rx="6" fill="#F9FAFB" stroke="#D1D5DB"/>
+  <text x="640" y="55" text-anchor="middle" font-size="10" font-weight="600" fill="#374151">Real tools</text>
+  <text x="640" y="70" text-anchor="middle" font-size="8" fill="#6B7280">and data</text>
+
+  <!-- Lifelines -->
+  <line x1="80" y1="78" x2="80" y2="370" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="275" y1="78" x2="275" y2="370" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="475" y1="78" x2="475" y2="370" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="640" y1="78" x2="640" y2="370" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <!-- Step markers -->
+  <text x="10" y="103" font-size="9" font-weight="700" fill="#6B7280">1</text>
+  <text x="10" y="138" font-size="9" font-weight="700" fill="#6B7280">2</text>
+  <text x="10" y="173" font-size="9" font-weight="700" fill="#6B7280">3</text>
+
+  <!-- Sandbox activation box -->
+  <rect x="470" y="178" width="10" height="90" fill="#92400E" opacity="0.35"/>
+
+  <text x="10" y="200" font-size="9" font-weight="700" fill="#6B7280">4</text>
+  <text x="10" y="235" font-size="9" font-weight="700" fill="#6B7280">5</text>
+  <text x="10" y="285" font-size="9" font-weight="700" fill="#6B7280">6</text>
+  <text x="10" y="320" font-size="9" font-weight="700" fill="#6B7280">7</text>
+
+  <!-- Step 1: Model sees stubs (Fabrica -> Model) -->
+  <line x1="275" y1="98" x2="88" y2="98" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="178" y="92" text-anchor="middle" font-size="9" fill="#374151">sees ToolNamespace.stubs()</text>
+  <text x="178" y="108" text-anchor="middle" font-size="7" fill="#9CA3AF">progressive disclosure — names only</text>
+
+  <!-- Step 2: Model writes code (Model -> Fabrica) -->
+  <line x1="80" y1="133" x2="267" y2="133" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="178" y="127" text-anchor="middle" font-size="9" fill="#374151">writes code calling opened stubs</text>
+
+  <!-- Step 3: Fabrica -> Sandbox -->
+  <line x1="275" y1="168" x2="467" y2="168" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="375" y="162" text-anchor="middle" font-size="9" fill="#374151">Sandbox.run(code)</text>
+
+  <!-- Step 4: Sandbox -> Real tools -->
+  <line x1="480" y1="195" x2="632" y2="195" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="558" y="189" text-anchor="middle" font-size="9" fill="#374151">executes: list, filter, read, aggregate…</text>
+
+  <!-- Step 5: Real tools -> Sandbox (return) -->
+  <line x1="640" y1="230" x2="488" y2="230" stroke="#9CA3AF" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+  <text x="558" y="224" text-anchor="middle" font-size="9" fill="#374151">raw results — large</text>
+  <rect x="500" y="238" width="140" height="20" rx="4" fill="#FEF3C7"/>
+  <text x="570" y="252" text-anchor="middle" font-size="8" font-weight="600" fill="#92400E">stays inside the sandbox</text>
+
+  <!-- Step 6: Sandbox -> Fabrica (small result) -->
+  <line x1="470" y1="280" x2="283" y2="280" stroke="#9CA3AF" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+  <text x="375" y="274" text-anchor="middle" font-size="9" fill="#374151">only the final small result</text>
+
+  <!-- Step 7: Fabrica -> Model -->
+  <line x1="267" y1="315" x2="88" y2="315" stroke="#9CA3AF" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+  <text x="178" y="309" text-anchor="middle" font-size="9" fill="#374151">result enters model context</text>
+
+  <!-- Footer note -->
+  <rect x="60" y="335" width="580" height="34" rx="6" fill="#111827"/>
+  <text x="350" y="349" text-anchor="middle" font-size="9" fill="#FBBF24">Loops, joins, retries, intermediate data —</text>
+  <text x="350" y="362" text-anchor="middle" font-size="9" fill="#FBBF24">none of it ever touches the model's context window.</text>
+</svg>
