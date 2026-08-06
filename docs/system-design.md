@@ -33,6 +33,18 @@ governance — goes through one seam, which is where mocking, circuit-breaking, 
 the fail-closed behavior in §6 all live in one place instead of scattered across
 four managers.
 
+**`PresidiumClient` is deliberately smaller than it first looks.** Presidium is a
+genuinely separate deployment (not co-located with Civitas), reached over REST +
+mTLS — so `PresidiumClient` has exactly **one** method: `check_grant`/`check_policy`,
+synchronous (you can't proceed without knowing ALLOW/DENY), circuit-breaker
+protected, fail-closed on timeout or an open breaker. There is **no**
+`emit_usage_event` method. Usage reaches Presidium as attributes on the OTEL spans
+Fabrica already emits for its own observability (§7) — async by construction
+(OTEL's exporter batches in the background), reusing existing plumbing instead of
+building a second one. Presidium implements its own span consumer watching for
+`fabrica.*` spans; that consumer is Presidium's concern, not something
+`PresidiumClient` calls out to.
+
 ---
 
 ## 2. Deployment topology: library mode vs. service mode
@@ -83,7 +95,7 @@ mechanism, not a diagram simplification. Getting the callback transport wrong
 | `Retriever` | index, search | `KeywordBackend` (default) or an adapter | in-process, local index | GenServer, one shared index fleet-wide |
 | `SandboxPool` | tier selection, pool of handles, platform dispatch | a `Sandbox` backend (subprocess/gVisor/Firecracker/`srt`/libkrun) | in-process, small pool | GenServer, supervised, larger warm pool |
 | `CivitasBridge` | mode selection at construction time | Civitas `Runtime` | no-op | registers GenServers with the supervision tree |
-| `PresidiumClient` | grant checks, usage-event emission | Presidium's exposed interface | direct call if Presidium is in-process | call over the Civitas message bus |
+| `PresidiumClient` | grant/policy checks only — no usage-emission method | Presidium's REST endpoint (mTLS) | same: REST + mTLS, circuit-breaker protected (Presidium is always a separate deployment, not affected by Fabrica's own mode) |
 
 ---
 
@@ -113,7 +125,7 @@ something breaks. Six real decisions, one flagged as a real availability tradeof
 |---|---|---|
 | Sandbox crashes mid-run | Civitas supervisor detects process death | `ToolManager` returns a structured error to the caller, not a silent hang. `SandboxPool` discards the handle and provisions a fresh one. **Civitas restarts the supervisor's child; Fabrica does not reimplement supervision.** |
 | `Retriever` backend (e.g. prx) unreachable | persistent-process health check fails (same pattern validated in [SPIKE-prx-invocation-latency.md](../specs/archive/spikes/SPIKE-prx-invocation-latency.md)) | falls back to `KeywordBackend` automatically, logs a degraded-mode event. Never fails the caller outright for this. |
-| Presidium unreachable | RPC timeout on `check_grant` | **fail closed — DENY by default.** Never fail-open on a security check. This is a real, explicit availability-vs-safety tradeoff: a Presidium outage degrades Fabrica to doing nothing, on purpose. |
+| Presidium unreachable | REST timeout on `check_grant`, or an open circuit breaker after N consecutive failures | **fail closed — DENY by default.** Never fail-open on a security check. This is a real, explicit availability-vs-safety tradeoff: a Presidium outage degrades Fabrica to doing nothing, on purpose. The circuit breaker means this triggers immediately once tripped, not after a fresh timeout wait on every call — and its cooldown/half-open retry protects Presidium from a thundering herd the moment it recovers. |
 | Warm pool exhausted | `acquire()` finds no available handle | **Resolved — hybrid bounded overflow** (see §7): cold-start on demand up to a hard `max_concurrent` ceiling; only queue (bounded wait + timeout, structured error if it expires) once that ceiling is hit. Never unbounded, never queues while the host still has headroom. |
 | Generated code hangs | `Sandbox.run(..., timeout=...)` | hard timeout enforced by the sandbox itself; process/VM killed; a `TimedOut` error returned, not a hang. |
 | Memory backend fails to instantiate (e.g. missing local model files) | at `MemoryManager` construction, not first use | **fail fast at Fabrica startup**, with a clear error — not a confusing failure mid-agent-task later. |
@@ -135,6 +147,14 @@ something breaks. Six real decisions, one flagged as a real availability tradeof
 All spans ride Civitas's existing OTEL plumbing (`civitas-presidium-integration.md`
 — "Fabrica emits, Civitas collects") — this table is what Fabrica emits, not a new
 tracing mechanism.
+
+**These spans do double duty.** Beyond tracing, they are also how usage reaches
+Presidium (see §1) — which means every span above that has a resource-consumption
+attribute (`fabrica.sandbox.run`'s `cpu_seconds`, `fabrica.tool.code_mode.run`'s
+`tool_call_count`, etc.) must also carry `Scope` (`user_id`/`session_id`/`agent_id`/
+`team_id`) as span attributes, so Presidium's span consumer can attribute
+consumption to the correct budget scope. This is a real, small addition these
+spans didn't need before — not an assumption already covered elsewhere.
 
 ---
 
@@ -158,8 +178,12 @@ known list, not silent assumptions:
    bursts organically regrow the warm pool instead of needing manual resizing.
    Exact queue-timeout duration is left as an operator-tunable config value, not
    hardcoded here — it's a deployment SLA choice, not an architecture one.
-2. **`PresidiumClient`'s exact transport** when Presidium isn't in-process — Civitas
-   message bus, or a separate call? Affects the fail-closed timeout's real latency.
+2. ~~`PresidiumClient`'s exact transport~~ **Resolved.** REST + mTLS, since
+   Presidium is a genuinely separate deployment, not co-located with Civitas.
+   Circuit-breaker protected. Only one method exists (`check_grant`) —
+   `emit_usage_event` was removed entirely, not made async, because usage already
+   rides the OTEL spans Fabrica emits for its own observability (§7). Async
+   preference was satisfied by reusing existing plumbing, not building new plumbing.
 3. **The callback transport** (§3, step 9) — is it `vsock` uniformly (matching
    Firecracker's real mechanism from `isolation.md`), or does each tier
    (subprocess/Firecracker/`srt`/libkrun) implement its own? This one is load-bearing,

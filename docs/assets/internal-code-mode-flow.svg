@@ -94,5 +94,5 @@
 
   <!-- Footer -->
   <rect x="10" y="440" width="680" height="18" rx="4" fill="#111827"/>
-  <text x="350" y="453" text-anchor="middle" font-size="7.5" fill="#FBBF24">ToolManager also emits a usage event to PresidiumClient here — omitted above for space, shown in the full request-lifecycle diagram.</text>
+  <text x="350" y="453" text-anchor="middle" font-size="7.5" fill="#FBBF24">Usage reaches Presidium via the OTEL span this run already emits (scope attributes added) — not a direct PresidiumClient call.</text>
 </svg>
