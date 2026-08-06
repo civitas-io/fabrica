@@ -78,8 +78,37 @@ intermediate data never leaves the sandbox: the generated code calls
 actually has network/filesystem/API access), the real result crosses back in —
 but only the *next* line of generated code sees it, not the model. This is the
 mechanism, not a diagram simplification. Getting the callback transport wrong
-(§7, open question) would break the whole token-savings story from
+would break the whole token-savings story from
 [SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md).
+
+**The callback transport, resolved:** a shared wire protocol (ZMQ) over a
+tier-specific bridge — not one uniform transport, and not a different RPC
+implementation per tier either:
+
+- **Tier 0/1** (no real VM boundary — subprocess, gVisor, `srt`): ZMQ binds
+  directly via `ipc://` (Unix domain socket). No relay needed — guest and host
+  share a kernel.
+- **Tier 2** (real VM boundary — Firecracker, libkrun, eventually Hyper-V): a
+  small relay, baked into the guest image the same way the tool-namespace shim
+  already is, speaks ZMQ locally to the sandbox-side shim and bridges those
+  bytes across the actual platform-specific channel — `vsock` for Firecracker,
+  `VZVirtioSocketDevice` for libkrun, `AF_HYPERV` for Hyper-V — to a matching
+  bridge on the host side, which re-exposes ZMQ to `ToolManager`.
+
+This means `ToolManager` and the sandbox-side shim speak **only ZMQ, always**
+— tier/platform-specific complexity collapses into one small, isolated relay
+component instead of being spread across the application-level RPC code. It
+may also let Fabrica reuse Civitas's own ZMQ transport implementation (already
+part of its scaling ladder) rather than hand-rolling a second one. The relay is
+trusted, Fabrica-controlled infrastructure the generated code never touches
+directly — the same trust boundary as the tool-namespace shim already
+described in `isolation.md`.
+
+**Not yet verified:** whether `libzmq` is viable inside a minimal Firecracker
+guest image without pulling in dependencies that work against the
+minimal-rootfs goal from the Firecracker spike. A sanity-check spike is
+planned as the next step — this resolves the *architecture*, not yet
+implementation feasibility.
 
 ---
 
@@ -93,7 +122,7 @@ mechanism, not a diagram simplification. Getting the callback transport wrong
 | `MemoryManager` | adapter lifecycle (Mem0 etc.) | configured `MemoryStore` adapter | in-process | GenServer, shared across a fleet |
 | `PromptManager` | `PromptStore` | Civitas `StateStore` | in-process | GenServer |
 | `Retriever` | index, search | `KeywordBackend` (default) or an adapter | in-process, local index | GenServer, one shared index fleet-wide |
-| `SandboxPool` | tier selection, pool of handles, platform dispatch | a `Sandbox` backend (subprocess/gVisor/Firecracker/`srt`/libkrun) | in-process, small pool | GenServer, supervised, larger warm pool |
+| `SandboxPool` | tier selection, pool of handles, platform dispatch, **baking the guest image** (tool-namespace shim +, for Tier 2, the ZMQ relay) | a `Sandbox` backend (subprocess/gVisor/Firecracker/`srt`/libkrun) | in-process, small pool | GenServer, supervised, larger warm pool |
 | `CivitasBridge` | mode selection at construction time | Civitas `Runtime` | no-op | registers GenServers with the supervision tree |
 | `PresidiumClient` | grant/policy checks only — no usage-emission method | Presidium's REST endpoint (mTLS) | same: REST + mTLS, circuit-breaker protected (Presidium is always a separate deployment, not affected by Fabrica's own mode) |
 
@@ -184,10 +213,12 @@ known list, not silent assumptions:
    `emit_usage_event` was removed entirely, not made async, because usage already
    rides the OTEL spans Fabrica emits for its own observability (§7). Async
    preference was satisfied by reusing existing plumbing, not building new plumbing.
-3. **The callback transport** (§3, step 9) — is it `vsock` uniformly (matching
-   Firecracker's real mechanism from `isolation.md`), or does each tier
-   (subprocess/Firecracker/`srt`/libkrun) implement its own? This one is load-bearing,
-   not cosmetic — get it wrong and the token-savings story breaks.
+3. ~~The callback transport~~ **Resolved** (see §3): shared ZMQ wire protocol,
+   direct `ipc://` for Tier 0/1 (no relay needed), a small guest-side relay
+   bridging to the real platform-specific channel (`vsock` / `VZVirtioSocketDevice`
+   / `AF_HYPERV`) for Tier 2. Implementation feasibility (e.g. `libzmq` inside a
+   minimal Firecracker guest) still needs a sanity-check spike — the
+   architecture is decided, the build artifact isn't yet proven.
 4. **Should `ToolManager` and `SkillManager` actually be separate classes?** They
    have near-identical shapes (both use `Retriever` and `SandboxPool` the same way).
    Worth asking directly before contracts lock in two classes that should be one
