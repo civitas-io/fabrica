@@ -158,6 +158,7 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | [memory.md](docs/memory.md) | `MemoryStore` protocol; wrap-don't-build |
 | [civitas-presidium-integration.md](docs/civitas-presidium-integration.md) | How Fabrica plugs into the platform |
 | [landscape.md](docs/landscape.md) | Competitive research (Nov 2025), dated + sourced |
+| [critique.md](docs/critique.md) | Design claims checked against six spikes — corrections, open decisions, and the one gap that matters most |
 
 ---
 
