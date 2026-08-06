@@ -50,6 +50,14 @@ Each row: the doc's current claim, what the spike found, and the fix.
 
 ## B. The gap that matters more than any single number
 
+> **UPDATE:** resolved by [SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md),
+> run immediately after this critique was written. The mechanism works: 3/3 runs
+> produced lower token cost (~79% reduction, consistent) **and** the traditional
+> approach was wrong in 3/3 runs (errors of 16–48%, once even miscounting the file
+> set) while code-mode was exactly correct in 3/3. The section below is kept as
+> written to preserve the reasoning trail — it correctly identified the risk before
+> it was closed.
+
 `tool-execution.md` is explicit: *"code-mode... is Fabrica's headline. `find_tools`
 retrieval... is a compatibility floor, not the pitch."* Every tool-related spike this
 round tested the floor, not the pitch:
