@@ -62,7 +62,16 @@ class SkillCard:      # progressive-disclosure listing entry
 
 ## Open questions
 
-1. Exact `SKILL.md` frontmatter fields to index — track the published standard.
-2. Trust model for third-party skills (signing, provenance) — coordinate with
-   Presidium tool-poisoning detection.
-3. Relationship to Civitas's own skill/prompt ideas (v0.5 roadmap) — consolidate here.
+1. **Disambiguation among overlapping skills — a cross-cutting concern, not a skills-
+   only one.** "Used... only when relevant" (Devon's JTBD) is the *same failure mode*
+   as tool-selection accuracy degrading past ~20–30 candidates ([tool-execution.md](tool-execution.md)) —
+   the model choosing among N things it only partially sees. Ranking/prioritization
+   tooling is deferred — not because it's low priority, but because it's genuinely
+   unsolved and deserves its own design pass across *all* of Fabrica's discovery
+   surfaces (tools, skills, memory search) rather than a skills-only fix. Tracked as
+   a dedicated cross-cutting design question before P3 ships broadly.
+2. Exact `SKILL.md` frontmatter fields to index — track the published standard.
+3. Trust model for third-party skills (signing, provenance) — **deferred, not
+   dropped**, same posture as Elena's log-tamper deferral: get discovery + loading
+   working end-to-end first, add provenance once there's a real ecosystem to protect.
+4. Relationship to Civitas's own skill/prompt ideas (v0.5 roadmap) — consolidate here.

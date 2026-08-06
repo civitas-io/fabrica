@@ -76,6 +76,64 @@ Fabrica designs the sandbox so injected secrets live only inside the microVM and
 scrubbed from any result returned to the model. **tessera stays a separate product;**
 this is a designed seam, not a merge (see the toolchain note below).
 
+## Usage & budget ceilings — metering vs. enforcement
+
+Two different jobs get bundled under "usage tracking," and they split across the
+boundary exactly like everything else in this doc:
+
+- **Metering** (recording consumption) — Fabrica's job, for anything it executes.
+- **Enforcement** (ALLOW/DENY/THROTTLE once a ceiling is hit) — Presidium's job, as
+  a direct extension of the cost-tracking/budget-enforcement scope it already claims
+  for the LLM Gateway.
+
+**This is not a fourth system.** What's new is that consumption isn't only LLM
+tokens anymore — Fabrica introduces dimensions the LLM gateway was never built to
+see (sandbox compute-seconds, tool-call counts, memory volume, skill invocations).
+Rather than Fabrica building its own budget system, it emits standardized
+consumption events into the same ledger Presidium's LLM gateway already writes to,
+so a session/user/team has **one** budget, not two disconnected ones.
+
+### What Fabrica emits
+
+| Component | Consumption events |
+|---|---|
+| `Sandbox` ([isolation.md](isolation.md)) | cpu-seconds, wall-clock duration, memory bytes — per run |
+| `ToolNamespace` / `find_tools` ([tool-execution.md](tool-execution.md)) | call count, latency — per tool per call |
+| `MemoryStore` ([memory.md](memory.md)) | read/write volume — per scope |
+| `SkillStore` ([skills-gateway.md](skills-gateway.md)) | invocation count — per skill |
+
+Every event carries the same `Scope` already used by `MemoryStore` — **extended to
+include `team_id`**, since per-team ceilings aren't covered by the original
+user/session/agent shape:
+
+```python
+@dataclass
+class Scope:
+    user_id: str | None = None
+    session_id: str | None = None
+    agent_id: str | None = None
+    team_id: str | None = None   # added for usage/budget rollups
+```
+
+### What Fabrica does NOT do
+
+- Does not aggregate consumption into a ledger.
+- Does not decide whether a session/team is over budget.
+- Does not throttle or deny on its own initiative.
+
+It only **checks before executing**: if Presidium's policy engine already flags a
+scope as over-budget — returned the same way as any other ALLOW/DENY/
+REQUIRE_APPROVAL decision — Fabrica refuses the run *before* it starts. Same
+pattern as every other governance seam in this doc; no new enforcement path invented.
+
+### Deployment shape
+
+Same pattern as everywhere else in the platform: **library mode** (in-process
+counters — enough for single-deployment ceilings) vs. **service mode** (a shared
+`UsageLedger` service, e.g. backed by Postgres/Redis, addressable across a fleet for
+centralized cross-team ceilings). Same interface either way; Fabrica doesn't care
+which mode Presidium runs it in.
+
 ## What stays out of Fabrica
 
 - Generic MCP proxy/registry → commoditized infra (see landscape.md).

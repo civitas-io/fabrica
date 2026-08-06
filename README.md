@@ -150,6 +150,7 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | Doc | What |
 |---|---|
 | [personas.md](docs/personas.md) | Who Fabrica is for — human personas + JTBD, and the model as a non-human actor |
+| [problem-definition.md](docs/problem-definition.md) | Per-persona problem statements, success metrics, non-goals — and the cross-cutting decisions that fell out of defining them |
 | [context-layer.md](docs/context-layer.md) | The pillar framing and full scope |
 | [tool-execution.md](docs/tool-execution.md) | Tools-as-code / code-mode design; `find_tools` fallback |
 | [isolation.md](docs/isolation.md) | Tiered `Sandbox` protocol; gVisor → Firecracker → Kata |

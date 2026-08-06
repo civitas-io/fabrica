@@ -39,6 +39,8 @@ class Scope:
     user_id: str | None = None
     session_id: str | None = None
     agent_id: str | None = None
+    team_id: str | None = None    # shared with usage/budget rollups — see
+                                   # civitas-presidium-integration.md#usage--budget-ceilings
 ```
 
 Default: an in-process store (SQLite/vector) so `pip install fabrica` works with zero

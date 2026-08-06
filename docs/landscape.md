@@ -69,6 +69,39 @@ AGENTS.md under the Linux Foundation Agentic AI Foundation (Anthropic/Google/
 Microsoft/OpenAI). Progressive disclosure is the shared pattern. **No agent runtime
 owns skill loading** → Fabrica's strongest near-term product; conform to `SKILL.md`.
 
+## 6. Tool search / retrieval backends — a two-tier market
+
+Distinct from the "MCP gateway" question (section 2) — this is specifically about
+the *retrieval technique* behind a `find_tools`-style meta-tool.
+
+**Tier 1 — mature, but bundled or commercial:**
+
+| Project | What | Backend | Maintained |
+|---|---|---|---|
+| **LlamaIndex** `ToolRetriever`/`ObjectIndex` | dynamic tool retrieval over a `VectorStoreIndex` | embeddings | actively, widely adopted |
+| **LangChain** `retriever_tool` + `EnsembleRetriever` | dynamic tool selection | hybrid BM25 + embeddings | actively, widely adopted |
+| **Composio** `COMPOSIO_SEARCH_TOOLS` | hosted meta-tool, discovers tools across a large app ecosystem | undisclosed | commercial, active |
+
+All three require adopting a mega-framework (LlamaIndex/LangChain) or a commercial
+hosted platform (Composio) to get this behavior.
+
+**Tier 2 — smaller/standalone repos claiming RAG-over-tools or MCP-native search:**
+several surfaced (RAG-MCP-style projects, various `mcp-*-rag` servers). **Treat with
+skepticism** — grounding returned generic "actively maintained" claims attached to
+commit dates that read as stale rather than current; none were independently
+verified. Re-check any specific one directly before relying on it.
+
+**The gap:** no small, standalone, **framework-agnostic, MCP-native** library was
+found that does just "one `find_tools` meta-tool, aggregate multiple sources,
+keyword-first with optional embeddings" — i.e. exactly RFC 0001's shape. The
+*technique* is commoditized inside mega-frameworks or sold as a hosted product;
+the *lightweight, unopinionated building block* is not.
+
+**Conclusion:** build the interface/aggregation layer (real gap, low risk of
+redundancy) — but wrap Tier 1's embedding engines as optional backends rather than
+reimplementing vector retrieval. See [tool-execution.md](tool-execution.md#build-vs-wrap-the-retrieval-backend)
+for the resulting package split.
+
 ## Sources
 
 Selected grounding sources (via Vertex Gemini Google Search, Aug 2026):
