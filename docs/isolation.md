@@ -7,29 +7,54 @@
 ## Why this matters
 
 Code mode runs **model-generated code**. That code is untrusted by definition. The
-value of Fabrica's headline feature is only as real as the isolation underneath it.
-Fabrica makes isolation a **pluggable, tiered `Sandbox` protocol**: cheap in dev,
-hardware-grade in production, with no change to agent code.
+value of Fabrica's headline feature — now validated, see
+[SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md)
+— is only as real as the isolation underneath it. Fabrica makes isolation a
+**pluggable, tiered `Sandbox` protocol**: cheap in dev, hardware-grade in
+production, with no change to agent code — and, per direct product feedback,
+**no change to agent code across platforms either.** Users don't care whether
+Firecracker, `srt`, or libkrun is underneath; they care that the problem (safe
+execution) is solved on whatever OS they're on. See platform dispatch, below.
 
-## The tiers
+## Platform dispatch — auto-detected, not user-configured
 
-| Tier | Backend | Isolation model | Cold start | Notes |
-|---|---|---|---|---|
-| 0 | subprocess / OS user | none → OS-level | ~0 | trusted code, local dev only |
-| 1 | **gVisor** | user-space kernel (intercepts syscalls) | ~100 ms | strong-ish, cheap; used by Modal, Google Agent Sandbox |
-| 2 | **Firecracker** | microVM, own kernel (KVM) | ~125 ms boot; **~4 ms restore from snapshot** | production target; used by AWS Lambda, E2B, Fly.io, Vercel Sandbox |
-| 3 | **Kata Containers** | microVM inside Kubernetes | ~60–150 ms | k8s-native multi-tenant; can use Firecracker/Cloud Hypervisor as VMM |
+Unlike transport (an explicit user choice in Civitas topology config —
+`type: nats` vs `type: in_process`), **the isolation backend is not a normal
+user-facing knob.** The `Sandbox` factory auto-detects the host OS at startup and
+selects the tier-appropriate backend internally. This is a deliberate exception to
+the platform's usual "expose it in config" pattern: isolation backend choice is an
+implementation detail Fabrica manages on the user's behalf, not a deployment
+topology decision the way transport is. A hidden override exists for testing/CI
+only — it is not documented as a supported user option.
 
-Related options considered:
+## The tiers, per platform
+
+Each tier is a **capability level**, not a single technology — what actually backs
+it depends on the host OS, auto-detected and swapped in transparently.
+
+| Tier | Linux | macOS | Windows |
+|---|---|---|---|
+| 0 | subprocess / OS user — none → OS-level, ~0ms | *(same)* | *(same)* |
+| 1 | **gVisor** — user-space kernel, ~100ms | **`srt`** (Anthropic's Sandbox Runtime, built on `sandbox-exec`/Seatbelt) — real enforcement confirmed (write/network denial), **p50 152ms** ([SPIKE-macos-isolation-srt-libkrun.md](../specs/archive/spikes/SPIKE-macos-isolation-srt-libkrun.md)) | `srt` claims Windows support (`windows-install`: dedicated `srt-sandbox` user + WFP filters) — **untested, deferred**. Windows is a small segment; if `srt` works there, no further action needed. If a real gap surfaces, spike then. |
+| 2 | **Firecracker** — microVM, own kernel (KVM). Boot: **VMM-ready ~10.5ms**, **full-userspace-ready ~1,055ms with an unoptimized image** — these are different signals, not one number ([SPIKE-firecracker-boot-restore-latency.md](../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)). **Restore from snapshot: 8.1–10.7ms**, validated on real bare-metal hardware. | **libkrun** (`Virtualization.framework`-based) — **cold-boot-only, permanently: no snapshot/restore support exists.** This is a structural ceiling, not a bug to fix. Accepted and shippable — snapshot/restore is valuable, not mandatory. | Hyper-V isolation / Windows Sandbox — real, hypervisor-backed, but seconds-to-minutes boot, not milliseconds. Not a near-term priority. |
+| 3 | **Kata Containers** — microVM in k8s, ~60–150ms | no direct equivalent (k8s-node-specific) | no direct equivalent |
+
+Related options considered (Linux-specific unless noted):
 - **Cloud Hypervisor** — Rust VMM (~200 ms), often the VMM under Kata.
 - **V8 isolates** (Cloudflare) — millisecond starts but JS-centric and weaker than a
   microVM; not a fit for arbitrary Python tool code.
 - **Managed sandboxes** (E2B, Modal, Daytona) — buy-not-build option; Fabrica should
   ship adapters so teams can point at them instead of self-hosting Firecracker.
+- **Apple's Containerization framework** (macOS) — an alternative to libkrun for
+  Tier 2, described as similar in isolation strength to Kata. **Untested** — not
+  chosen over libkrun, just not yet evaluated.
 
-**Recommendation:** default **Tier 0** for dev, **Tier 1 (gVisor)** as the safe
-multi-tenant default, **Tier 2 (Firecracker)** as the production target for untrusted
-code. Offer managed-sandbox adapters (E2B/Modal) as a zero-ops path.
+**Recommendation:** default **Tier 0** for dev on any platform. **Tier 1** as the
+safe multi-tenant default — gVisor (Linux) or `srt` (macOS), auto-selected. **Tier
+2** as the production target for untrusted code on Linux (Firecracker, warm-pool
+restore validated fast); on macOS, Tier 2 is available but honestly weaker (no warm
+pool) — document the ceiling, don't hide it. Offer managed-sandbox adapters
+(E2B/Modal) as a zero-ops path on any platform.
 
 ## The protocol
 
@@ -63,7 +88,17 @@ Architecture Fabrica must orchestrate (self-hosted Tier 2):
   tool-namespace shim.
 - **Snapshot / restore + UFFD lazy loading** — serialize a booted-and-warmed microVM
   once, then fork many from it in single-digit ms. This is the warm-pool mechanism
-  (E2B reports sub-30 ms starts from snapshots).
+  (E2B reports sub-30 ms starts from snapshots; measured on real hardware here at
+  8.1–10.7ms — see the Firecracker spike). **Snapshot creation is a separate,
+  non-trivial cost** — measured at ~807ms for a 512MiB guest — paid once per
+  warm-pool member at pool-build time, not per request. Budget for it explicitly;
+  it is invisible if you only think about restore latency.
+- **A minimal, purpose-built rootfs/init is its own scope item, not a side-effect of
+  "use Firecracker."** A full Ubuntu 24.04 + systemd image took **~1,055ms** to reach
+  actual usable userspace, two orders of magnitude past VMM-ready (~10.5ms). The
+  commonly-cited "~125ms boot" figures assume a minimal image nobody has built yet.
+  Cold boot-from-scratch anywhere near that number requires building and maintaining
+  a dedicated small init/rootfs — real, uncounted work.
 
 Orchestration reference points:
 - **E2B**: Firecracker + Nomad/Consul control plane, locally cached templates.
@@ -88,5 +123,19 @@ expose all of it behind the `Sandbox` protocol as a supervised Civitas `GenServe
 2. GPU-in-sandbox (Modal-style) — needed for any Fabrica workloads, or out of scope?
 3. Snapshot image supply chain — how are base images signed/verified (ties to
    Presidium/tool-poisoning concerns)?
-4. Bare-metal requirement — Firecracker needs KVM; document the deploy constraints
-   (nested virt on cloud VMs, or bare-metal nodes).
+4. ~~Bare-metal requirement~~ **Resolved by spike**: Firecracker needs KVM;
+   validated end-to-end on real bare-metal AMD-V hardware
+   ([SPIKE-firecracker-boot-restore-latency.md](../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)).
+   Nested-virt-on-cloud-VM path remains untested.
+5. **Apple's Containerization framework vs. libkrun for macOS Tier 2** — named as an
+   alternative above, not evaluated. Worth a spike if libkrun's packaging friction
+   (three separate config issues surfaced in
+   [SPIKE-macos-isolation-srt-libkrun.md](../specs/archive/spikes/SPIKE-macos-isolation-srt-libkrun.md))
+   becomes a real integration cost.
+6. `srt`'s `--control-fd` persistent-mode — could improve the measured 152ms macOS
+   Tier-1 latency the same way a persistent process helped prx (per
+   [SPIKE-prx-invocation-latency.md](../specs/archive/spikes/SPIKE-prx-invocation-latency.md)).
+   Deferred to implementation, not a design blocker.
+7. `srt`'s Windows mode (`windows-install`) — claims to close the Windows Tier-1 gap,
+   unverified. Deferred: Windows is a small segment; test if/when a real gap forces
+   it, not preemptively.

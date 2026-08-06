@@ -34,11 +34,11 @@ Each row: the doc's current claim, what the spike found, and the fix.
 
 | # | Doc / claim | Spike evidence | Fix needed |
 |---|---|---|---|
-| A1 | `isolation.md` tier table: "Firecracker \| 125 ms boot" | Real measurement: `InstanceStart`→VMM-`Running` is **10.5ms**; →actual usable userspace (full Ubuntu) is **1,055ms**. The "125ms" figure conflates two different readiness signals and assumes a minimal image nobody has built. | Split the claim into VMM-ready vs. userspace-ready; note the minimal-image assumption explicitly. |
-| A2 | `isolation.md` warm-pool section: silent on snapshot creation | Snapshot *creation* took **~807ms** for a 512MiB guest — a real, one-time pool-initialization cost, currently invisible in the doc. | Add creation cost to the warm-pool design as a distinct, budgeted cost. |
-| A3 | `isolation.md`: no mention that a minimal rootfs/init is separate work | Full-Ubuntu boot-to-usable was 1s+; production-grade ~125ms needs a purpose-built minimal image, which doesn't exist and isn't scoped anywhere. | Name "build a minimal rootfs/init" as its own work item, not an assumed side-effect of "use Firecracker." |
-| A4 | `isolation.md` tier table has no platform dimension; reads as OS-agnostic | gVisor **and** Firecracker are Linux-only. `srt` (real numbers: p50 152ms) is the macOS Tier-1 candidate; `libkrun`/`krunvm` is the macOS Tier-2 candidate **with no snapshot/restore at all**; Windows has no validated Tier-1 candidate. | Reframe the whole tier table as platform-dispatched, not "the" implementation. Carry the macOS numbers and the Windows gap in explicitly, not as a footnote. |
-| A5 | `tool-execution.md`'s "vendor-neutral... hardenable to microVMs" framed as a general platform claim | True and validated on Linux only. macOS: Tier 1 works but ~50% slower than Linux gVisor and has no restore-based warm pool at Tier 2. Windows: unvalidated, real gap. | Scope the differentiator claim honestly per platform rather than implying uniform readiness. |
+| A1 | `isolation.md` tier table: "Firecracker \| 125 ms boot" | Real measurement: `InstanceStart`→VMM-`Running` is **10.5ms**; →actual usable userspace (full Ubuntu) is **1,055ms**. The "125ms" figure conflates two different readiness signals and assumes a minimal image nobody has built. | **Resolved** — `isolation.md` now states both numbers explicitly with the minimal-image caveat. |
+| A2 | `isolation.md` warm-pool section: silent on snapshot creation | Snapshot *creation* took **~807ms** for a 512MiB guest — a real, one-time pool-initialization cost, currently invisible in the doc. | **Resolved** — added to `isolation.md` as a distinct, budgeted cost. |
+| A3 | `isolation.md`: no mention that a minimal rootfs/init is separate work | Full-Ubuntu boot-to-usable was 1s+; production-grade ~125ms needs a purpose-built minimal image, which doesn't exist and isn't scoped anywhere. | **Resolved** — named explicitly in `isolation.md` as its own scope item. |
+| A4 | `isolation.md` tier table has no platform dimension; reads as OS-agnostic | gVisor **and** Firecracker are Linux-only. `srt` (real numbers: p50 152ms) is the macOS Tier-1 candidate; `libkrun`/`krunvm` is the macOS Tier-2 candidate **with no snapshot/restore at all**; Windows has no validated Tier-1 candidate. | **Resolved** — `isolation.md`'s tier table is now platform-dispatched (auto-detected, not user-configured — a deliberate exception to how transport works). Windows Tier-1 deferred (small segment; `srt`'s claimed Windows support untested but not blocking). macOS Tier 2's cold-boot-only ceiling accepted explicitly ("snapshot/restore is great to have, not a must"). |
+| A5 | `tool-execution.md`'s "vendor-neutral... hardenable to microVMs" framed as a general platform claim | True and validated on Linux only. macOS: Tier 1 works but ~50% slower than Linux gVisor and has no restore-based warm pool at Tier 2. Windows: unvalidated, real gap. | **Resolved** — `isolation.md` now states per-platform reality directly rather than implying uniform readiness. |
 | A6 | `problem-definition.md` Devon metric: "Flat index cost... stays token-bounded regardless of skill count" | Measured: index cost grew **linearly** (1,478→6,248 tokens, N=10→81) because the current `SkillStore.index()` design puts the whole index in the model's own context — no server-side search step like `find_tools` has. Not flat. | **Resolved** — [retrieval.md](retrieval.md): a shared `Retriever` engine + `find(query, kind)` surface makes tools and skills both O(1), no duplicated infrastructure. See C1. |
 | A7 | `tool-execution.md` "build vs. wrap" backend list names LlamaIndex/LangChain only | `prx`'s off-the-shelf, code-tuned embedding model hit **100% precision@3** on a 12-tool disambiguation benchmark with zero fine-tuning — same-org, zero-dependency, Apache 2.0. | Add `prx` as a named candidate backend. |
 | A8 | No doc states a rank-vs-threshold requirement for retrieval backends | Every embedding score observed (prx: 0.01–0.04; correct hits and near-misses both landed in this band) was low in absolute terms but reliable in **rank**. A threshold rule would have silently discarded every correct answer. | Add "select by rank, never absolute threshold" as a hard interface requirement wherever retrieval backends are specified. |
@@ -100,16 +100,16 @@ rather than deferred silently.
    sharing only the engine underneath. Also folds in a stated engineering
    principle: where Fabrica builds (not wraps) compute, prefer Rust with a Python
    binding — the default `KeywordBackend` follows this, matching prx's own shape.
-2. **Cross-platform Tier dispatch is a real architecture change, not a caveat.**
-   `isolation.md`'s `Sandbox` protocol needs to actually dispatch by platform
-   (A4) — this changes the shape of how a backend gets selected, not just what's
-   documented.
-3. **The Windows Tier-1 gap may already be solved (srt's Windows mode) — but nobody
-   has looked.** Cheap to check, currently just sitting there as an assumption.
-4. **libkrun's permanent lack of snapshot/restore means macOS Tier 2 has a
-   structurally different performance ceiling than Linux Tier 2.** Is a cold-boot-only
-   macOS Tier 2 even worth shipping, or should macOS stop at Tier 1 (`srt`) until/
-   unless Apple's Containerization framework (untested) closes the gap?
+2. **Resolved.** Dispatch is auto-detected by host OS, not user-configured — a
+   deliberate exception to how transport works elsewhere in Civitas, stated
+   explicitly in `isolation.md` rather than left implicit.
+3. **Resolved (deferred deliberately).** Windows is a small segment; `srt`'s claimed
+   `windows-install` support is untested but not blocking — verify only if a real
+   gap surfaces, not preemptively.
+4. **Resolved.** Cold-boot-only macOS Tier 2 is accepted and shippable —
+   snapshot/restore is valuable, not mandatory. Apple's Containerization framework
+   remains a named-but-unevaluated alternative if libkrun's packaging friction
+   becomes a real integration cost.
 5. **`code-mode` vs. `find_tools` prioritization** (from B) — does P1 ship both, or
    does the fallback ship first and code-mode becomes its own phase?
 
