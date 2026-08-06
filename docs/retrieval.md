@@ -1,6 +1,7 @@
 # Retrieval: the shared engine behind tools and skills
 
-**Status:** Design · **Last updated:** 2026-08
+**Status:** Design — see [contracts/retriever.md](contracts/retriever.md) for the
+implementation-ready contract · **Last updated:** 2026-08
 **Resolves:** [critique.md §C1](critique.md) (skills' linear-index-cost gap vs.
 tools' O(1) `find_tools`) via unification rather than either accepting the gap or
 duplicating infrastructure.
@@ -129,7 +130,7 @@ irrelevant — that's the whole point of wrapping.
 3. Scale ceiling — this doc resolves the O(1)-vs-linear architecture question, but
    the *quality* of matching at hundreds of tools/skills combined in one index
    (rather than tested separately, as the spikes did) remains unmeasured.
-4. Whether `find`'s `kind` parameter should support searching both tools and skills
-   in one call (a task that plausibly needs either) or forces the model to pick —
-   currently specified as required, forcing a choice; worth revisiting once real
-   usage patterns exist.
+4. ~~Whether `find`'s `kind` parameter should support searching both tools and
+   skills in one call~~ **Resolved in [contracts/retriever.md](contracts/retriever.md)**:
+   `kind` is optional, `None` searches across both. Settled while writing the
+   actual contract, not deferred further.
