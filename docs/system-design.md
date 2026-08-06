@@ -232,10 +232,18 @@ real decision that could reasonably have gone another way.
    a silent hang. Chosen over unbounded cold-start specifically because it's the
    direct answer to Marcus's own stated fear: *"a bad run can't touch the host or
    blow the budget... a runaway resource consumer"* — unbounded cold-start under
-   a traffic spike or adversarial burst is exactly that shape. Refinement, not a
-   separate decision: a cold-started overflow sandbox that finishes work is
-   folded back into the warm pool (if under `warm_size`) rather than discarded —
-   bursts organically regrow the warm pool instead of needing manual resizing.
+   a traffic spike or adversarial burst is exactly that shape.
+   **Correction from [contracts/sandbox.md](contracts/sandbox.md):** the refinement
+   originally stated here ("a cold-started overflow sandbox... folded back into
+   the warm pool rather than discarded") was imprecise in a way that matters.
+   The *instance itself* is never reused — arbitrary generated code may have left
+   arbitrary state in it, and reusing a dirty instance across calls would leak
+   state across the isolation boundary this design exists to enforce. What
+   actually happens: the used instance is **always terminated**; the pool
+   regrows by restoring a **fresh** instance from the clean base snapshot, not by
+   recycling the released one. The externally-visible effect (pool trends back
+   toward `warm_size` after a burst) is the same; the mechanism matters and was
+   stated wrong until the contract was written out precisely.
    Exact queue-timeout duration is left as an operator-tunable config value, not
    hardcoded here — it's a deployment SLA choice, not an architecture one.
 2. ~~`PresidiumClient`'s exact transport~~ **Resolved.** REST + mTLS, since

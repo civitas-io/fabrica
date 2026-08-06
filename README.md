@@ -169,7 +169,8 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | [context-layer.md](docs/context-layer.md) | The pillar framing and full scope |
 | [tool-execution.md](docs/tool-execution.md) | Tools-as-code / code-mode design; `find` fallback |
 | [retrieval.md](docs/retrieval.md) | The shared `Retriever` engine behind tools + skills discovery — one engine, rank-not-threshold, Rust-for-compute |
-| [contracts/retriever.md](docs/contracts/retriever.md) | **Contracts** — implementation-ready signatures, error types, async behavior. Growing collection, `Retriever` first. |
+| [contracts/retriever.md](docs/contracts/retriever.md) | **Contracts** — implementation-ready signatures, error types, async behavior. |
+| [contracts/sandbox.md](docs/contracts/sandbox.md) | Sandbox contract — corrects a real imprecision in system-design.md's warm-pool language, found by writing exact release() semantics. |
 | [isolation.md](docs/isolation.md) | Tiered `Sandbox` protocol; gVisor → Firecracker → Kata |
 | [skills-gateway.md](docs/skills-gateway.md) | `SKILL.md`-conformant skills, discovery via retrieval.md |
 | [memory.md](docs/memory.md) | `MemoryStore` protocol; wrap-don't-build |
