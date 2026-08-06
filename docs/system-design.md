@@ -75,6 +75,17 @@ run library mode until they outgrow it, then flip to service mode, same interfac
 zero application-code changes. `CivitasBridge`'s job (§1) is entirely this: decide
 once, at construction time, which shape each manager takes.
 
+**Phased, deliberately — v1 is one flag, v2 is per-component, and v2 doesn't
+break v1.** `Fabrica` takes a single top-level `mode: "library" | "service"` in
+v1; `CivitasBridge` propagates that one value uniformly to every manager,
+`Retriever`, and `SandboxPool`. But `CivitasBridge` treats mode selection as a
+**per-component decision internally from day one** — v1 just always passes the
+same value to every component. This makes v2 (per-component overrides, e.g.
+`Fabrica(mode="library", overrides={"sandbox_pool": "service"})`, for when
+Marcus needs the warm pool to scale independently of everything else) a purely
+**additive** feature later, not a rework: nothing about the internal wiring or
+the public contract assumes uniformity, v1 just happens to always request it.
+
 ---
 
 ## 3. Internal flow: one code-mode call, in detail
@@ -205,10 +216,12 @@ spans didn't need before — not an assumption already covered elsewhere.
 
 ---
 
-## What this doc deliberately leaves open
+## Decisions made after this doc's first draft
 
-Real decisions, not oversights — surfaced here so contracts work starts from a
-known list, not silent assumptions:
+All five items originally listed here as open have since been resolved through
+direct review, one at a time — kept below with the resolution and reasoning
+intact, not deleted, so the trail is visible. None were oversights; each is a
+real decision that could reasonably have gone another way.
 
 1. ~~Warm-pool-exhausted behavior~~ **Resolved.** Two config values on `SandboxPool`:
    `warm_size` (pre-booted, ready) and `max_concurrent` (hard ceiling, warm +
@@ -243,9 +256,11 @@ known list, not silent assumptions:
    (author-trusted named scripts vs. freshly-generated arbitrary code) genuinely
    differ. What's actually shared — the execute-in-sandbox orchestration — is one
    small helper both call, not a base class both inherit.
-5. **Mode-switching granularity** — one flag for the whole `Fabrica` instance, or
-   can `Retriever` be service-mode while `SandboxPool` stays library-mode? The
-   diagrams above assume all-or-nothing; that's an assumption, not a decision.
+5. ~~Mode-switching granularity~~ **Resolved — phased.** v1 ships one top-level
+   flag (all components move together); `CivitasBridge`'s internals are built as
+   if per-component granularity already exists, so v2's per-component overrides
+   (when a real deployment need justifies the larger test matrix) are additive,
+   not a breaking rework of v1's contract.
 
 ---
 
