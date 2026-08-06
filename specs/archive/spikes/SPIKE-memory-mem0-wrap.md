@@ -8,7 +8,7 @@ method signatures, a scope-model mismatch, or a dependency footprint heavier tha
 `memory.md`'s "wrap, don't build" framing implies? Does a basic write-then-search
 round trip actually work end to end?
 
-Closes the last remaining gap named in [critique.md](../../docs/critique.md): P4
+Closes the last remaining gap named in [critique.md](../../../docs/critique.md): P4
 (memory) had zero empirical work of any kind before this spike.
 
 ## Result
