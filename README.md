@@ -162,6 +162,7 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 
 | Doc | What |
 |---|---|
+| [architecture.md](docs/architecture.md) | **Start here for a visual walkthrough** — diagrams of every layer, from platform context down to a single request's lifecycle |
 | [personas.md](docs/personas.md) | Who Fabrica is for — human personas + JTBD, and the model as a non-human actor |
 | [problem-definition.md](docs/problem-definition.md) | Per-persona problem statements, success metrics, non-goals — and the cross-cutting decisions that fell out of defining them |
 | [context-layer.md](docs/context-layer.md) | The pillar framing and full scope |
