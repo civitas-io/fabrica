@@ -164,8 +164,20 @@ genuinely mattered — §B's finding that the differentiated headline mechanism 
 zero hands-on validation — got closed by running the spike rather than accepting the
 risk, and the result came back stronger than the question asked for.
 
-**What's actually left, honestly:** P4 (memory & prompts) has had no empirical work
-at all, and P3's `SKILL.md` conformance has only been checked against one tool's
-dialect of the format, not Anthropic's native one. Those are the two real remaining
-gaps in this doc set — everything else raised here has a resolution applied, not
-just proposed.
+**Update — both remaining gaps have since been addressed.** P4 (memory) now has a
+real spike ([SPIKE-memory-mem0-wrap.md](../specs/archive/spikes/SPIKE-memory-mem0-wrap.md)):
+a working `MemoryStore` adapter over real Mem0, round-tripped end to end, with real
+friction found and absorbed (Mem0 requires an API key by default — contradicts
+zero-infra unless explicitly reconfigured; `add()`/`search()` have inconsistent
+parameter conventions; no native `team_id`, but `metadata` works, confirmed).
+Prompts and the other memory backends (Zep, Letta, Cognee, LangMem) remain
+untested — only Mem0 was tried. P3's `SKILL.md` conformance is checked field-by-field
+against the real spec in `skills-gateway.md` — required fields fully compliant,
+optional fields and progressive disclosure's third level (bundled scripts/assets)
+genuinely untested since no corpus exercises them.
+
+**What's honestly still open, updated:** the *scope* of what's untested narrowed
+significantly (one memory backend validated, not zero), but nothing in this doc
+set has reached 100% coverage — that was never the goal. The remaining gaps are
+now specific and named rather than whole-phase blanks: other memory backends,
+prompts, `infer=True`'s LLM-driven path, and `SKILL.md`'s optional fields.

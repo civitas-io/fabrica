@@ -27,6 +27,29 @@ Fabrica **does not define a new skill format.** It implements a runtime-native l
 for the open `SKILL.md` standard, with progressive disclosure as a first-class feature.
 This rides a standardizing wave instead of fighting it.
 
+**Checked against the real spec, not assumed.** Spike 6's disambiguation results
+(4/4 exact picks) were validated against the bigpowers catalog — a real, in-use
+SKILL.md dialect, but one tool's dialect, not Anthropic's canonical spec
+(`agentskills.io`, published 18 Dec 2025). Direct comparison, field by field, across
+all 81 bigpowers skills:
+
+| Spec requirement | bigpowers compliance |
+|---|---|
+| `name`: lowercase/digits/hyphens only, ≤ 64 chars, no leading/trailing/double hyphens | **81/81 compliant** |
+| `description`: ≤ 1024 chars | **81/81 compliant** |
+| Optional: `license`, `allowed-tools`, `version`, `author`, `compatibility` | **0/81 use any of these** |
+| Non-spec field: `model` | **81/81 use this** — a bigpowers-specific extension the official spec does not define at all |
+| Bundled resources (`scripts/`, `assets/`, `references/`, `REFERENCE.md` — progressive disclosure's *third* level) | **0/81 use any bundled files** — every bigpowers skill is a bare `SKILL.md` |
+
+**What this means:** the two required fields are fully conformant, which is reassuring
+— but the validation never exercised the spec's optional fields, and **never tested
+progressive disclosure's third level at all** (loading bundled scripts/assets on
+demand), since no test corpus skill has any. `SkillStore`/`Indexable` should
+tolerate unspecified fields permissively (bigpowers' `model` field is exactly the
+kind of vendor extension a conformant loader must not choke on), but the
+bundled-resource loading path remains **genuinely untested**, not just
+unexercised by coincidence.
+
 ## What Fabrica adds over "just read the file"
 
 1. **Runtime-native discovery via the shared retrieval engine.** A `SkillStore`
