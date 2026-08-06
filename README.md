@@ -4,6 +4,10 @@
 
 Part of the [Civitas](https://github.com/civitas-io/python-civitas) platform.
 
+> **Resuming after a break or a context compaction? Read [`HANDOFF.md`](HANDOFF.md)
+> first** — the full arc of decisions, why each was made, and the one open
+> question that needs answering before contracts work continues.
+
 > **Status:** Pre-alpha — thesis, design, and validation. Seven spikes
 > ([`specs/archive/spikes/`](specs/archive/spikes/)) tested the riskiest claims
 > against real hardware and real API calls — see [`docs/critique.md`](docs/critique.md)
