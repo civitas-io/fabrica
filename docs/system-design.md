@@ -114,7 +114,7 @@ something breaks. Six real decisions, one flagged as a real availability tradeof
 | Sandbox crashes mid-run | Civitas supervisor detects process death | `ToolManager` returns a structured error to the caller, not a silent hang. `SandboxPool` discards the handle and provisions a fresh one. **Civitas restarts the supervisor's child; Fabrica does not reimplement supervision.** |
 | `Retriever` backend (e.g. prx) unreachable | persistent-process health check fails (same pattern validated in [SPIKE-prx-invocation-latency.md](../specs/archive/spikes/SPIKE-prx-invocation-latency.md)) | falls back to `KeywordBackend` automatically, logs a degraded-mode event. Never fails the caller outright for this. |
 | Presidium unreachable | RPC timeout on `check_grant` | **fail closed — DENY by default.** Never fail-open on a security check. This is a real, explicit availability-vs-safety tradeoff: a Presidium outage degrades Fabrica to doing nothing, on purpose. |
-| Warm pool exhausted | `acquire()` finds no available handle | **Open question — not decided here.** Queue with a bounded wait, or cold-start on demand (accepting the Firecracker cold-boot cost the earlier spike measured at ~1s)? See §7. |
+| Warm pool exhausted | `acquire()` finds no available handle | **Resolved — hybrid bounded overflow** (see §7): cold-start on demand up to a hard `max_concurrent` ceiling; only queue (bounded wait + timeout, structured error if it expires) once that ceiling is hit. Never unbounded, never queues while the host still has headroom. |
 | Generated code hangs | `Sandbox.run(..., timeout=...)` | hard timeout enforced by the sandbox itself; process/VM killed; a `TimedOut` error returned, not a hang. |
 | Memory backend fails to instantiate (e.g. missing local model files) | at `MemoryManager` construction, not first use | **fail fast at Fabrica startup**, with a clear error — not a confusing failure mid-agent-task later. |
 
@@ -143,7 +143,21 @@ tracing mechanism.
 Real decisions, not oversights — surfaced here so contracts work starts from a
 known list, not silent assumptions:
 
-1. **Warm-pool-exhausted behavior** (§6) — queue-with-timeout vs. cold-start.
+1. ~~Warm-pool-exhausted behavior~~ **Resolved.** Two config values on `SandboxPool`:
+   `warm_size` (pre-booted, ready) and `max_concurrent` (hard ceiling, warm +
+   cold-started combined). `acquire()` tries the warm pool first (8–11ms); if
+   empty and under `max_concurrent`, cold-starts on demand (bounded, ~1s per the
+   Firecracker spike); only once `max_concurrent` is hit does it queue with a
+   bounded timeout, returning a structured error if the timeout expires — never
+   a silent hang. Chosen over unbounded cold-start specifically because it's the
+   direct answer to Marcus's own stated fear: *"a bad run can't touch the host or
+   blow the budget... a runaway resource consumer"* — unbounded cold-start under
+   a traffic spike or adversarial burst is exactly that shape. Refinement, not a
+   separate decision: a cold-started overflow sandbox that finishes work is
+   folded back into the warm pool (if under `warm_size`) rather than discarded —
+   bursts organically regrow the warm pool instead of needing manual resizing.
+   Exact queue-timeout duration is left as an operator-tunable config value, not
+   hardcoded here — it's a deployment SLA choice, not an architecture one.
 2. **`PresidiumClient`'s exact transport** when Presidium isn't in-process — Civitas
    message bus, or a separate call? Affects the fail-closed timeout's real latency.
 3. **The callback transport** (§3, step 9) — is it `vsock` uniformly (matching
