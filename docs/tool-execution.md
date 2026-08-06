@@ -1,4 +1,4 @@
-# Tool Execution: Code Mode, with `find_tools` as fallback
+# Tool Execution: Code Mode, with `find` as fallback
 
 **Status:** Design · **Last updated:** 2026-08 · **Supersedes:** RFC 0001 (as headline)
 
@@ -49,49 +49,21 @@ Why Fabrica and not just use Anthropic/Cloudflare:
   runtime.
 - **Governed by Presidium.** Grants and policy gate what the sandbox may touch.
 
-### Fallback: `find_tools` retrieval (from RFC 0001)
+### Fallback: `find` retrieval (was `find_tools` in RFC 0001)
 
-For models/hosts that don't do code mode, Fabrica keeps the original interface:
+For models/hosts that don't do code mode, Fabrica keeps a retrieval interface —
+but it's no longer tool-specific. See **[retrieval.md](retrieval.md)** for the
+full design: a single `find(query, kind, limit)` meta-tool shared by tools and
+skills, backed by a pluggable `Retriever` engine (rank-ordered results only —
+never filtered by absolute score, per
+[SPIKE-tool-retrieval-token-overhead.md](../specs/archive/spikes/SPIKE-tool-retrieval-token-overhead.md)).
+This mode is a *compatibility floor*, not the pitch — see
+[SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md)
+for why code-mode is now validated as the actual headline, not just the aspiration.
 
-```json
-{ "name": "find_tools",
-  "input_schema": { "type": "object",
-    "properties": { "query": {"type": "string"},
-                    "limit": {"type": "integer", "default": 5} },
-    "required": ["query"] } }
-```
-
-- Keyword (BM25) backend by default; embedding backend via `fabrica-contrib[search]`.
-- Aggregates multiple sources (local registry, MCP servers, remote).
-- Returns schemas in the host API's native format (Anthropic / OpenAI).
-
-This mode is a *compatibility floor*, not the pitch.
-
-## Build vs. wrap: the retrieval backend
-
-Research turned up a **two-tier market** for tool retrieval (full detail in
-[landscape.md](landscape.md#6-tool-search--retrieval-backends--a-two-tier-market)):
-
-- **Tier 1 — mature, inside mega-frameworks or hosted products.** LlamaIndex's
-  `ToolRetriever`/`ObjectIndex`, LangChain's `retriever_tool` + `EnsembleRetriever`
-  (hybrid BM25+embeddings), and Composio's hosted `COMPOSIO_SEARCH_TOOLS`. All
-  actively maintained. All require adopting a mega-framework or a commercial platform.
-- **Tier 2 — a real gap.** No small, standalone, framework-agnostic, **MCP-native**
-  library exists that just does "one `find_tools` meta-tool, multiple sources,
-  keyword-first with optional embeddings." That gap is what Fabrica's `find_tools`
-  fallback fills.
-
-So: **build the interface layer** (it's genuinely missing) — but **wrap, don't
-reimplement, the embedding engine underneath it**, mirroring the `MemoryStore`
-posture in [memory.md](memory.md):
-
-- `fabrica` core ships a zero-dependency `KeywordBackend` (BM25) by default.
-- `fabrica-contrib[llamaindex]` / `fabrica-contrib[langchain]` wrap `ObjectIndex` /
-  `EnsembleRetriever` as an `EmbeddingBackend`, instead of Fabrica maintaining its
-  own vector-index code.
-- `fabrica-contrib[search]` (sentence-transformers, from the original RFC) remains
-  as a dependency-light option for teams that want embeddings without adopting
-  either framework.
+Backends (keyword default, prx/LlamaIndex/LangChain as adapters) are specified in
+[retrieval.md](retrieval.md#backends--rust-for-the-built-parts-wrap-everything-else),
+not duplicated here.
 
 ## Why this lives in Fabrica, not the Rust toolchain (prx/tessera)
 
@@ -138,11 +110,12 @@ value. Fabrica captures stdout/stderr, enforces limits, and returns only the res
 
 ## Open questions
 
-0. **Disambiguation among overlapping tools/skills is one unsolved design question,
-   not several.** See [skills-gateway.md](skills-gateway.md#open-questions) —
-   ranking/prioritization tooling across `find_tools`, skill discovery, and memory
-   search is deferred to a single cross-cutting design pass, not solved ad hoc per
-   surface.
+0. **Resolved by unification, not deferral.** Disambiguation across tools and
+   skills is no longer "one unsolved question tracked in two places" — see
+   [retrieval.md](retrieval.md), which gives both a shared `Retriever` engine and
+   a shared `find(query, kind)` surface. Memory search remains intentionally
+   separate (different semantics — scoped, not a shared registry) but plugs into
+   the same underlying engine.
 1. Language of the sandbox API — Python first (matches Civitas); TypeScript later?
 2. Credential propagation into the sandbox — coordinate with Presidium + tessera so
    the sandbox can *use* secrets it can't *read*.

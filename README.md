@@ -152,9 +152,10 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | [personas.md](docs/personas.md) | Who Fabrica is for — human personas + JTBD, and the model as a non-human actor |
 | [problem-definition.md](docs/problem-definition.md) | Per-persona problem statements, success metrics, non-goals — and the cross-cutting decisions that fell out of defining them |
 | [context-layer.md](docs/context-layer.md) | The pillar framing and full scope |
-| [tool-execution.md](docs/tool-execution.md) | Tools-as-code / code-mode design; `find_tools` fallback |
+| [tool-execution.md](docs/tool-execution.md) | Tools-as-code / code-mode design; `find` fallback |
+| [retrieval.md](docs/retrieval.md) | The shared `Retriever` engine behind tools + skills discovery — one engine, rank-not-threshold, Rust-for-compute |
 | [isolation.md](docs/isolation.md) | Tiered `Sandbox` protocol; gVisor → Firecracker → Kata |
-| [skills-gateway.md](docs/skills-gateway.md) | `SKILL.md`-conformant skills |
+| [skills-gateway.md](docs/skills-gateway.md) | `SKILL.md`-conformant skills, discovery via retrieval.md |
 | [memory.md](docs/memory.md) | `MemoryStore` protocol; wrap-don't-build |
 | [civitas-presidium-integration.md](docs/civitas-presidium-integration.md) | How Fabrica plugs into the platform |
 | [landscape.md](docs/landscape.md) | Competitive research (Nov 2025), dated + sourced |

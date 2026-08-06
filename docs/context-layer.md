@@ -76,6 +76,29 @@ Like the rest of the platform, every component runs in two modes:
 - **Service mode** — a supervised `GenServer` on the Civitas bus (e.g. a shared
   sandbox pool or memory service). Same interface, shared state, central management.
 
+## Engineering principle: Rust for compute, Python for interface
+
+Where Fabrica **builds** (not wraps) a compute-intensive internal component, prefer
+implementing it in **Rust with a Python binding** (e.g. via PyO3/maturin), not pure
+Python. This mirrors the platform's own toolchain precedent — prx's embedded
+retrieval model is exactly this shape (Rust core, zero-copy, no runtime dependency)
+— rather than inventing a new pattern.
+
+This does **not** contradict the "zero infra for hello-world" success metric
+(Priya's, in `problem-definition.md`): a compiled Rust extension ships as a normal
+wheel. `pip install fabrica` stays exactly as simple — there is no separate Rust
+toolchain a user ever sees or installs. The principle is about where the *compute*
+lives, not what the *user* has to do.
+
+Likely candidates as implementation proceeds (not resolved here, flagged for
+`plan-work`): the default keyword-retrieval backend in
+[retrieval.md](retrieval.md), any local embedding computation Fabrica ever
+implements itself (as opposed to wrapping), and sandbox-pool bookkeeping/scheduling
+if it turns out to be compute-bound rather than I/O-bound. Wrapped third-party
+libraries (Mem0, Zep, LlamaIndex, prx itself) are unaffected — this principle only
+applies to what Fabrica builds, consistent with "wrap, don't build" everywhere else
+in this doc set.
+
 ## Why this framing wins
 
 - **Symmetry sells.** "Runtime, Control, Context — Civitas, Presidium, Fabrica" is a
