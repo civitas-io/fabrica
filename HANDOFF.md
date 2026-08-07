@@ -90,8 +90,20 @@ architecture → system design → contracts → *then* implementation).
      one had none until now, and zero spike coverage — stated honestly, not
      hidden). Deliberately excludes both rendering and prompt compression, per
      `architecture.md §1a`'s library-first principle applied from the start:
-     rendering is a harness decision, and compression would duplicate
-     `Compactor` rather than generalize it.
+     rendering is a harness decision.
+   - `prompts.md` was then extended with a grounded "Explored: the wider
+     feature space" survey (provider-side prompt caching mechanics, DSPy/
+     TextGrad automated tuning, LLMLingua-2 extractive compression, registry/
+     hub table-stakes features, a `PROMPT.md` portable format precedented by
+     both Humanloop and this codebase's own `SkillManager.load()`). This
+     **corrected an earlier claim**: compression does NOT belong as a
+     `Compactor` extension — LLMLingua-2's extractive token-classification
+     approach is mechanically nothing like `Compactor`'s abstractive
+     `Summarizer`-based one; it's closer in shape to a `RetrieverBackend`
+     (wrap a small local model) than to `Summarizer`. Two ideas flagged as
+     worth prioritizing soon, not yet built: a cache-boundary marker
+     (low-coupling, high-leverage) and the `PROMPT.md` format. Not yet decided
+     whether either gets promoted into `contracts/prompts.md`.
    - **Not yet written:** `CivitasBridge`.
 
 ---

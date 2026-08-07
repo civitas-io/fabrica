@@ -26,15 +26,18 @@ no reason for this component to own the decision at all.
 
 **2. `PromptManager` does not compress/shrink prompts.** `context-layer.md`
 named "promptshrink compression" as one of the scattered ideas being
-absorbed into this platform. Having now designed `Compactor`
-([memory.md](memory.md)), it's clear that "reduce a block of text's token
-footprint under a budget, via an injected `Summarizer`" is already a general
-shape this platform has — building a *second*, prompt-specific compression
-mechanism inside `PromptManager` would duplicate `Compactor` rather than
-generalize it. If prompt compression becomes a real, validated need, it
-should extend `Compactor`'s shape (or `Compactor` itself, generalized to
-`list[Message] | str`), not become a third mechanism. Not built now, not
-forgotten — named here explicitly so the next person doesn't reinvent it.
+absorbed into this platform. **Correction to an earlier claim in this same
+doc's history:** it was initially assumed this should extend `Compactor`
+([memory.md](memory.md)) if it ever gets built, on the theory that
+"reduce a block of text's token footprint under a budget" is one general
+shape. That's wrong once the actual research is looked at directly — see
+["Explored: the wider feature space"](#explored-the-wider-feature-space-not-built-investigated-deliberately)
+below. Extractive compression (LLMLingua-2) and `Compactor`'s abstractive
+summarization are mechanically different techniques with different
+dependency shapes; collapsing them would have been a mistake in the other
+direction from duplicating. Not built now either way — named here so the
+next person doesn't reinvent it, and doesn't inherit the wrong assumption
+about where it belongs if it is built.
 
 ## Interface (sketch)
 
@@ -109,7 +112,118 @@ see its content change under it.
 4. Does Presidium need any grant surface here at all (e.g., gating who can
    `put()` a new version of a prompt used broadly)? Not designed — genuinely
    unclear whether this is a real governance need or not.
-5. If prompt compression becomes real, does it belong as a generalization of
-   `Compactor` (accepting `str` alongside `list[Message]`), or as its own
-   sibling mechanism reusing `Summarizer`'s DI shape independently? Not decided
-   — flagged in the thesis above, not resolved here.
+5. If prompt compression becomes real, does it need `Summarizer`'s DI shape at
+   all, or is it closer to a `RetrieverBackend`-style wrapped local model
+   (LLMLingua-2 is a small importable classifier, not a big-LLM dependency)?
+   See ["Explored"](#explored-the-wider-feature-space-not-built-investigated-deliberately)
+   below — leaning toward "its own mechanism," not resolved as a contract
+   decision here.
+
+## Explored: the wider feature space (not built, investigated deliberately)
+
+A deliberate divergent-thinking pass — "think bigger, we may or may not use
+any of it" — grounded against the actual current (2024–2025) prompt-tooling
+landscape rather than invented from scratch. Captured here in full even where
+the answer is "no, not now," per the same "named, not buried" convention used
+for every other deferred decision in this platform.
+
+### A real miscategorization worth fixing regardless of anything else
+
+`PromptManager`'s read cache (above) and **"prompt caching" as an industry
+term are two different things**, and the design currently addresses only the
+minor one. Provider-side prompt caching (Anthropic/OpenAI/Gemini) reuses
+**KV-cache computation** for an exact token-for-token repeated prefix,
+skipping re-computation of that portion entirely — one of the single largest
+cost/latency levers available (Anthropic: up to 90% cost reduction via
+explicit `cache_control` breakpoints; OpenAI: ~50% discount, automatic above
+~1024 tokens; Gemini: explicit context caching, 1-hour TTL). It requires
+**exact prefix stability** — one changed token anywhere breaks the cache from
+that point forward, which is why providers all converge on the same
+structuring rule: stable content (system prompt, tool defs) first, dynamic
+content (user query, live conversation) last.
+
+**`PromptManager`'s storage model already has the right shape for this, by
+accident:** a stored `PromptTemplate` *is* the stable prefix; whatever a
+harness fills in at runtime is the dynamic suffix. `PromptManager` doesn't
+need to know Anthropic vs. OpenAI vs. Gemini specifics — it only needs to
+**preserve and expose the boundary** between "versioned, stable" and
+"filled in per-call," which every provider's caching mechanism relies on
+regardless of vendor. This is the one idea from this whole pass that looks
+worth doing something with soon: low-coupling (no provider-specific logic
+owned here), cheap, and high-leverage.
+
+### Automated prompt optimization / "tuning" — DSPy, TextGrad
+
+DSPy (Stanford) and TextGrad treat prompt wording as something to *search
+over* against an eval metric and training examples — not hand-edit. A DSPy
+optimizer's output is, mechanically, just another prompt. This maps directly
+onto `PromptManager`'s existing version model: it doesn't need to *run* DSPy
+(a heavy, separate dependency — real "wrap, don't build" territory), but
+version `metadata` could record **provenance** — hand-written vs.
+auto-optimized, against which metric, what score it achieved.
+`PromptManager` would become the registry optimization tools write results
+*into*, never the optimizer itself. Real value, correctly speculative until
+there's an actual optimization workflow to attach it to.
+
+### Extractive compression (LLMLingua-2) — mechanically distinct from `Compactor`
+
+LLMLingua-2 formulates compression as **extractive token classification**: a
+small, local, bidirectional-Transformer classifier removes low-information
+tokens from the *original* text — the output is a strict subset of the
+input, never new text, which is precisely why it avoids the hallucination
+risk of LLM-based summarization. This is mechanically nothing like
+`Compactor`'s `Summarizer`-based abstractive approach (rewrite into new,
+shorter text via an injected large model). It's closer in shape to a
+`RetrieverBackend` — wrap a small local model — than to `Summarizer`'s
+harness-injected big-LLM pattern. If this is ever built, it should probably
+be its own swappable mechanism, not a generalization of `Compactor` as
+previously (incorrectly) assumed in this document's history.
+
+### Registry/hub workflow features — an honest gap, named
+
+Humanloop, PromptLayer, LangSmith Hub, and MLflow Prompt Registry all treat
+as baseline: **diff views** between versions, **environment aliases**
+(dev/staging/prod), **A/B testing** linked to eval datasets, and
+**attribution** (who changed what, when). This platform's design has
+versioning and nothing else on that list. That's a real gap in the
+*workflow* layer, distinct from the *storage* layer this contract actually
+covers — named honestly rather than implied to be covered by "versioning"
+alone.
+
+### A portable file format — validated by direct precedent, not invented here
+
+Humanloop ships a dedicated `.prompt` file format specifically for
+git-native source control — prompts authored and reviewed via normal PRs and
+`git diff`, not hidden inside a database. This maps directly onto a pattern
+this exact codebase already has working: `SkillManager.load(skill_dir)`
+reading a `SKILL.md` package (`skills-gateway.md`). A `PromptManager.load(path)`
+reading a `PROMPT.md`-shaped file (frontmatter + content) would be the same
+shape applied to prompts. Of everything in this section, this is the
+strongest single idea — not because it's novel, but because it has a working
+precedent in a real product (Humanloop) *and* a working precedent already
+implemented in this codebase (`SkillManager`), which is an unusually strong
+position for a "considered" idea to be in.
+
+### Composition/partials
+
+Real and common (Jinja includes, reusable blocks referenced across multiple
+top-level templates). Adds genuine complexity this pass doesn't resolve: if a
+shared fragment changes, do dependent templates that reference it
+auto-update, or stay pinned to whatever fragment version they last resolved?
+That's a real versioning-semantics question, not a detail — unresolved here.
+
+### Triage
+
+**Worth doing something with soon:** the cache-boundary marker (cheap,
+high-leverage, no provider coupling) and the `PROMPT.md` portable format
+(direct precedent already exists in this codebase).
+
+**Real value, correctly deferred:** provenance metadata for optimization
+tooling; diff/environment-alias/A/B-testing workflow features — genuine
+value, but zero validated demand yet, same "ship the default, revisit if
+forced" logic as Windows support and macOS Tier 2.
+
+**Belongs elsewhere or not at all:** running DSPy/TextGrad optimization
+itself (a separate tool, not this platform's job); multi-provider prompt
+reformatting (real coupling risk, no clear owner); prompt-injection scanning
+(plausibly Presidium's governance concern, not this component's).
