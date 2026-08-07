@@ -178,7 +178,7 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | [contracts/managers.md](docs/contracts/managers.md) | `PresidiumClient.check_grant`, the shared `execute_in_sandbox` helper, `ToolManager`, `SkillManager` |
 | [contracts/memory.md](docs/contracts/memory.md) | `WorkingMemoryStore`, `Compactor`/`Summarizer` (DI'd), `MemoryStore`, `MemoryManager` facade |
 | [prompts.md](docs/prompts.md) | The narrowest manager: storage/versioning/retrieval only. Plus a grounded "explored, not built" feature survey (provider-side caching, DSPy-style tuning, LLMLingua compression, portable `PROMPT.md` format) |
-| [contracts/prompts.md](docs/contracts/prompts.md) | `PromptStore`, `PromptManager` |
+| [contracts/prompts.md](docs/contracts/prompts.md) | `PromptStore`, `PromptManager` — plus `cacheable`/`cache_boundary` (author-declared, never parsed) and `PROMPT.md` portable-format `load()` |
 | [isolation.md](docs/isolation.md) | Tiered `Sandbox` protocol; gVisor → Firecracker → Kata |
 | [skills-gateway.md](docs/skills-gateway.md) | `SKILL.md`-conformant skills, discovery via retrieval.md |
 | [memory.md](docs/memory.md) | Three facets: working memory, compaction (harness-engineering primitive, DI'd Summarizer), long-term `MemoryStore` (wrap-don't-build) |

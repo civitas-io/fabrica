@@ -102,8 +102,16 @@ architecture → system design → contracts → *then* implementation).
      `Summarizer`-based one; it's closer in shape to a `RetrieverBackend`
      (wrap a small local model) than to `Summarizer`. Two ideas flagged as
      worth prioritizing soon, not yet built: a cache-boundary marker
-     (low-coupling, high-leverage) and the `PROMPT.md` format. Not yet decided
-     whether either gets promoted into `contracts/prompts.md`.
+     (low-coupling, high-leverage) and the `PROMPT.md` format.
+   - **Both promoted into `contracts/prompts.md`.** Resolved a real tension
+     while doing so: `PromptManager` can't detect a template's cache
+     boundary itself (it's contractually forbidden from parsing `content`'s
+     templating syntax), so `cacheable`/`cache_boundary` are
+     author-declared fields, stored and returned verbatim, never validated
+     -- the author makes the claim, `PromptManager` just carries it.
+     `load(path)` reads a `PROMPT.md` file (frontmatter + body, mirroring
+     `SKILL.md`) and is idempotent for unchanged content, same pattern as
+     `ToolManager.register()`.
    - **Not yet written:** `CivitasBridge`.
 
 ---
