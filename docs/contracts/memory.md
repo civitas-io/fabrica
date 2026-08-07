@@ -176,6 +176,34 @@ class RecencyCompactor:
     target_tokens = budget_tokens - (tokens consumed by preserved messages).
     """
     def __init__(self, summarizer: Summarizer, *, preserve_last_n: int = 6) -> None: ...
+
+
+class CompactionUnavailableError(MemoryError):
+    """Raised by NullCompactor.compact() -- compaction was invoked, but
+    CivitasBridge was constructed with summarizer=None, so no model
+    connection was ever configured to perform it."""
+
+
+class NullCompactor:
+    """What CivitasBridge wires into MemoryManager when summarizer=None
+    at construction (a decision walked through before this contract was
+    written -- HANDOFF.md). Implements the Compactor protocol like any
+    other implementation -- a Null Object, not a special case.
+
+    This matters for a concrete reason, not just tidiness: MemoryManager's
+    constructor requires a Compactor (contracts/memory.md's facade
+    section) -- making it Optional instead would push an `if self._compactor
+    is None` branch into every call site inside MemoryManager that touches
+    compaction. Standard Null Object pattern instead: MemoryManager always
+    receives A Compactor, full stop; NullCompactor just always raises
+    CompactionUnavailableError the moment compact() is actually invoked.
+    The 'is compaction configured?' question is answered once, at
+    CivitasBridge construction time, not repeatedly at every call site."""
+    async def compact(self, messages: list[Message], *, budget_tokens: int) -> CompactionResult:
+        raise CompactionUnavailableError(
+            "No Summarizer was configured -- construct CivitasBridge with "
+            "summarizer=... to enable compaction."
+        )
 ```
 
 **Unresolved edge case, flagged rather than papered over:** if a *single*
@@ -252,7 +280,12 @@ harness holds one object, not three.
   not each adapter's implementation.
 - **Civitas's `StateStore` checkpointing** of working memory and the default
   long-term store — referenced as a dependency (`memory.md`'s Integration
-  section), not specified here.
+  section), mediated through `CivitasBridge.request_state_persistence`
+  (`system-design.md §1`'s correction), not specified here.
+- **Whether `CivitasBridge` was constructed with a `Summarizer`** — out of
+  scope for this contract; `NullCompactor` documents the behavior when it
+  wasn't, but the decision of whether/how a harness supplies one belongs to
+  `CivitasBridge`'s own contract, not yet written.
 - **`Message` ↔ Civitas's runtime-loop representation conversion** — flagged
   above as unreconciled, not assumed away.
 

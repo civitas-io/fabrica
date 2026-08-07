@@ -176,7 +176,7 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | [contracts/retriever.md](docs/contracts/retriever.md) | **Contracts** — implementation-ready signatures, error types, async behavior. |
 | [contracts/sandbox.md](docs/contracts/sandbox.md) | Sandbox contract — corrects a real imprecision in system-design.md's warm-pool language, found by writing exact release() semantics. |
 | [contracts/managers.md](docs/contracts/managers.md) | `PresidiumClient.check_grant`, the shared `execute_in_sandbox` helper, `ToolManager`, `SkillManager` |
-| [contracts/memory.md](docs/contracts/memory.md) | `WorkingMemoryStore`, `Compactor`/`Summarizer` (DI'd), `MemoryStore`, `MemoryManager` facade |
+| [contracts/memory.md](docs/contracts/memory.md) | `WorkingMemoryStore`, `Compactor`/`Summarizer` (DI'd), `MemoryStore`, `MemoryManager` facade, `NullCompactor` (Null Object for summarizer-not-configured) |
 | [prompts.md](docs/prompts.md) | The narrowest manager: storage/versioning/retrieval only. Plus a grounded "explored, not built" feature survey (provider-side caching, DSPy-style tuning, LLMLingua compression, portable `PROMPT.md` format) |
 | [contracts/prompts.md](docs/contracts/prompts.md) | `PromptStore`, `PromptManager` — plus `cacheable`/`cache_boundary` (author-declared, never parsed) and `PROMPT.md` portable-format `load()` |
 | [isolation.md](docs/isolation.md) | Tiered `Sandbox` protocol; gVisor → Firecracker → Kata |

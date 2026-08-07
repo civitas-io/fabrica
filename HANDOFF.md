@@ -275,10 +275,30 @@ settled, both corrections to what `system-design.md` said before:
    `system-design.md` (component matrix + state table) and `memory.md`
    (Integration section).
 
-**Not yet done:** the actual `contracts/civitas-bridge.md` contract, and two
-queued decisions the walkthrough hadn't reached yet: the DI entry point for
-`Summarizer` (Fabrica has no model connection of its own — this is the seam
-where a harness's connection enters the object graph), and what happens when
+**`Summarizer` DI entry point — resolved.** `CivitasBridge.__init__` takes
+`summarizer: Summarizer | None = None` — a plain typed keyword parameter, not
+a generic dependency-registry bag (that would be premature generalization:
+`Summarizer` is the ONLY dependency in this whole system that structurally
+cannot have a zero-config default, so there's no real risk yet of
+`CivitasBridge`'s constructor bloating with more of these — revisit
+generalizing only if a second one actually appears). Optional, not required,
+so constructing `Fabrica` never forces every deployment to supply a model
+connection just to start up.
+
+This meant `MemoryManager`'s required `Compactor` constructor parameter
+needed an answer for `summarizer=None`: **`NullCompactor`**, a Null Object
+implementing `Compactor`, wired in by `CivitasBridge` instead of
+`RecencyCompactor` when no `Summarizer` was configured. Raises
+`CompactionUnavailableError` only when `compact()` is actually invoked —
+keeps `MemoryManager`'s constructor simple (always receives a valid
+`Compactor`, no `Optional`/`None`-branching at every call site) and answers
+"is compaction configured?" once, at construction time, not repeatedly at
+every call site. Written into `contracts/memory.md` already, ahead of
+`CivitasBridge`'s own contract, since it's `Compactor`/`MemoryManager`'s
+behavior being specified, not `CivitasBridge`'s.
+
+**Not yet done:** the actual `contracts/civitas-bridge.md` contract, and one
+queued decision the walkthrough hasn't reached yet: what happens when
 Presidium isn't configured at all (distinct from configured-but-unreachable,
 which already fails closed) — does `CivitasBridge` require a
 `presidium_endpoint` always, or support a `NullPresidiumClient` that allows
