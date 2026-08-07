@@ -80,8 +80,12 @@ architecture → system design → contracts → *then* implementation).
      broad `except:` can't accidentally treat an outage as permissive),
      `execute_in_sandbox` (the literal implementation of "composition, not
      inheritance"), `ToolManager`, `SkillManager`.
-   - **Not yet written:** `MemoryManager` (design reframed in `docs/memory.md`,
-     contract still to write), `PromptManager`, `CivitasBridge`.
+   - `memory.md` — done. Kept `MemoryItem.score` unlike `RankedMatch`
+     (no counter-evidence exists for memory recall the way there was for
+     tool retrieval — not copying the no-score rule by reflex). Made
+     `Message.tokens` required, not optional, specifically to avoid Fabrica
+     needing to bundle or guess at a model-specific tokenizer.
+   - **Not yet written:** `PromptManager`, `CivitasBridge`.
 
 ---
 
@@ -134,8 +138,10 @@ Key design decision: `Compactor` never makes its own LLM call (would violate
 `Sandbox`/`RetrieverBackend`. See `docs/memory.md`'s new sections for the full
 `WorkingMemoryStore`/`Compactor`/`Summarizer`/`MemoryManager` shape.
 
-**Next:** write `docs/contracts/memory.md` against this updated design — not
-yet done as of this handoff revision.
+**Update:** `docs/contracts/memory.md` is now written (see the Contracts list
+above). Remaining flagged there, not resolved: `RecencyCompactor` has zero
+empirical backing (no spike), and a single-message-exceeds-budget edge case
+has no defined behavior.
 
 ---
 
@@ -194,9 +200,10 @@ yet done as of this handoff revision.
 
 ## Immediate next action
 
-Write `docs/contracts/memory.md` against the three-facet design now in
-`docs/memory.md` — `PresidiumClient.check_grant`/`execute_in_sandbox`-level rigor:
-exact `WorkingMemoryStore`/`Compactor`/`Summarizer`/`MemoryManager` signatures,
-error types, and what's deliberately left out (the `Message`-type reconciliation
-with Civitas's own runtime loop is real integration work, not a contract-level
-decision). Then `PromptManager`, then `CivitasBridge`.
+Four contracts done (`Retriever`, `Sandbox`, `managers.md`, `memory.md`).
+Remaining from the object model: `PromptManager`, then `CivitasBridge` (the
+top-level facade tying every manager together, including the mode-switching
+granularity decision from `system-design.md`). Worth considering, before
+writing `PromptManager`'s contract, whether it's substantial enough to need
+one at all, or whether it's thin enough to fold into `CivitasBridge`'s own
+contract directly — not yet decided.
