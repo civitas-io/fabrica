@@ -85,7 +85,14 @@ architecture → system design → contracts → *then* implementation).
      tool retrieval — not copying the no-score rule by reflex). Made
      `Message.tokens` required, not optional, specifically to avoid Fabrica
      needing to bundle or guess at a model-specific tokenizer.
-   - **Not yet written:** `PromptManager`, `CivitasBridge`.
+   - `prompts.md` + `contracts/prompts.md` — done, and the FIRST manager written
+     design-doc-first (the other three formalized existing design docs; this
+     one had none until now, and zero spike coverage — stated honestly, not
+     hidden). Deliberately excludes both rendering and prompt compression, per
+     `architecture.md §1a`'s library-first principle applied from the start:
+     rendering is a harness decision, and compression would duplicate
+     `Compactor` rather than generalize it.
+   - **Not yet written:** `CivitasBridge`.
 
 ---
 
@@ -218,10 +225,11 @@ rule, not something to re-derive.
 
 ## Immediate next action
 
-Four contracts done (`Retriever`, `Sandbox`, `managers.md`, `memory.md`).
-Remaining from the object model: `PromptManager`, then `CivitasBridge` (the
-top-level facade tying every manager together, including the mode-switching
-granularity decision from `system-design.md`). Worth considering, before
-writing `PromptManager`'s contract, whether it's substantial enough to need
-one at all, or whether it's thin enough to fold into `CivitasBridge`'s own
-contract directly — not yet decided.
+Five contracts done (`Retriever`, `Sandbox`, `managers.md`, `memory.md`,
+`prompts.md`). One left in the object model: `CivitasBridge` — the top-level
+facade tying every manager together, including the mode-switching granularity
+decision from `system-design.md` (v1 single flag, v2 per-component overrides
+built in from day one). This is also the layer where `architecture.md §1a`'s
+library-first principle is under the most real pressure to be broken —
+`CivitasBridge` is explicitly the ONE place allowed to integrate tightly, so
+writing its contract means deciding exactly where that license ends.
