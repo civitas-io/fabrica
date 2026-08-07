@@ -4,7 +4,38 @@
 
 ---
 
-## Thesis: wrap, don't build — but ship a working default, not the raw library
+## Reframe: memory is a harness-engineering primitive, not just personal recall
+
+The original version of this document covered exactly one thing: cross-session
+factual/preference recall, Mem0-style (*"the user prefers dark mode and lives in
+Bangalore"*). That's real, but it's only one of **three genuinely different
+time horizons** a harness builder (Priya) needs help with, and the other two are
+arguably more universal, since almost every agent hits them regardless of
+whether it does any personalization at all:
+
+| Facet | Time horizon | The problem it solves |
+|---|---|---|
+| **Working memory** | one task/session, ephemeral | Where does an agent stash task state — decisions made, approaches already tried, progress — without either re-deriving it every turn or bloating the raw message history just to remember it? |
+| **Compaction** | one context window, bounded by a token budget | When conversation history approaches the model's context limit, how does a harness keep running without either truncating blindly or hand-rolling its own summarization? |
+| **Long-term memory** | across sessions, persistent | Cross-session facts/preferences — the original scope of this document, unchanged in substance below. |
+
+**Compaction earns its place here for a very concrete reason, not a theoretical
+one:** producing this repo's own [`HANDOFF.md`](../HANDOFF.md) was a manual,
+human-triggered instance of exactly this mechanism — a person noticed context
+pressure and asked for a checkpoint by hand. A generic `MemoryManager` should
+offer that as a callable primitive a harness invokes automatically, not
+something that only happens when a human remembers to ask for it.
+
+**The Civitas boundary stays exactly where it already is, not muddied by
+adding this:** Civitas owns "keeps agents alive" — the runtime loop, session
+lifecycle, token-budget tracking — so Civitas decides *when* to compact
+(crossing a threshold it already tracks). Fabrica decides *how* — the actual
+compaction policy and mechanism. Same split as tool execution: Civitas decides
+*when* to call a tool, Fabrica decides *how* retrieval/execution works. Adding
+compaction to Fabrica's scope reinforces this boundary rather than creating a
+new cross-cutting one.
+
+## Thesis for the long-term facet: wrap, don't build — but ship a working default, not the raw library
 
 Agent memory is a **crowded, mature market with no single winner.** Reimplementing a
 knowledge graph or vector-memory engine would be off-strategy. Consistent with the
@@ -23,7 +54,7 @@ Two real frictions the adapter must absorb invisibly: Mem0's own `add()`/`search
 have inconsistent parameter conventions (top-level kwargs vs. a `filters=` dict),
 and there's no native `team_id` (works via `metadata`, confirmed end-to-end).
 
-## The landscape (2025)
+## The long-term-memory landscape (2025)
 
 | Player | Shape | Note |
 |---|---|---|
@@ -35,9 +66,14 @@ and there's no native `team_id` (works via `metadata`, confirmed end-to-end).
 
 Takeaway: these differ enough that a **protocol + adapters** serves users better than
 one opinionated build. Zep going cloud-only is a live example of *why* a portable
-interface matters.
+interface matters. This landscape and this takeaway apply only to the long-term
+facet — there is no equivalent "market" for working memory or compaction, since
+both are thin, Fabrica-owned mechanisms, not markets to wrap.
 
-## Interface (sketch)
+## Interface: long-term memory (`MemoryStore`)
+
+Unchanged from the original design — the reframe adds two new facets, it doesn't
+alter this one.
 
 ```python
 class MemoryStore(Protocol):
@@ -58,20 +94,141 @@ class Scope:
 Default: an in-process store (SQLite/vector) so `pip install fabrica` works with zero
 infra. Adapters: `fabrica-contrib[mem0|zep|letta|cognee|langmem]`.
 
+## Interface: working memory (`WorkingMemoryStore`)
+
+A scratchpad, not a knowledge base — no semantic search, no external infra, tied to
+`Scope.session_id`'s lifecycle by default. Deliberately much simpler than the
+long-term store: there is no "market" here to wrap, so Fabrica owns this outright
+rather than shipping a protocol-plus-adapters shape for it.
+
+```python
+class WorkingMemoryStore(Protocol):
+    async def remember(self, scope: Scope, key: str, value: Any) -> None: ...
+    async def recall(self, scope: Scope, key: str) -> Any | None: ...
+    async def snapshot(self, scope: Scope) -> dict[str, Any]: ...
+    async def clear(self, scope: Scope) -> None: ...
+```
+
+No `promote()` bridge to long-term memory is planned — if a harness decides a
+working-memory item is worth keeping past the session, it reads it via `recall`/
+`snapshot` and writes it into the long-term store itself, explicitly. Consistent
+with keeping `ToolManager`/`SkillManager` as separate classes rather than hiding
+behavior behind a cross-cutting method: no magic bridges between facets that have
+genuinely different persistence and governance semantics.
+
+## Interface: compaction (`Compactor`, DI'd with a `Summarizer`)
+
+The part that must **not** grow its own model dependency. If `Compactor` made its
+own LLM call to produce summaries, Fabrica would need its own model credentials
+and config — a real "wrap, don't build" violation, and the one thing everything
+else in this design has been careful to avoid. Instead: the harness already has a
+model connection (or wants to use a smaller/cheaper model dedicated to
+summarization) — it injects a `Summarizer` once, at construction time, exactly
+like `SandboxPool` is constructed with a `Sandbox` backend and `Retriever` with a
+`RetrieverBackend`. Not a per-call callback — real dependency injection, so the
+same summarization mechanism is reused across every `compact()` call, not
+re-supplied at each site that needs one.
+
+```python
+class Summarizer(Protocol):
+    """Injected dependency. Fabrica never constructs one itself and never
+    holds model credentials — the harness supplies this, wrapping
+    whichever model connection it already has."""
+    async def summarize(self, messages: list[Message], *, target_tokens: int) -> str: ...
+
+
+class Compactor(Protocol):
+    """The compaction POLICY — which messages are preserved verbatim vs.
+    folded into a summary. Swappable, like Sandbox/RetrieverBackend, so a
+    non-default policy (e.g. "preserve messages tagged important" instead
+    of "preserve the last N") doesn't require touching MemoryManager."""
+    async def compact(
+        self, messages: list[Message], *, budget_tokens: int
+    ) -> CompactionResult: ...
+
+
+class RecencyCompactor:
+    """The default Compactor implementation: preserve the last
+    preserve_last_n messages verbatim, fold everything older into one
+    summary via the injected Summarizer."""
+    def __init__(self, summarizer: Summarizer, *, preserve_last_n: int = 6) -> None: ...
+
+
+@dataclass(frozen=True)
+class CompactionResult:
+    summary: str
+    preserved: list[Message]
+    tokens_before: int
+    tokens_after: int
+```
+
+`Message` is a new type this facet introduces — not yet reconciled with whatever
+representation Civitas's own runtime loop already uses internally for conversation
+history. That reconciliation is real integration work, flagged below, not assumed
+away by inventing a redundant type that quietly conflicts with one Civitas already
+has.
+
+## The unified facade: `MemoryManager`
+
+One class agents/harnesses actually interact with, composed of the three backends
+above — the same "public engine wraps swappable pieces" shape as `Retriever` and
+`SandboxPool`, used a third time here rather than inventing a new pattern:
+
+```python
+class MemoryManager:
+    def __init__(
+        self, working: WorkingMemoryStore, long_term: MemoryStore, compactor: Compactor,
+    ) -> None: ...
+
+    # working memory
+    async def remember(self, scope: Scope, key: str, value: Any) -> None: ...
+    async def recall(self, scope: Scope, key: str) -> Any | None: ...
+
+    # compaction — Civitas decides WHEN (a budget threshold it already
+    # tracks), this decides HOW; MemoryManager itself stays ignorant of
+    # summarization, delegating entirely to the injected Compactor
+    async def compact(self, messages: list[Message], *, budget_tokens: int) -> CompactionResult: ...
+
+    # long-term memory — delegates directly to the MemoryStore protocol
+    async def write(self, scope: Scope, item: MemoryItem) -> str: ...
+    async def search(self, scope: Scope, query: str, limit: int = 5) -> list[MemoryItem]: ...
+    async def get(self, scope: Scope, id: str) -> MemoryItem | None: ...
+    async def forget(self, scope: Scope, id: str) -> None: ...
+```
+
 ## Deployment modes
 
-- **Library** — in-process default store, dev + small.
-- **Service** — a `MemoryStore` `GenServer` (or a remote adapter) shared across agents.
+- **Long-term memory** — Library (in-process default store) or Service (a
+  `MemoryStore` `GenServer`, or a remote adapter, shared across agents) —
+  unchanged from the original design.
+- **Working memory** — almost always Library-mode in-process, given its
+  ephemeral, session-local nature. Worth persisting via Civitas's `StateStore`
+  anyway (see Integration, below) so it survives a supervised process restart —
+  that's the actual point of Civitas's own state supervision, not a reason to
+  treat working memory as disposable.
+- **Compaction** — has no deployment mode of its own. `Compactor` holds no
+  persistent state — it's a pure function of the messages and budget it's given,
+  plus whatever `Summarizer` it was constructed with.
 
 ## Integration
 
-- **Civitas** persists the default store via its `StateStore`; memory writes emit OTEL
-  spans.
+- **Civitas** persists the long-term default store AND working memory via its
+  `StateStore` (working memory rides the same mechanism precisely so it survives
+  a supervised restart, not just a clean session end); memory writes emit OTEL
+  spans. Civitas also owns *when* to trigger compaction — it already tracks
+  token budgets for its own runtime loop; `MemoryManager.compact()` is a
+  mechanism Civitas calls, not one that watches its own budget independently.
 - **Presidium** governs scope access (e.g. a grant like `data:customer_pii:read`
-  gates cross-user recall) and can audit memory reads/writes.
-- **Fabrica** owns the retrieval interface and adapter surface only.
+  gates cross-user recall) and can audit memory reads/writes. This applies to the
+  long-term facet; working memory and compaction don't cross a scope-access
+  boundary the same way, since they never leave the originating session.
+- **Fabrica** owns the retrieval interface and adapter surface for long-term
+  memory, and owns the working-memory and compaction mechanisms outright (no
+  adapters needed for either, per the landscape note above).
 
 ## Open questions
+
+**Long-term memory (original, unchanged):**
 
 1. Is memory a v1 concern or deferred until tools/skills land? (Leaning: protocol in
    v1, adapters follow demand.)
@@ -86,3 +243,29 @@ infra. Adapters: `fabrica-contrib[mem0|zep|letta|cognee|langmem]`.
    zero-infra local path only.
 5. Only Mem0 was spiked. Zep, Letta, Cognee, and LangMem may have entirely
    different integration frictions — unknown until each is tried.
+
+**Working memory (new):**
+
+6. Should `WorkingMemoryStore` support anything beyond exact-key recall — e.g. a
+   `list_keys` or prefix query — or is that scope creep toward re-implementing
+   the long-term store's search? Leaning: no, keep it a plain scratchpad.
+7. Is there a size ceiling per session before working memory itself needs
+   compaction, or is it assumed to always stay small relative to the context
+   window it's meant to save? Unverified either way.
+
+**Compaction (new):**
+
+8. `Message`'s shape hasn't been reconciled with whatever Civitas's runtime loop
+   already uses internally for conversation history — real integration work, not
+   assumed away.
+9. `RecencyCompactor`'s `preserve_last_n` default of 6 is a guess, not validated
+   by any spike — unlike almost everything else in this design, compaction has
+   zero empirical evidence behind it yet. A spike here (does a
+   summary-plus-recent-N actually preserve enough for a model to keep working
+   correctly, measured the same rigorous way SPIKE-code-mode-execution.md
+   measured correctness) is a real gap, not a formality.
+10. Should `Compactor` be swappable per-deployment the same way the isolation
+    backend or retrieval backend is, or is `RecencyCompactor` good enough as the
+    only implementation for v1? Leaning toward shipping one default and revisiting
+    only if a real gap forces it — consistent with how Windows support and macOS
+    Tier 2 were handled.

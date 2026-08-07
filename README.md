@@ -178,7 +178,7 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | [contracts/managers.md](docs/contracts/managers.md) | `PresidiumClient.check_grant`, the shared `execute_in_sandbox` helper, `ToolManager`, `SkillManager` |
 | [isolation.md](docs/isolation.md) | Tiered `Sandbox` protocol; gVisor → Firecracker → Kata |
 | [skills-gateway.md](docs/skills-gateway.md) | `SKILL.md`-conformant skills, discovery via retrieval.md |
-| [memory.md](docs/memory.md) | `MemoryStore` protocol; wrap-don't-build |
+| [memory.md](docs/memory.md) | Three facets: working memory, compaction (harness-engineering primitive, DI'd Summarizer), long-term `MemoryStore` (wrap-don't-build) |
 | [civitas-presidium-integration.md](docs/civitas-presidium-integration.md) | How Fabrica plugs into the platform |
 | [landscape.md](docs/landscape.md) | Competitive research (Nov 2025), dated + sourced |
 | [critique.md](docs/critique.md) | Design claims checked against six spikes — corrections, open decisions, and the one gap that matters most |

@@ -80,7 +80,8 @@ architecture → system design → contracts → *then* implementation).
      broad `except:` can't accidentally treat an outage as permissive),
      `execute_in_sandbox` (the literal implementation of "composition, not
      inheritance"), `ToolManager`, `SkillManager`.
-   - **Not yet written:** `MemoryManager`, `PromptManager`, `CivitasBridge`.
+   - **Not yet written:** `MemoryManager` (design reframed in `docs/memory.md`,
+     contract still to write), `PromptManager`, `CivitasBridge`.
 
 ---
 
@@ -113,33 +114,28 @@ to keep using:
 
 ---
 
-## THE OPEN QUESTION THAT TRIGGERED THIS HANDOFF — resolve this first
+## THE OPEN QUESTION THAT TRIGGERED THIS HANDOFF — resolved
 
-Right before this handoff was requested, a real scope question surfaced that
-hasn't been answered yet:
+**Resolved:** Fabrica's target is confirmed as general Civitas agents, not
+coding agents specifically — but the resolution came with a real reframe, not
+just a confirmation. `docs/memory.md` was rewritten to cover **three facets**,
+not one: working memory (session-scoped scratchpad), compaction (a
+harness-engineering primitive — Civitas decides *when* to compact, Fabrica
+decides *how*), and long-term memory (the original Mem0-style design,
+unchanged). The concrete trigger for adding compaction as a first-class facet:
+**this very `HANDOFF.md` was a manual, human-triggered instance of exactly that
+mechanism** — a person noticed context pressure and asked for a checkpoint by
+hand, which is precisely the kind of thing a generic `MemoryManager` should
+offer as a callable primitive instead.
 
-> **Is Fabrica's target *general* Civitas agents, or *coding* agents specifically?**
+Key design decision: `Compactor` never makes its own LLM call (would violate
+"wrap, don't build" by requiring Fabrica to hold model credentials) — a
+`Summarizer` is injected via real DI at construction time, same pattern as
+`Sandbox`/`RetrieverBackend`. See `docs/memory.md`'s new sections for the full
+`WorkingMemoryStore`/`Compactor`/`Summarizer`/`MemoryManager` shape.
 
-Context: `MemoryManager` (the next contract in line) wraps Mem0-style
-conversational/personal memory (*"the user prefers dark mode and lives in
-Bangalore"*) — built for general-purpose agents. But **coding-agent context
-management is a different problem, already solved by `prx`** (codebase
-search/read/diff with token budgets) — a tool deliberately kept *outside*
-Fabrica because it serves a different consumer (a human/coding-agent at a
-terminal, not a model mid-inference inside a governed Civitas process).
-
-Every persona in `personas.md` (Priya, Marcus, Devon) was written around
-general Civitas agents, and the whole thesis in `architecture.md` argues from
-that framing. If that's still right, `MemoryManager` as designed is correct and
-`PromptManager`/`CivitasBridge` contracts should follow next. **If the actual
-target has shifted toward coding agents specifically**, `MemoryManager` may be
-the wrong next thing — a coding agent needs session/task-scoped state (files
-touched, progress on a task), not cross-session personal-preference memory, and
-that's a different, smaller design than wrapping Mem0.
-
-**Do not write `MemoryManager`'s contract until this is answered** — it
-determines whether that contract is even the right thing to build next, not
-just what it should contain.
+**Next:** write `docs/contracts/memory.md` against this updated design — not
+yet done as of this handoff revision.
 
 ---
 
@@ -198,11 +194,9 @@ just what it should contain.
 
 ## Immediate next action
 
-Resolve the general-agents-vs-coding-agents question above. Then either:
-- **General agents confirmed:** write `MemoryManager`'s contract
-  (`docs/contracts/memory.md`), following the same rigor as the three done so
-  far — then `PromptManager`, then `CivitasBridge`.
-- **Coding agents confirmed (or a hybrid):** revisit whether `MemoryManager` as
-  designed belongs in v1 at all, and whether Fabrica's relationship to `prx`
-  needs to be re-examined given a coding-agent-primary framing — this could
-  be a real re-scoping conversation, not just a contract-writing one.
+Write `docs/contracts/memory.md` against the three-facet design now in
+`docs/memory.md` — `PresidiumClient.check_grant`/`execute_in_sandbox`-level rigor:
+exact `WorkingMemoryStore`/`Compactor`/`Summarizer`/`MemoryManager` signatures,
+error types, and what's deliberately left out (the `Message`-type reconciliation
+with Civitas's own runtime loop is real integration work, not a contract-level
+decision). Then `PromptManager`, then `CivitasBridge`.
