@@ -48,6 +48,31 @@ governance — goes through one seam, which is where mocking, circuit-breaking, 
 the fail-closed behavior in §6 all live in one place instead of scattered across
 four managers.
 
+**Correction: `CivitasBridge` must have the same shape as `PresidiumClient`, not
+just sit next to it.** An earlier version of this section (and the component
+matrix in §4) described `CivitasBridge` as something that "registers GenServers
+with the supervision tree" — language that implies reaching into Civitas's
+supervision tree and manipulating it directly. That's inconsistent with
+`PresidiumClient`'s own design one paragraph below: `check_grant` **asks**
+Presidium a question; Presidium's own internal logic decides the answer, and
+`PresidiumClient` never reaches into Presidium's internals to decide it itself.
+**`CivitasBridge` must work the same way toward Civitas: it requests, Civitas
+performs.** `CivitasBridge` never touches a supervision tree or a `StateStore`
+directly — it calls `request_supervision(component_name, spec) -> SupervisionHandle`
+and `request_state_persistence(key, ...) -> StateHandle`; Civitas's own runtime
+decides how to fulfill each request and performs the actual registration or
+write. This also means **no manager talks to Civitas directly, even for
+state persistence** — `PromptManager`'s and `MemoryManager`'s dependence on
+Civitas's `StateStore` (§4–§5) is mediated through `CivitasBridge`'s
+`request_state_persistence`, not a direct call from the manager itself. Without
+this correction, the earlier phrasing would have quietly created a *third*
+place this system talks outward, contradicting the very sentence above it that
+says there are only two. This same request-not-reach-in rule is also what keeps
+any future, bounded extension of `CivitasBridge`'s scope (discussed and
+deliberately deferred) from becoming an exception to this pattern later — the
+rule doesn't get renegotiated as scope grows, it's applied consistently
+regardless of what `CivitasBridge` eventually does.
+
 **`PresidiumClient` is deliberately smaller than it first looks.** Presidium is a
 genuinely separate deployment (not co-located with Civitas), reached over REST +
 mTLS — so `PresidiumClient` has exactly **one** method: `check_grant`/`check_policy`,
@@ -149,10 +174,10 @@ its own dedicated spike rather than attempted alongside the easier half.
 | `ToolManager` | `ToolNamespace` registration, code-mode orchestration | `Retriever`, `SandboxPool`, `PresidiumClient`, shared `execute_in_sandbox` helper | in-process | GenServer |
 | `SkillManager` | `SKILL.md` loading, skill execution orchestration | `Retriever`, `SandboxPool`, `PresidiumClient`, shared `execute_in_sandbox` helper | in-process | GenServer |
 | `MemoryManager` | adapter lifecycle (Mem0 etc.) | configured `MemoryStore` adapter | in-process | GenServer, shared across a fleet |
-| `PromptManager` | `PromptStore` | Civitas `StateStore` | in-process | GenServer |
+| `PromptManager` | `PromptStore` | Civitas `StateStore`, mediated through `CivitasBridge.request_state_persistence` — never called directly (§1's correction) | in-process | GenServer |
 | `Retriever` | index, search | `KeywordBackend` (default) or an adapter | in-process, local index | GenServer, one shared index fleet-wide |
 | `SandboxPool` | tier selection, pool of handles, platform dispatch, **baking the guest image** (tool-namespace shim +, for Tier 2, the ZMQ relay) | a `Sandbox` backend (subprocess/gVisor/Firecracker/`srt`/libkrun) | in-process, small pool | GenServer, supervised, larger warm pool |
-| `CivitasBridge` | mode selection at construction time | Civitas `Runtime` | no-op | registers GenServers with the supervision tree |
+| `CivitasBridge` | mode selection at construction time; the ONLY caller of `request_supervision`/`request_state_persistence` | Civitas `Runtime` | no-op | requests that Civitas's runtime supervise each GenServer — Civitas performs the actual registration, `CivitasBridge` never touches the supervision tree itself (§1's correction) |
 | `PresidiumClient` | grant/policy checks only — no usage-emission method | Presidium's REST endpoint (mTLS) | same: REST + mTLS, circuit-breaker protected (Presidium is always a separate deployment, not affected by Fabrica's own mode) |
 
 ---
@@ -164,7 +189,7 @@ its own dedicated spike rather than attempted alongside the easier half.
 | `Retriever` index | tool/skill `Indexable`s | in-memory dict / BM25 | Postgres or Redis, shared |
 | `SandboxPool` | warm handles, snapshot refs | local files / OS processes | shared node pool, snapshot store on disk or object storage |
 | `MemoryManager` | conversation memories | SQLite + local vector (fastembed/chroma — the config [SPIKE-memory-mem0-wrap.md](../specs/archive/spikes/SPIKE-memory-mem0-wrap.md) validated) | hosted vector store, or a Postgres-backed adapter |
-| `PromptManager` | prompt versions | local files or SQLite | Civitas `StateStore` / Postgres |
+| `PromptManager` | prompt versions | local files or SQLite | Civitas `StateStore` (via `CivitasBridge.request_state_persistence`) / Postgres |
 | Usage/budget counters | **not owned by Fabrica at all** | emitted to Presidium, not stored here | emitted to Presidium, not stored here |
 
 That last row matters: per

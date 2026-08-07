@@ -266,10 +266,14 @@ class MemoryManager:
 
 - **Civitas** persists the long-term default store AND working memory via its
   `StateStore` (working memory rides the same mechanism precisely so it survives
-  a supervised restart, not just a clean session end); memory writes emit OTEL
-  spans. Civitas also owns *when* to trigger compaction — it already tracks
-  token budgets for its own runtime loop; `MemoryManager.compact()` is a
-  mechanism Civitas calls, not one that watches its own budget independently.
+  a supervised restart, not just a clean session end) — **mediated through
+  `CivitasBridge.request_state_persistence`**, not a direct call from
+  `MemoryManager` (`system-design.md §1`'s correction: `CivitasBridge` is the
+  only seam allowed to talk outward to Civitas; a manager reaching Civitas
+  directly would quietly create a second one). Memory writes emit OTEL spans.
+  Civitas also owns *when* to trigger compaction — it already tracks token
+  budgets for its own runtime loop; `MemoryManager.compact()` is a mechanism
+  Civitas calls, not one that watches its own budget independently.
 - **Presidium** governs scope access (e.g. a grant like `data:customer_pii:read`
   gates cross-user recall) and can audit memory reads/writes. This applies to the
   long-term facet; working memory and compaction don't cross a scope-access

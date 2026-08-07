@@ -243,13 +243,43 @@ rule, not something to re-derive.
 
 ---
 
-## Immediate next action
+## `CivitasBridge` design walkthrough — in progress, two decisions settled
 
-Five contracts done (`Retriever`, `Sandbox`, `managers.md`, `memory.md`,
-`prompts.md`). One left in the object model: `CivitasBridge` — the top-level
-facade tying every manager together, including the mode-switching granularity
-decision from `system-design.md` (v1 single flag, v2 per-component overrides
-built in from day one). This is also the layer where `architecture.md §1a`'s
-library-first principle is under the most real pressure to be broken —
-`CivitasBridge` is explicitly the ONE place allowed to integrate tightly, so
-writing its contract means deciding exactly where that license ends.
+Before writing `contracts/civitas-bridge.md`, walked through where `§1a`'s
+"only the orchestrator integrates tightly" license actually ends. Two things
+settled, both corrections to what `system-design.md` said before:
+
+1. **Construction-time wiring only (v1), a bounded runtime extension possible
+   later (deferred, not ruled out).** `CivitasBridge`'s job is assembling the
+   object graph once (`build() -> Fabrica`) — never per-turn orchestration
+   across managers, which would duplicate Civitas's own runtime loop. Kept
+   extensible the same way mode-switching was: `build()` must return every
+   manager as a public attribute on `Fabrica`, never hidden exclusively
+   behind `CivitasBridge` — that's what would make a later, narrow,
+   opt-in, read-only convenience method (never a decision-making one)
+   additive rather than a rework.
+2. **`CivitasBridge` requests, Civitas performs — corrects a real
+   inconsistency, not just adds detail.** `system-design.md` previously said
+   `CivitasBridge` "registers GenServers with the supervision tree,"
+   implying it reaches into Civitas's internals directly. Wrong, and
+   inconsistent with `PresidiumClient`'s own design one paragraph earlier in
+   the same doc (`check_grant` asks, Presidium decides). Fixed: `CivitasBridge`
+   calls `request_supervision(...)`/`request_state_persistence(...)`; Civitas's
+   own runtime decides how to fulfill each request. This also fixed a second,
+   previously-unnoticed inconsistency: `PromptManager`/`MemoryManager` were
+   described as depending on Civitas's `StateStore` directly, which would have
+   quietly created a THIRD place this system talks outward, contradicting
+   §1's own claim that there are only two (`CivitasBridge`, `PresidiumClient`).
+   Both managers' state persistence is now explicitly mediated through
+   `CivitasBridge.request_state_persistence` — fixed in both
+   `system-design.md` (component matrix + state table) and `memory.md`
+   (Integration section).
+
+**Not yet done:** the actual `contracts/civitas-bridge.md` contract, and two
+queued decisions the walkthrough hadn't reached yet: the DI entry point for
+`Summarizer` (Fabrica has no model connection of its own — this is the seam
+where a harness's connection enters the object graph), and what happens when
+Presidium isn't configured at all (distinct from configured-but-unreachable,
+which already fails closed) — does `CivitasBridge` require a
+`presidium_endpoint` always, or support a `NullPresidiumClient` that allows
+by default for local dev, matching the zero-infra defaults everywhere else?
