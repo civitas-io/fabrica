@@ -35,6 +35,58 @@ compaction policy and mechanism. Same split as tool execution: Civitas decides
 compaction to Fabrica's scope reinforces this boundary rather than creating a
 new cross-cutting one.
 
+## Related work and a deliberate divergence
+
+The idea of unifying content-ingestion, indexing/retrieval, and
+compaction/forgetting into one governed pipeline is not new here — it's the
+subject of real, named prior art, worth citing accurately rather than
+reinventing implicitly:
+
+- **Generative Agents** (Park et al., Stanford, 2023) — the cleanest unifying
+  precedent. One memory stream of raw, timestamped content; one **composite
+  retrieval score** combining recency, importance, and relevance; periodic
+  **reflection**, where the agent synthesizes recent raw memories into
+  higher-level abstractions that get written back into the same stream and
+  become retrievable themselves. Content becomes knowledge by feeding back
+  into the same indexed structure it came from — not a separate stage.
+- **MemGPT / Letta** — the OS-memory-hierarchy framing this platform's
+  `WorkingMemoryStore` / `MemoryStore` split structurally echoes: core memory
+  (≈ RAM, in-context) vs. archival memory (≈ cold storage), with the *model
+  itself* deciding what moves between tiers via explicit tool calls.
+- **MemOS / Continuum Memory Architecture** (2024–2026) — newer, less
+  battle-tested than the two above, but converging on the same idea: an
+  explicit "operating system for memory" with named lifecycle stages (create,
+  activate, fuse, dispose).
+
+**Fabrica borrows the tiered shape from MemGPT (working vs. long-term), but
+deliberately does NOT adopt Generative Agents' single unified
+recency+importance+relevance score across all three facets.** This is a
+conscious divergence, not an oversight, and the reasoning is Civitas's own
+platform philosophy, not a Fabrica-specific one:
+
+**Civitas is library-first, low-coupling/high-cohesion by design — every
+component must work as an independently reusable piece, and only the
+orchestrator layer is allowed to be tightly integrated** (see
+[architecture.md §1a](architecture.md#1a-a-platform-wide-principle-named-explicitly-library-first-low-coupling-high-cohesion)
+for the full principle and the other decisions it explains). A single
+composite score across `WorkingMemoryStore`, `Compactor`, and `MemoryStore`
+would require each of them to know about the others' internal signals to stay
+consistent — exactly the coupling this platform avoids everywhere else. It
+would also reintroduce the dependency `Summarizer`'s DI boundary exists
+specifically to keep out: Generative Agents' "importance" scoring comes from
+an LLM call, and folding that into `Compactor` would mean Fabrica owning a
+model dependency it has deliberately avoided at every other layer.
+
+**The trade-off, stated plainly rather than hidden:** three independently
+swappable policies (recency-only in `Compactor`, semantic-score in
+`MemoryStore`, exact-key lookup in `WorkingMemoryStore`) are individually
+simpler and more reusable outside Fabrica, but less principled as a whole than
+one unified formula would be. For a platform library serving many different
+harnesses with different needs, that trade favors reusability over unified
+elegance — the right call *for this kind of system*, even though it would be
+the wrong call for a single fixed research agent like the one Generative
+Agents describes.
+
 ## Thesis for the long-term facet: wrap, don't build — but ship a working default, not the raw library
 
 Agent memory is a **crowded, mature market with no single winner.** Reimplementing a

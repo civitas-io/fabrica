@@ -167,6 +167,24 @@ has no defined behavior.
 
 ---
 
+## A named platform-wide principle (added after four contracts were already written)
+
+`architecture.md §1a`: **library-first, low coupling / high cohesion** — every
+component must work as an independently reusable piece; only the orchestrator
+layer (`CivitasBridge`/Civitas) is allowed to be tightly integrated. This was
+driving decisions all session without being named (separate `ToolManager`/
+`SkillManager`, `prx`/`tessera` staying outside Fabrica, swappable `Protocol`
+backends everywhere) until a sidebar about graph-based dynamic memory
+compaction (comparing Fabrica's `MemoryManager` to Generative Agents/MemGPT/
+MemOS prior art) surfaced it directly: Fabrica's three memory facets
+deliberately do NOT share one unified retrieval/retention score, unlike
+Generative Agents' single composite formula, specifically because a shared
+score would couple `WorkingMemoryStore`/`Compactor`/`MemoryStore` to each
+other's internal signals. See `memory.md`'s "Related work and a deliberate
+divergence" section for the full reasoning. **Apply this principle explicitly
+when writing `PromptManager`/`CivitasBridge`'s contracts** — it's now a named
+rule, not something to re-derive.
+
 ## Process conventions established this whole session — keep using them
 
 - **Spikes:** lock a specific question + timebox before writing any code

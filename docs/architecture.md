@@ -23,6 +23,45 @@ accountable. Fabrica decides what they see and how they act on it. Full detail:
 
 ---
 
+## 1a. A platform-wide principle, named explicitly: library-first, low coupling, high cohesion
+
+This has been driving decisions throughout the whole design without ever being
+stated as a rule until it was challenged directly (see [memory.md](memory.md#related-work-and-a-deliberate-divergence)
+for the case that surfaced it). Naming it now, retroactively, because several
+earlier decisions only make full sense in light of it:
+
+**Every component is designed as an independently reusable library first --
+only the orchestrator layer (`CivitasBridge`, or Civitas itself) is allowed to
+be tightly integrated.** A component should work if someone imports *just that
+piece* and nothing else -- `Retriever` without `Sandbox`, `Compactor` without
+`MemoryStore`, `prx` without any of Fabrica at all. This is a stronger
+constraint than ordinary interface-driven design: it's not just "swap the
+implementation behind a Protocol," it's "the pieces must not need each other's
+internal knowledge to function correctly on their own."
+
+Decisions this explains, made independently, now revealed as one pattern:
+
+- **`ToolManager`/`SkillManager` stayed separate classes**, not unified
+  despite real overlap, because they have genuinely different trust models --
+  fusing them would couple two things that should be independently
+  understandable (`system-design.md` §1).
+- **`prx`/`tessera` live entirely outside Fabrica**, not as an integrated
+  sub-module, despite solving an adjacent problem -- different consumer,
+  different distribution, and forcing them into Fabrica would couple two
+  things that don't need to know about each other (`HANDOFF.md`).
+- **`MemoryManager`'s three facets deliberately do *not* share one unified
+  retrieval/retention score**, even though the most influential prior art
+  (Generative Agents' memory stream) uses exactly one composite formula across
+  ingestion, retrieval, and forgetting. A shared score would require
+  `WorkingMemoryStore`, `Compactor`, and `MemoryStore` to know about each
+  other's internal signals -- the opposite of low coupling. Each stays a
+  standalone, swappable library; only `MemoryManager` (the orchestrator for
+  *this* component) composes them, and nothing above it needs to know that
+  composition happened. See
+  [memory.md](memory.md#related-work-and-a-deliberate-divergence).
+
+---
+
 ## 2. The two ways a model gets a capability
 
 Fabrica offers exactly two paths, deliberately — a headline and a fallback, not a
