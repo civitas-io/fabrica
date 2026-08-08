@@ -115,6 +115,14 @@ class PromptStore(Protocol):
     async def list_versions(self, name: str) -> list[int]:
         """Ascending order. Empty list (not an error) if name doesn't exist."""
 
+    async def list_names(self) -> list[str]:
+        """Every registered name, regardless of version count. Added after
+        writing contracts/mcp-server.md's fabrica_prompts_list handler --
+        MCP's native prompts/list primitive needs to enumerate ALL prompts,
+        and list_versions(name) presupposes a name already known. A real
+        gap found by wiring this contract to an actual caller, not
+        anticipated in advance."""
+
     async def delete(self, name: str, version: int | None = None) -> None:
         """version=None deletes every version of name. An int deletes just
         that version. No-op if the target doesn't exist."""
@@ -152,6 +160,11 @@ class PromptManager:
         result, not re-fetched."""
 
     async def list_versions(self, name: str) -> list[int]: ...
+    async def list_names(self) -> list[str]:
+        """Not cached -- unlike get()'s read-heavy justification, enumerating
+        all names is not assumed to be a hot path; delegates straight
+        through to store.list_names() every call."""
+
     async def delete(self, name: str, version: int | None = None) -> None:
         """Invalidates every cached entry for name, not just the deleted
         version — a deleted specific version can change what version=None

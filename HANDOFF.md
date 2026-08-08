@@ -462,3 +462,29 @@ What's left, roughly in order of how blocking each is:
    `allow_weak_isolation_for_external_callers` is the FOURTH confirmed
    instance of the fail-closed-by-default-explicit-opt-in-to-bypass rule.
    Zero spike coverage, same honest flag as everywhere else this applies.
+
+## Two more contracts written: `mcp-integration.md`, `mcp-server.md`
+
+`docs/contracts/mcp-integration.md` (`MCPClient`/`MCPToolNamespace`) and
+`docs/contracts/mcp-server.md` (`FabricaMCPServer`) are both done, formalizing
+the two MCP-direction design docs. Two real findings from writing exact
+signatures, not just transcription:
+
+1. **A genuine implementation wrinkle in the client contract**: eager
+   connection (required by `ToolManager.register()`'s existing contract)
+   needs to happen in `__init__`, but `connect()` is a coroutine and Python
+   constructors can't be `async`. Needs an async factory
+   (`await MCPToolNamespace.create(client)`) or equivalent — not resolved,
+   flagged honestly as something the design doc's sketch glossed over.
+2. **A real gap in `contracts/prompts.md`, found and closed immediately**:
+   writing `FabricaMCPServer`'s `prompts/list` handler required enumerating
+   *all* registered prompt names, and `PromptStore`/`PromptManager` only had
+   `list_versions(name)` — versions of a name already known. Added
+   `list_names() -> list[str]` to both directly, rather than left dangling.
+
+Eight contracts total now across the object model + MCP integration.
+Remaining named debt: `mcp-server.md`'s `WeakIsolationError` only checks once
+at construction (no live re-check if a service-mode deployment's tier changes
+later), and multi-tenant HTTP deployments aren't stress-tested against shared
+`SandboxPool`/`Retriever` state. Zero spike coverage for both, unchanged from
+the design docs.
