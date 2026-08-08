@@ -179,6 +179,7 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | [contracts/memory.md](docs/contracts/memory.md) | `WorkingMemoryStore`, `Compactor`/`Summarizer` (DI'd), `MemoryStore`, `MemoryManager` facade, `NullCompactor` (Null Object for summarizer-not-configured) |
 | [prompts.md](docs/prompts.md) | The narrowest manager: storage/versioning/retrieval only. Plus a grounded "explored, not built" feature survey (provider-side caching, DSPy-style tuning, LLMLingua compression, portable `PROMPT.md` format) |
 | [contracts/prompts.md](docs/contracts/prompts.md) | `PromptStore`, `PromptManager` — plus `cacheable`/`cache_boundary` (author-declared, never parsed) and `PROMPT.md` portable-format `load()` |
+| [contracts/civitas-bridge.md](docs/contracts/civitas-bridge.md) | **Sixth and final contract.** `CivitasBridge` — construction-time wiring only, "requests, never reaches in" toward Civitas, `NullPresidiumClient` for opt-in ungoverned mode. One interface (`CivitasRuntime`) explicitly flagged provisional. |
 | [isolation.md](docs/isolation.md) | Tiered `Sandbox` protocol; gVisor → Firecracker → Kata |
 | [skills-gateway.md](docs/skills-gateway.md) | `SKILL.md`-conformant skills, discovery via retrieval.md |
 | [memory.md](docs/memory.md) | Three facets: working memory, compaction (harness-engineering primitive, DI'd Summarizer), long-term `MemoryStore` (wrap-don't-build) |

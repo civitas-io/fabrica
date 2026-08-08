@@ -112,7 +112,9 @@ architecture → system design → contracts → *then* implementation).
      `load(path)` reads a `PROMPT.md` file (frontmatter + body, mirroring
      `SKILL.md`) and is idempotent for unchanged content, same pattern as
      `ToolManager.register()`.
-   - **Not yet written:** `CivitasBridge`.
+   - **`CivitasBridge` — now done too.** See the `CivitasBridge` design
+     walkthrough section further down for the full reasoning trail; all six
+     object-model contracts are complete as of this revision.
 
 ---
 
@@ -297,9 +299,60 @@ every call site. Written into `contracts/memory.md` already, ahead of
 `CivitasBridge`'s own contract, since it's `Compactor`/`MemoryManager`'s
 behavior being specified, not `CivitasBridge`'s.
 
-**Not yet done:** the actual `contracts/civitas-bridge.md` contract, and one
-queued decision the walkthrough hasn't reached yet: what happens when
-Presidium isn't configured at all (distinct from configured-but-unreachable,
-which already fails closed) — does `CivitasBridge` require a
-`presidium_endpoint` always, or support a `NullPresidiumClient` that allows
-by default for local dev, matching the zero-infra defaults everywhere else?
+**Presidium-absent question — resolved, asymmetrically from `NullCompactor`
+on purpose.** `check_grant` is mandatory hot-path control flow (called by
+`execute_in_sandbox` on every execution), unlike compaction which a harness
+invokes optionally — so `NullPresidiumClient` must ALLOW by default, the
+opposite failure direction from `NullCompactor`. To keep that from being a
+silent security hole: `presidium_client=None` requires an explicit
+`allow_ungoverned=True` or `CivitasBridge` raises `UngovernedConfigurationError`
+at construction — forces a visible, greppable decision rather than a default
+you fall into by omission.
+
+**DI shape for `presidium_client` — resolved, mirrors `summarizer` exactly.**
+A fully-constructed `presidium_client: PresidiumClient | None` object, not a
+raw endpoint string — a bare endpoint would have been insufficient anyway
+(mTLS needs certs, not just a URL) and would have forced `CivitasBridge`'s
+constructor to slowly absorb `PresidiumClient`'s entire configuration surface.
+Named as a general rule, not a one-off: **`CivitasBridge` accepts
+fully-constructed objects for every external dependency, never raw config it
+would translate itself** — applies to any future DI'd dependency by default.
+
+## `CivitasBridge` — DONE. All six object-model contracts complete.
+
+`contracts/civitas-bridge.md` written, incorporating every decision above. One
+honesty flag worth carrying forward: `CivitasRuntime` (the interface
+`request_supervision`/`request_state_persistence` call into) is explicitly
+marked **provisional** — this session confirmed real Civitas vocabulary
+(`Supervisor` with `ONE_FOR_ONE`/`ONE_FOR_ALL`/`REST_FOR_ONE` strategies,
+`GenServer`) via `python-civitas`'s own docs, but not the actual registration
+API a library uses. Flagged the same way `Message` was flagged in
+`contracts/memory.md` — concrete enough to implement against, not a claim
+about what Civitas's real SDK looks like.
+
+---
+
+## Immediate next action (supersedes any earlier "next action" note above)
+
+All six object-model contracts are done: `Retriever`, `Sandbox`,
+`managers.md` (`PresidiumClient.check_grant`, `execute_in_sandbox`,
+`ToolManager`, `SkillManager`), `memory.md`, `prompts.md`, `civitas-bridge.md`.
+The design/validate/critique/architecture/system-design/contracts arc that
+`README.md`'s reading order describes is now complete end to end.
+
+What's left, roughly in order of how blocking each is:
+
+1. **`CivitasRuntime` reconciliation** (`contracts/civitas-bridge.md`'s
+   explicitly-provisional interface) — needs an actual look at Civitas's
+   registration API, not guessed at further. The most significant
+   real gap across all six contracts.
+2. **No code exists yet anywhere in this repo.** Scaffolding the actual
+   `fabrica/` Python package (`pyproject.toml`, source layout) is the next
+   phase-level step once `CivitasRuntime` is settled enough not to require
+   an immediate rewrite.
+3. Everything in "What's explicitly left open elsewhere" above — still
+   accurate, nothing there has been resolved by the contracts work.
+4. `prompts.md`'s "Explored" survey has two items marked worth prioritizing
+   that got promoted into the contract (cache-boundary, `PROMPT.md` format)
+   and several marked correctly deferred — no action needed unless demand
+   surfaces.
