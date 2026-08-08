@@ -444,3 +444,21 @@ What's left, roughly in order of how blocking each is:
    above) — the strategy is validated; `preserve_last_n=6` specifically is
    not. Next-level spike, if ever prioritized: vary N against a real
    token-budget boundary, not just the fixed window this spike used.
+9. **New: `mcp-server.md` written** — Fabrica as an MCP server, the
+   complementary opposite of `mcp-integration.md`'s client direction. Closes a
+   claim `tool-execution.md` made and never designed. Key finding: the
+   two-path token-efficiency thesis has to be preserved for EXTERNAL MCP
+   clients too, not just internal models — exposing every registered
+   tool/skill as its own flat MCP tool would reintroduce the exact O(N)
+   schema-dump cost this project exists to eliminate, just shifted onto
+   whoever calls in from outside. Resolved: five fixed, generic MCP tools
+   (`fabrica_find`/`fabrica_run_code`/`fabrica_run_skill`/memory ops) plus
+   `PromptManager` mapped directly onto MCP's native Prompts primitive.
+   Bearer-token auth for HTTP/SSE (deliberately NOT mTLS, unlike
+   `PresidiumClient` — different topology, many diverse third-party clients
+   vs. one controlled service). A NEW connection-level auth layer sits in
+   front of, not parallel to, existing per-call governance (`check_grant`
+   reused unchanged once a connection resolves to an `agent_id`).
+   `allow_weak_isolation_for_external_callers` is the FOURTH confirmed
+   instance of the fail-closed-by-default-explicit-opt-in-to-bypass rule.
+   Zero spike coverage, same honest flag as everywhere else this applies.

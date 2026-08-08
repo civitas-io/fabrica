@@ -173,6 +173,7 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | [context-layer.md](docs/context-layer.md) | The pillar framing and full scope |
 | [tool-execution.md](docs/tool-execution.md) | Tools-as-code / code-mode design; `find` fallback |
 | [mcp-integration.md](docs/mcp-integration.md) | `MCPToolNamespace` — Fabrica as an MCP client. Reconciled with landscape.md's "do not build an MCP gateway" decision. Uses `srt` (cross-platform, already spiked) instead of Linux-only `bwrap`. Four of five open questions resolved through direct walkthrough. |
+| [mcp-server.md](docs/mcp-server.md) | `FabricaMCPServer` — Fabrica as an MCP server, closing a claim `tool-execution.md` made but never designed. Preserves the two-path token-efficiency thesis externally, not just internally. New connection-auth layer sits in front of, not parallel to, existing governance. |
 | [retrieval.md](docs/retrieval.md) | The shared `Retriever` engine behind tools + skills discovery — one engine, rank-not-threshold, Rust-for-compute |
 | [contracts/retriever.md](docs/contracts/retriever.md) | **Contracts** — implementation-ready signatures, error types, async behavior. |
 | [contracts/sandbox.md](docs/contracts/sandbox.md) | Sandbox contract — corrects a real imprecision in system-design.md's warm-pool language, found by writing exact release() semantics. |
