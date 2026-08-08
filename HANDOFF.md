@@ -46,7 +46,8 @@ architecture → system design → contracts → *then* implementation).
 3. **Design** — `docs/context-layer.md`, `tool-execution.md`, `isolation.md`,
    `retrieval.md`, `memory.md`, `skills-gateway.md`,
    `civitas-presidium-integration.md`, `landscape.md`.
-4. **Validate** — 8 spikes in `specs/archive/spikes/`, all real hardware/API
+4. **Validate** — 9 spikes in `specs/archive/spikes/` (10th added later, see below),
+   all real hardware/API
    evidence, not simulated:
    - `SPIKE-tool-retrieval-token-overhead.md` — `find_tools` stays near-flat vs. static linear growth (real Claude-on-Vertex calls)
    - `SPIKE-tool-disambiguation-retrieval-quality.md` — embeddings beat keyword matching (100% vs 67% precision@3); **includes the prx detour** that found prx's off-the-shelf model hits 100% precision@3 on this task
@@ -57,6 +58,16 @@ architecture → system design → contracts → *then* implementation).
    - `SPIKE-code-mode-execution.md` — **the most important one.** Validated the actual headline mechanism (not just the fallback): ~79% cheaper AND exactly correct in 3/3 runs, while the traditional approach was wrong in 3/3 runs
    - `SPIKE-memory-mem0-wrap.md` — real Mem0 integration; found it requires an API key by default (contradicts zero-infra assumption) and has an internal `add()`/`search()` parameter inconsistency
    - `SPIKE-zmq-sandbox-channel-feasibility.md` — confirmed `pyzmq` is viable (1.6MB, self-contained, 0.73ms round trip) for the Tier 0/1 sandbox callback
+   - **10th spike, added post-contracts**: `SPIKE-recency-compactor-validation.md` —
+     closed the project's biggest evidence gap (`RecencyCompactor` had zero
+     validation until now). Real Gemini calls, 5 runs each: full history 5/5
+     grounded-correct, `RecencyCompactor`'s real strategy 5/5 (matched the
+     baseline exactly), naive truncation 0/5 genuinely grounded (it landed on
+     the same answer every time but never once via real reasoning from the
+     actual constraint). Caught and fixed a real false-positive in its own
+     checker mid-spike — documented, not hidden. Validates the core
+     summarize-vs-truncate mechanism; `preserve_last_n=6` itself remains an
+     unvalidated guess, precisely scoped as still open.
 5. **Critique** — `docs/critique.md`: every claim checked, 11 corrections + 5 open
    architecture decisions, **all resolved and applied**, not left as proposals.
 6. **Architecture** — `docs/architecture.md` + `docs/assets/*.svg` (8 diagrams).
@@ -168,9 +179,10 @@ Key design decision: `Compactor` never makes its own LLM call (would violate
 `WorkingMemoryStore`/`Compactor`/`Summarizer`/`MemoryManager` shape.
 
 **Update:** `docs/contracts/memory.md` is now written (see the Contracts list
-above). Remaining flagged there, not resolved: `RecencyCompactor` has zero
-empirical backing (no spike), and a single-message-exceeds-budget edge case
-has no defined behavior.
+above). Remaining flagged there, not resolved at the time: `RecencyCompactor`
+had zero empirical backing (no spike) — **later closed**, see
+`SPIKE-recency-compactor-validation.md` above. A single-message-exceeds-budget
+edge case still has no defined behavior.
 
 ---
 
@@ -428,3 +440,7 @@ What's left, roughly in order of how blocking each is:
    that got promoted into the contract (cache-boundary, `PROMPT.md` format)
    and several marked correctly deferred — no action needed unless demand
    surfaces.
+8. `RecencyCompactor`'s core mechanism is now spiked (see the arc section
+   above) — the strategy is validated; `preserve_last_n=6` specifically is
+   not. Next-level spike, if ever prioritized: vary N against a real
+   token-budget boundary, not just the fixed window this spike used.

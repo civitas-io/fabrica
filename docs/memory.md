@@ -314,12 +314,16 @@ class MemoryManager:
 8. `Message`'s shape hasn't been reconciled with whatever Civitas's runtime loop
    already uses internally for conversation history — real integration work, not
    assumed away.
-9. `RecencyCompactor`'s `preserve_last_n` default of 6 is a guess, not validated
-   by any spike — unlike almost everything else in this design, compaction has
-   zero empirical evidence behind it yet. A spike here (does a
-   summary-plus-recent-N actually preserve enough for a model to keep working
-   correctly, measured the same rigorous way SPIKE-code-mode-execution.md
-   measured correctness) is a real gap, not a formality.
+9. ~~`RecencyCompactor`'s `preserve_last_n` default of 6 is a guess, not
+   validated by any spike~~ **Partially resolved** — see
+   [SPIKE-recency-compactor-validation.md](../specs/archive/spikes/SPIKE-recency-compactor-validation.md).
+   The core strategy (summarize what falls out of the window, don't just drop
+   it) is now validated: matched full-history correctness 5/5 vs. naive
+   truncation's 0/5 genuinely-grounded answers on a scenario requiring recall
+   of an early, non-repeated constraint. **`preserve_last_n=6` itself remains
+   unvalidated** — the spike held N constant to isolate the
+   summarize-vs-truncate variable cleanly, and says nothing about whether 6 is
+   the right number for real conversation shapes. Precise, not a full close.
 10. Should `Compactor` be swappable per-deployment the same way the isolation
     backend or retrieval backend is, or is `RecencyCompactor` good enough as the
     only implementation for v1? Leaning toward shipping one default and revisiting

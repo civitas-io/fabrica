@@ -296,10 +296,11 @@ harness holds one object, not three.
 2. `WorkingMemoryQuotaExceeded`'s default ceiling (256KB suggested above) is a
    guess, not validated against any real working-memory usage pattern — no
    spike exists for what a realistic session's scratchpad actually accumulates.
-3. Per `memory.md` open question 9: `RecencyCompactor`'s `preserve_last_n=6`
-   default, and the whole preserve-verbatim-plus-summarize strategy, has zero
-   empirical backing. A correctness-preservation spike (does a summary really
-   let a model keep working correctly after compaction, measured the same way
-   `SPIKE-code-mode-execution.md` measured correctness) is a real gap, not a
-   formality, and should probably happen before this contract is implemented
-   rather than after.
+3. ~~Per `memory.md` open question 9: the whole preserve-verbatim-plus-summarize
+   strategy has zero empirical backing~~ **Resolved for the strategy, not the
+   number.** [SPIKE-recency-compactor-validation.md](../../specs/archive/spikes/SPIKE-recency-compactor-validation.md)
+   validated the summarize-vs-truncate mechanism directly (5/5 grounded-correct
+   vs. 0/5), the same rigor `SPIKE-code-mode-execution.md` applied elsewhere.
+   `preserve_last_n=6` itself is still an unvalidated guess — the spike held N
+   constant to isolate the mechanism question, and doesn't say whether 6 is
+   right for real conversation shapes.
