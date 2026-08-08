@@ -5,14 +5,16 @@
 Part of the [Civitas](https://github.com/civitas-io/python-civitas) platform.
 
 > **Resuming after a break or a context compaction? Read [`HANDOFF.md`](HANDOFF.md)
-> first** — the full arc of decisions, why each was made, and the one open
-> question that needs answering before contracts work continues.
+> first** — it leads with the current state (what's done, what's genuinely
+> open, what's next), then the full reasoning trail behind every decision.
 
-> **Status:** Pre-alpha — thesis, design, and validation. Ten spikes
-> ([`specs/archive/spikes/`](specs/archive/spikes/)) tested the riskiest claims
-> against real hardware and real API calls — see [`docs/critique.md`](docs/critique.md)
-> for what held up, what got corrected, and what's still open. Code lands after
-> `plan-work` turns this into an implementation plan.
+> **Status:** Pre-alpha — design and validation complete for the whole object
+> model plus both MCP directions (eight contracts, ten spikes
+> [`specs/archive/spikes/`](specs/archive/spikes/) against real hardware and
+> real API calls, not simulated). **Zero code exists yet, anywhere, by design**
+> — see [`docs/critique.md`](docs/critique.md) for what held up under evidence
+> and what got corrected. Code lands after a naming decision (a live PyPI
+> collision, unresolved) and `plan-work` turn this into an implementation plan.
 
 ---
 
@@ -152,44 +154,74 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 
 ## Plan
 
-| Phase | Deliverable |
-|---|---|
-| **P0 — Thesis** (now) | This README + `docs/`. Supersede RFC 0001. Agree scope. |
-| **P1 — Tools** | `find` fallback + tools-as-code namespace (**both validated by spike**); Tier 0/1 sandbox. |
-| **P2 — Isolation** | `Sandbox` protocol; Firecracker (Tier 2) backend + warm pools. |
-| **P3 — Skills** | `SKILL.md`-conformant skills gateway with progressive disclosure. |
-| **P4 — Memory & Prompts** | `MemoryStore` protocol + adapters; versioned `PromptStore`. |
+**This table describes the original phasing. It's kept for history, not
+because it still matches reality** — every phase below is now designed and
+contracted, not just planned, and MCP integration (both directions) exists as
+a fifth capability area this table predates entirely. See `HANDOFF.md`'s
+current-state section for what's actually true today.
+
+| Phase | Deliverable | Actual status |
+|---|---|---|
+| **P0 — Thesis** | This README + `docs/`. Supersede RFC 0001. Agree scope. | Done |
+| **P1 — Tools** | `find` fallback + tools-as-code namespace; Tier 0/1 sandbox. | Validated by spike, contracted (`Retriever`, `Sandbox`, `managers.md`) |
+| **P2 — Isolation** | `Sandbox` protocol; Firecracker (Tier 2) backend + warm pools. | Contracted (`contracts/sandbox.md`); Tier 2 relay implementation unspiked |
+| **P3 — Skills** | `SKILL.md`-conformant skills gateway with progressive disclosure. | Contracted (`SkillManager` in `managers.md`); exact frontmatter field list still open |
+| **P4 — Memory & Prompts** | `MemoryStore` protocol + adapters; versioned `PromptStore`. | Contracted (`contracts/memory.md`, `contracts/prompts.md`); reframed mid-project into three memory facets, not just one |
+| **P5 — MCP integration** *(not in the original plan)* | Fabrica as both an MCP client and server | Both directions designed and contracted |
+| **P6 — Implementation** *(not started)* | Actual `fabrica/` Python package | Blocked on a naming decision (PyPI collision), then `plan-work` |
 
 ---
 
 ## Documentation
 
+Grouped by the order this project was actually built in -- discovery through
+contracts -- not insertion order. Start with `architecture.md` for the visual
+tour, or `HANDOFF.md` for the current-state summary.
+
+**Discovery & definition**
+
 | Doc | What |
 |---|---|
-| [system-design.md](docs/system-design.md) | Internals: object model, deployment topology, error handling, state ownership — the layer below architecture.md, above contracts |
-| [architecture.md](docs/architecture.md) | **Start here for a visual walkthrough** — diagrams of every layer, from platform context down to a single request's lifecycle |
-| [personas.md](docs/personas.md) | Who Fabrica is for — human personas + JTBD, and the model as a non-human actor |
-| [problem-definition.md](docs/problem-definition.md) | Per-persona problem statements, success metrics, non-goals — and the cross-cutting decisions that fell out of defining them |
+| [personas.md](docs/personas.md) | Who Fabrica is for -- human personas + JTBD, and the model as a non-human actor |
+| [problem-definition.md](docs/problem-definition.md) | Per-persona problem statements, success metrics, non-goals |
 | [context-layer.md](docs/context-layer.md) | The pillar framing and full scope |
+| [landscape.md](docs/landscape.md) | Competitive research (Nov 2025), dated + sourced |
+
+**Design**
+
+| Doc | What |
+|---|---|
+| [architecture.md](docs/architecture.md) | **Start here for a visual walkthrough** -- diagrams of every layer, plus §1a's named library-first/low-coupling principle |
+| [system-design.md](docs/system-design.md) | Internals: object model, deployment topology, error handling, state ownership |
 | [tool-execution.md](docs/tool-execution.md) | Tools-as-code / code-mode design; `find` fallback |
-| [mcp-integration.md](docs/mcp-integration.md) | `MCPToolNamespace` — Fabrica as an MCP client. Reconciled with landscape.md's "do not build an MCP gateway" decision. Uses `srt` (cross-platform, already spiked) instead of Linux-only `bwrap`. Four of five open questions resolved through direct walkthrough. |
-| [mcp-server.md](docs/mcp-server.md) | `FabricaMCPServer` — Fabrica as an MCP server, closing a claim `tool-execution.md` made but never designed. Preserves the two-path token-efficiency thesis externally, not just internally. New connection-auth layer sits in front of, not parallel to, existing governance. |
-| [retrieval.md](docs/retrieval.md) | The shared `Retriever` engine behind tools + skills discovery — one engine, rank-not-threshold, Rust-for-compute |
-| [contracts/retriever.md](docs/contracts/retriever.md) | **Contracts** — implementation-ready signatures, error types, async behavior. |
-| [contracts/sandbox.md](docs/contracts/sandbox.md) | Sandbox contract — corrects a real imprecision in system-design.md's warm-pool language, found by writing exact release() semantics. |
-| [contracts/managers.md](docs/contracts/managers.md) | `PresidiumClient.check_grant`, the shared `execute_in_sandbox` helper, `ToolManager`, `SkillManager` |
-| [contracts/memory.md](docs/contracts/memory.md) | `WorkingMemoryStore`, `Compactor`/`Summarizer` (DI'd), `MemoryStore`, `MemoryManager` facade, `NullCompactor` (Null Object for summarizer-not-configured) |
-| [prompts.md](docs/prompts.md) | The narrowest manager: storage/versioning/retrieval only. Plus a grounded "explored, not built" feature survey (provider-side caching, DSPy-style tuning, LLMLingua compression, portable `PROMPT.md` format) |
-| [contracts/prompts.md](docs/contracts/prompts.md) | `PromptStore`, `PromptManager` — plus `cacheable`/`cache_boundary` (author-declared, never parsed), `PROMPT.md` portable-format `load()`, and `list_names()` (added later, for MCP's `prompts/list`) |
-| [contracts/civitas-bridge.md](docs/contracts/civitas-bridge.md) | `CivitasBridge` — construction-time wiring only, "requests, never reaches in" toward Civitas, `NullPresidiumClient` for opt-in ungoverned mode. `CivitasRuntime` reconciled against `python-civitas`'s real `Runtime.spawn`/`StateStore` source, not left provisional. |
-| [contracts/mcp-integration.md](docs/contracts/mcp-integration.md) | `MCPClient`, `MCPToolNamespace` — the client direction. Surfaced a real implementation wrinkle: eager connection needs an async factory, since Python constructors can't be coroutines. |
-| [contracts/mcp-server.md](docs/contracts/mcp-server.md) | `FabricaMCPServer` — the server direction. Five fixed MCP tools, `agent_id` resolved once at the connection layer and trusted downstream. Found and closed a real gap in `PromptStore` (`list_names()`) while wiring `prompts/list`. |
+| [retrieval.md](docs/retrieval.md) | The shared `Retriever` engine behind tools + skills discovery -- one engine, rank-not-threshold, Rust-for-compute |
 | [isolation.md](docs/isolation.md) | Tiered `Sandbox` protocol; gVisor → Firecracker → Kata |
 | [skills-gateway.md](docs/skills-gateway.md) | `SKILL.md`-conformant skills, discovery via retrieval.md |
-| [memory.md](docs/memory.md) | Three facets: working memory, compaction (harness-engineering primitive, DI'd Summarizer), long-term `MemoryStore` (wrap-don't-build) |
+| [memory.md](docs/memory.md) | Three facets: working memory, compaction (harness-engineering primitive, DI'd `Summarizer`), long-term `MemoryStore`. Includes a grounded "related work" section (Generative Agents, MemGPT, MemOS) explaining a deliberate divergence. |
+| [prompts.md](docs/prompts.md) | The narrowest manager: storage/versioning/retrieval only. Plus a grounded "explored, not built" survey (provider-side caching, DSPy-style tuning, `PROMPT.md` portable format) |
+| [mcp-integration.md](docs/mcp-integration.md) | `MCPToolNamespace` -- Fabrica as an MCP client, using `srt` (cross-platform) not Linux-only `bwrap` |
+| [mcp-server.md](docs/mcp-server.md) | `FabricaMCPServer` -- Fabrica as an MCP server, preserving the two-path token-efficiency thesis externally, not just internally |
 | [civitas-presidium-integration.md](docs/civitas-presidium-integration.md) | How Fabrica plugs into the platform |
-| [landscape.md](docs/landscape.md) | Competitive research (Nov 2025), dated + sourced |
-| [critique.md](docs/critique.md) | Design claims checked against six spikes — corrections, open decisions, and the one gap that matters most |
+
+**Validation**
+
+| Doc | What |
+|---|---|
+| [critique.md](docs/critique.md) | Every design claim checked against evidence as it existed at the time -- corrections applied, not just proposed |
+| `specs/archive/spikes/` | Ten spikes, real hardware/API evidence -- see `HANDOFF.md`'s arc section for the full list with findings |
+
+**Contracts -- implementation-ready signatures, error types, async behavior**
+
+| Doc | What |
+|---|---|
+| [contracts/retriever.md](docs/contracts/retriever.md) | `Retriever`/`RetrieverBackend` |
+| [contracts/sandbox.md](docs/contracts/sandbox.md) | `Sandbox`/`SandboxPool` -- corrected a real warm-pool reuse bug found while writing exact `release()` semantics |
+| [contracts/managers.md](docs/contracts/managers.md) | `PresidiumClient.check_grant`, `execute_in_sandbox`, `ToolManager`, `SkillManager` |
+| [contracts/memory.md](docs/contracts/memory.md) | `WorkingMemoryStore`, `Compactor`/`Summarizer` (DI'd), `MemoryStore`, `MemoryManager`, `NullCompactor` |
+| [contracts/prompts.md](docs/contracts/prompts.md) | `PromptStore`, `PromptManager` -- `cacheable`/`cache_boundary`, `PROMPT.md` `load()`, `list_names()` |
+| [contracts/civitas-bridge.md](docs/contracts/civitas-bridge.md) | `CivitasBridge` -- reconciled against `python-civitas`'s real `Runtime.spawn`/`StateStore` source |
+| [contracts/mcp-integration.md](docs/contracts/mcp-integration.md) | `MCPClient`, `MCPToolNamespace` |
+| [contracts/mcp-server.md](docs/contracts/mcp-server.md) | `FabricaMCPServer` |
 
 ---
 

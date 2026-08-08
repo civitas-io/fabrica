@@ -24,6 +24,78 @@ architecture → system design → contracts → *then* implementation).
 
 ---
 
+## Current state — read this section, not the chronological log below, for "where are we"
+
+**This section is authoritative. Everything after "The full arc of work"
+below is the detailed reasoning trail for HOW each thing below became true —
+read it for the *why*, not to figure out the *what*.** This section itself
+exists because the log below grew two different, sequentially-contradicting
+"here's the current state" sections over the course of one long session —
+exactly the kind of drift a resume-point doc should never have. Fixed by
+adding this, not by pretending the drift didn't happen.
+
+**Done:**
+- Full discovery→define→design→validate→critique→architecture→system-design arc.
+- **Eight contracts**, implementation-ready: `Retriever`, `Sandbox`,
+  `managers.md` (`PresidiumClient`/`execute_in_sandbox`/`ToolManager`/`SkillManager`),
+  `memory.md`, `prompts.md`, `civitas-bridge.md`, `mcp-integration.md`, `mcp-server.md`.
+- **Ten spikes**, all real hardware/API evidence, none simulated.
+- Both MCP directions designed and contracted (Fabrica as client, Fabrica as server).
+- `CivitasRuntime` reconciled against `python-civitas`'s actual source, not left provisional.
+- The memory reframe (three facets: working memory, compaction, long-term) and
+  its "related work" grounding (Generative Agents, MemGPT, MemOS) explaining a
+  deliberate divergence from unified scoring.
+- Four platform-wide rules confirmed multiple times each, safe to apply
+  without re-deriving: **library-first/low-coupling** (`architecture.md §1a`);
+  **requests, never reaches in** (toward Civitas AND toward Presidium);
+  **external dependencies are always fully-constructed objects, never raw
+  config** (`Summarizer`, `PresidiumClient`); **fail closed by default,
+  explicit greppable opt-in to bypass** (`allow_ungoverned`,
+  `allow_unsandboxed`, `allow_weak_isolation_for_external_callers` — four
+  confirmed instances now).
+
+**Not done, genuinely open, in rough priority order:**
+1. **A live PyPI naming collision, unresolved.** `fabrica` is already taken
+   by an unrelated third party. Candidates checked available:
+   `civitas-fabrica`, `fabrica-context`, `pyfabrica`, `fabrica-ctx`,
+   `civitas-context`, `fabrica-agent`, `fabricapy`. This blocks: fixing
+   `civitas-contrib`'s three stale docs (can't write an accurate "here's the
+   real package" pointer without a name) and ever actually publishing. **It
+   does NOT block starting implementation** — code can be written under a
+   placeholder name and renamed later; worth not conflating "naming is
+   undecided" with "we can't start building."
+2. **Zero code exists anywhere in `civitas-io/fabrica`.** Nothing has been
+   scaffolded (no `pyproject.toml`, no source layout).
+3. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
+   archiving — `MCPClient` moves in close to its current shape;
+   `BubblewrapSandbox` gets replaced by `srt` (`mcp-integration.md`), not
+   carried over Linux-only. Blocked on real code-writing starting, and on
+   item 1 for the docs half of this.
+4. **A set of older design-layer open items, explicitly fine to leave
+   deferred** (confirmed directly, not an oversight): `tool-execution.md`
+   (sandbox API language, credential propagation into the sandbox, huge-result
+   policy, determinism/replay), `retrieval.md` (Rust/PyO3 packaging shape,
+   eager-per-deployment-vs-per-item, matching quality at a combined
+   tools+skills index), `isolation.md` (self-host-vs-managed Firecracker for
+   v1, GPU-in-sandbox, snapshot image supply-chain signing), `skills-gateway.md`
+   (exact `SKILL.md` fields to index, reconciling with Civitas's own
+   skill/prompt roadmap).
+5. **Smaller contract-level open items**, each named in its own contract, not
+   blocking: `MCPToolNamespace`'s eager-connect-in-`__init__` needs an async
+   factory (Python constructors can't be coroutines — a real implementation
+   wrinkle the design sketch glossed over); `WeakIsolationError` only checks
+   once at construction, no live re-check; `RecencyCompactor`'s core
+   mechanism is now spike-validated but `preserve_last_n=6` itself isn't;
+   multi-tenant `FabricaMCPServer` deployments aren't stress-tested.
+
+**Immediate next action**: resolve the naming decision (item 1), OR start
+scaffolding the actual `fabrica/` package under a placeholder name if naming
+is taking a while — these are not mutually blocking, and treating them as if
+they were would stall real progress over a decision that doesn't need to
+block it.
+
+---
+
 ## Read in this order if you're new to this
 
 1. `README.md` — entry point, links to everything.
@@ -363,7 +435,12 @@ guess was wrong in its shape, not just underspecified.
 
 ---
 
-## Immediate next action (supersedes any earlier "next action" note above)
+## Immediate next action (supersedes any earlier "next action" note above) — HISTORICAL, itself now superseded by "Current state" near the top of this document
+
+*This section's own "supersedes any earlier note" claim is exactly the kind
+of drift the new "Current state" section at the top now exists to prevent —
+kept here as reasoning-trail detail, not as the place to look for current
+status.*
 
 All six object-model contracts are done: `Retriever`, `Sandbox`,
 `managers.md` (`PresidiumClient.check_grant`, `execute_in_sandbox`,
@@ -463,7 +540,7 @@ What's left, roughly in order of how blocking each is:
    instance of the fail-closed-by-default-explicit-opt-in-to-bypass rule.
    Zero spike coverage, same honest flag as everywhere else this applies.
 
-## Two more contracts written: `mcp-integration.md`, `mcp-server.md`
+## Two more contracts written: `mcp-integration.md`, `mcp-server.md` — reasoning-trail detail; see "Current state" at the top for status
 
 `docs/contracts/mcp-integration.md` (`MCPClient`/`MCPToolNamespace`) and
 `docs/contracts/mcp-server.md` (`FabricaMCPServer`) are both done, formalizing
