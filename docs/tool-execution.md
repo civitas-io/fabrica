@@ -86,7 +86,10 @@ coupling away and reduce it to just another commodity MCP gateway — the exact
 thing [landscape.md](landscape.md#2-mcp-gateways--registries--commoditized-do-not-build)
 says not to build. Portability for non-Civitas/non-Python consumers is still
 achieved — Fabrica exposes itself as an MCP server, so any MCP-compatible host can
-connect without needing a Rust rewrite or a separate brand.
+connect without needing a Rust rewrite or a separate brand. The opposite
+direction — Fabrica as an MCP **client**, consuming an external MCP server as
+a `ToolNamespace` — is a separate, complementary design:
+[mcp-integration.md](mcp-integration.md).
 
 ## Core interfaces (sketch)
 

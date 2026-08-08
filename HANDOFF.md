@@ -376,11 +376,23 @@ this project's actual conclusion that code-mode is the headline and `find()`
 is the fallback), with nothing anywhere pointing to `civitas-io/fabrica`.
 Fixing this was paused specifically because the naming collision means a
 "here's the real repo" pointer can't yet say what to `pip install`.
-**`packages/fabrica` also contains real code** (an MCP client, a bubblewrap
-sandbox module, ~500 lines) — this is a bigger decision than a doc fix
-(archive it? migrate it? does anything else in `civitas-contrib` depend on
-it? nothing found to, per a grep, but not exhaustively verified) and needs
-explicit direction before touching it.
+**`packages/fabrica`'s real code — resolved: migrate, don't archive.**
+Designed [mcp-integration.md](docs/mcp-integration.md): the old `MCPClient`/
+`BubblewrapSandbox` code (~500 lines) becomes the validated implementation
+behind a new `MCPToolNamespace` — one more `ToolNamespace` implementation,
+zero changes needed to `ToolManager`/`SandboxPool`/`execute_in_sandbox`.
+Explicitly reconciled against `landscape.md §2`'s "do not build an MCP
+gateway" decision: this is an internal adapter for Fabrica's own
+tool-execution pipeline (inherits Presidium governance for free via the
+existing `execute_in_sandbox` grant check), not a standalone gateway product
+with its own discovery/aggregation/governance — the thing that's rejected.
+Also distinguished from a second, already-noted direction in
+`tool-execution.md` (Fabrica *as* an MCP server) — this is the client
+direction, deliberately designed separately. The `bwrap` sandboxing stays
+internal to the adapter, never routed through `SandboxPool`'s tier system
+(different lifecycle shape: persistent connection vs. ephemeral execution).
+Only the old package's stale `find_tools`-only *docs* get retired — the code
+migrates.
 
 What's left, roughly in order of how blocking each is:
 
@@ -388,16 +400,20 @@ What's left, roughly in order of how blocking each is:
    pointer in the stale `civitas-contrib` docs, and blocks ever actually
    publishing this package.
 2. **Fix the three stale `civitas-contrib` documents**, once naming is
-   settled — mark superseded, point at `civitas-io/fabrica`.
-3. **Decide what happens to `civitas-contrib/packages/fabrica`'s actual
-   code** — archive, migrate, or leave as a deliberately-separate earlier
-   prototype; not yet decided, and a real decision, not a doc fix.
+   settled — mark superseded, point at `civitas-io/fabrica`, note the MCP
+   code's migration destination specifically (not just "see the new repo").
+3. **Actually perform the `MCPClient`/`BubblewrapSandbox` code migration**
+   into `civitas-io/fabrica`, once real code-writing begins there.
 4. **No code exists yet anywhere in `civitas-io/fabrica`.** Scaffolding the
    actual `fabrica/` Python package (`pyproject.toml`, source layout) is the
    next phase-level step — `CivitasRuntime` is now resolved, so this is no
    longer blocked on that.
 5. Everything in "What's explicitly left open elsewhere" above — still
    accurate, nothing there has been resolved by the contracts work.
+6. `mcp-integration.md`'s own open questions (macOS/Windows `bwrap`
+   fallback, connection lifecycle/eager-vs-lazy connect, multi-server support,
+   zero spike coverage for `MCPToolNamespace` specifically) — all new, all
+   named, none resolved.
 6. `prompts.md`'s "Explored" survey has two items marked worth prioritizing
    that got promoted into the contract (cache-boundary, `PROMPT.md` format)
    and several marked correctly deferred — no action needed unless demand

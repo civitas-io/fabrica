@@ -172,6 +172,7 @@ Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-
 | [problem-definition.md](docs/problem-definition.md) | Per-persona problem statements, success metrics, non-goals — and the cross-cutting decisions that fell out of defining them |
 | [context-layer.md](docs/context-layer.md) | The pillar framing and full scope |
 | [tool-execution.md](docs/tool-execution.md) | Tools-as-code / code-mode design; `find` fallback |
+| [mcp-integration.md](docs/mcp-integration.md) | `MCPToolNamespace` — Fabrica as an MCP client. Explicitly reconciled with landscape.md's "do not build an MCP gateway" decision. Migrates real code from `civitas-contrib/packages/fabrica`. |
 | [retrieval.md](docs/retrieval.md) | The shared `Retriever` engine behind tools + skills discovery — one engine, rank-not-threshold, Rust-for-compute |
 | [contracts/retriever.md](docs/contracts/retriever.md) | **Contracts** — implementation-ready signatures, error types, async behavior. |
 | [contracts/sandbox.md](docs/contracts/sandbox.md) | Sandbox contract — corrects a real imprecision in system-design.md's warm-pool language, found by writing exact release() semantics. |
