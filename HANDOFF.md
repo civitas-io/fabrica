@@ -320,15 +320,34 @@ would translate itself** — applies to any future DI'd dependency by default.
 
 ## `CivitasBridge` — DONE. All six object-model contracts complete.
 
-`contracts/civitas-bridge.md` written, incorporating every decision above. One
-honesty flag worth carrying forward: `CivitasRuntime` (the interface
-`request_supervision`/`request_state_persistence` call into) is explicitly
-marked **provisional** — this session confirmed real Civitas vocabulary
-(`Supervisor` with `ONE_FOR_ONE`/`ONE_FOR_ALL`/`REST_FOR_ONE` strategies,
-`GenServer`) via `python-civitas`'s own docs, but not the actual registration
-API a library uses. Flagged the same way `Message` was flagged in
-`contracts/memory.md` — concrete enough to implement against, not a claim
-about what Civitas's real SDK looks like.
+`contracts/civitas-bridge.md` written, incorporating every decision above.
+
+**`CivitasRuntime` reconciliation — done, not left provisional.** Read
+`python-civitas`'s actual source directly (`civitas/runtime.py`,
+`civitas/genserver.py`, `civitas/plugins/state.py`), not just its docs, and
+found the real API differs from the first draft in two concrete ways:
+
+1. There is no "register a supervision spec" call. The real mechanism is
+   `Runtime.spawn(supervisor_name, agent_class, name, config, *, wait=True) ->
+   str` — dynamically spawning an agent into an **already-existing, named**
+   `DynamicSupervisor` that Civitas's own deployment topology defines.
+   `CivitasBridge` doesn't create a supervisor or choose a restart strategy;
+   it spawns into one Civitas already set up, and needs a new
+   `dynamic_supervisor_name` constructor parameter to know which one. Returns
+   the spawned agent's name (a string), raises `SpawnError` on failure — not
+   an opaque handle.
+2. `civitas.plugins.state.StateStore` is far simpler than guessed: keyed by
+   `agent_name: str`, storing `dict[str, Any]` directly. Replaced the
+   invented byte-oriented `StateHandle` with `ComponentStateHandle` — a thin
+   wrapper pre-bound to one component's name over the real `StateStore`, so a
+   manager can't accidentally address another component's state.
+
+`CivitasBridge.__init__` now requires `civitas_runtime`, `civitas_state_store`,
+AND `dynamic_supervisor_name` together in service mode (`RuntimeRequiredError`
+if any is missing) — all three genuinely needed given the real API, not one
+combined "runtime" object as first sketched. This is a real correction, not
+just filling in the previously-flagged gap with confirmation — the original
+guess was wrong in its shape, not just underspecified.
 
 ---
 
@@ -340,19 +359,46 @@ All six object-model contracts are done: `Retriever`, `Sandbox`,
 The design/validate/critique/architecture/system-design/contracts arc that
 `README.md`'s reading order describes is now complete end to end.
 
+**A live PyPI naming collision was also found and is unresolved**: the name
+`fabrica` is already taken on PyPI by an unrelated third party (a Codex-transport
+scaffold, v0.0.7) — neither this repo NOR `civitas-contrib/packages/fabrica`
+(a real, separate, code-containing package that also claims `name = "fabrica"`
+in its `pyproject.toml`, discovered while investigating this) can ever ship
+under that name. Candidate alternates already checked available:
+`civitas-fabrica`, `fabrica-context`, `pyfabrica`, `fabrica-ctx`,
+`civitas-context`, `fabrica-agent`, `fabricapy`. Not decided which, if any.
+
+**`civitas-contrib`'s three stale Fabrica documents are still unfixed** —
+`docs/design/fabrica.md`, `packages/fabrica/README.md`,
+`rfcs/0001-tool-retrieval.md` all describe the old, narrower `find_tools`-only
+version of Fabrica (framing `find_tools` as the solution, the exact reverse of
+this project's actual conclusion that code-mode is the headline and `find()`
+is the fallback), with nothing anywhere pointing to `civitas-io/fabrica`.
+Fixing this was paused specifically because the naming collision means a
+"here's the real repo" pointer can't yet say what to `pip install`.
+**`packages/fabrica` also contains real code** (an MCP client, a bubblewrap
+sandbox module, ~500 lines) — this is a bigger decision than a doc fix
+(archive it? migrate it? does anything else in `civitas-contrib` depend on
+it? nothing found to, per a grep, but not exhaustively verified) and needs
+explicit direction before touching it.
+
 What's left, roughly in order of how blocking each is:
 
-1. **`CivitasRuntime` reconciliation** (`contracts/civitas-bridge.md`'s
-   explicitly-provisional interface) — needs an actual look at Civitas's
-   registration API, not guessed at further. The most significant
-   real gap across all six contracts.
-2. **No code exists yet anywhere in this repo.** Scaffolding the actual
-   `fabrica/` Python package (`pyproject.toml`, source layout) is the next
-   phase-level step once `CivitasRuntime` is settled enough not to require
-   an immediate rewrite.
-3. Everything in "What's explicitly left open elsewhere" above — still
+1. **Resolve the PyPI naming collision** — blocks writing an accurate
+   pointer in the stale `civitas-contrib` docs, and blocks ever actually
+   publishing this package.
+2. **Fix the three stale `civitas-contrib` documents**, once naming is
+   settled — mark superseded, point at `civitas-io/fabrica`.
+3. **Decide what happens to `civitas-contrib/packages/fabrica`'s actual
+   code** — archive, migrate, or leave as a deliberately-separate earlier
+   prototype; not yet decided, and a real decision, not a doc fix.
+4. **No code exists yet anywhere in `civitas-io/fabrica`.** Scaffolding the
+   actual `fabrica/` Python package (`pyproject.toml`, source layout) is the
+   next phase-level step — `CivitasRuntime` is now resolved, so this is no
+   longer blocked on that.
+5. Everything in "What's explicitly left open elsewhere" above — still
    accurate, nothing there has been resolved by the contracts work.
-4. `prompts.md`'s "Explored" survey has two items marked worth prioritizing
+6. `prompts.md`'s "Explored" survey has two items marked worth prioritizing
    that got promoted into the contract (cache-boundary, `PROMPT.md` format)
    and several marked correctly deferred — no action needed unless demand
    surfaces.

@@ -1,7 +1,9 @@
 # Contract: `CivitasBridge`
 
-**Status:** Contract — implementation-ready, with one interface explicitly
-provisional (see below) · **Last updated:** 2026-08
+**Status:** Contract — implementation-ready. `CivitasRuntime` (below) has been
+reconciled against `python-civitas`'s real source (`civitas/runtime.py`,
+`civitas/genserver.py`, `civitas/plugins/state.py`), superseding the
+originally-provisional sketch. · **Last updated:** 2026-08
 **Depends on:** [system-design.md §1–§2](../system-design.md) (the corrected
 "requests, never reaches in" design), [contracts/memory.md](memory.md)
 (`NullCompactor`, resolved together with this contract)
@@ -42,24 +44,40 @@ ends, not just what it can do.
 
 ---
 
-## An explicitly provisional type — read before the rest
+## `CivitasRuntime` — grounded against real `python-civitas` source, not guessed
+
+Reconciled by reading `civitas/runtime.py`, `civitas/genserver.py`, and
+`civitas/plugins/state.py` directly, not just docs. Two real corrections to
+what an earlier draft of this contract assumed:
+
+1. **There is no "register a supervision spec" call.** Civitas's real
+   mechanism is `Runtime.spawn(supervisor_name, agent_class, name, config, *,
+   wait=True) -> str` — dynamically spawning an agent *into an
+   already-existing, named `DynamicSupervisor`* that Civitas's own deployment
+   topology defines. `CivitasBridge` does not create a supervisor or choose a
+   restart strategy; it spawns into one Civitas already established. Returns
+   the spawned agent's **name** (a string) on success, raises `SpawnError` on
+   failure — not an opaque handle object.
+2. **`StateStore` is far simpler than originally sketched**: keyed by
+   `agent_name: str`, storing `dict[str, Any]` directly (`get`/`set`/`delete`/
+   `list_agents`/`close`) — not a byte-oriented, opaquely-keyed store.
 
 ```python
 class CivitasRuntime(Protocol):
-    """PROVISIONAL. Fabrica does not have visibility into Civitas's actual
-    registration API in this contract-writing session -- python-civitas's
-    own docs confirm real vocabulary (`Supervisor` with ONE_FOR_ONE/
-    ONE_FOR_ALL/REST_FOR_ONE strategies, `GenServer`), but not the exact
-    method signature a library uses to register one. This Protocol is
-    Fabrica's best current guess at the shape it needs, written so this
-    contract is concrete enough to implement against -- NOT a claim about
-    what Civitas's real SDK looks like. Expect this to be replaced by, or
-    reconciled with, Civitas's actual runtime-handle type before
-    CivitasBridge ships. Same honesty standard as `Message` in
-    contracts/memory.md, which has the identical caveat for a different
-    reason."""
-    async def supervise(self, spec: SupervisionSpec) -> SupervisionHandle: ...
-    async def persist(self, component_name: str) -> StateHandle: ...
+    """The subset of civitas.runtime.Runtime's real public API CivitasBridge
+    needs. Not a new interface Civitas must conform to -- civitas.runtime.Runtime
+    already satisfies this shape today."""
+    async def spawn(
+        self, supervisor_name: str, agent_class: type[GenServer], name: str,
+        config: dict[str, Any] | None = None, *, wait: bool = True,
+    ) -> str: ...
+    async def despawn(self, supervisor_name: str, name: str) -> None: ...
+
+
+class SpawnError(Exception):
+    """Re-exported from civitas.process -- not redefined by Fabrica.
+    Raised by CivitasRuntime.spawn on failure (name collision, max_children
+    reached, governance veto via on_spawn_requested, ...)."""
 ```
 
 ---
@@ -67,29 +85,17 @@ class CivitasRuntime(Protocol):
 ## Types
 
 ```python
-@dataclass(frozen=True)
-class SupervisionSpec:
-    component_name: str
-    restart_strategy: Literal["one_for_one", "one_for_all", "rest_for_one"]
-    """Matches Civitas's own Supervisor vocabulary directly (not an
-    invented Fabrica-specific term) -- see python-civitas's design docs."""
-
-
-class SupervisionHandle(Protocol):
-    """Opaque to CivitasBridge beyond identity. Returned so a future
-    extension COULD act on it (e.g. explicit shutdown) without
-    CivitasBridge needing that capability today -- not exercised by
-    anything in this contract."""
-    component_name: str
-
-
-class StateHandle(Protocol):
-    """What a manager (PromptManager, MemoryManager) actually uses to
-    read/write its own state via Civitas's StateStore, without ever
-    holding a direct reference to the StateStore itself."""
-    async def get(self, key: str) -> bytes | None: ...
-    async def put(self, key: str, value: bytes) -> None: ...
-    async def delete(self, key: str) -> None: ...
+class ComponentStateHandle(Protocol):
+    """A StateStore access already bound to one component's name -- so a
+    manager cannot accidentally read or write a different component's
+    state by passing the wrong key. Thin wrapper over Civitas's real
+    civitas.plugins.state.StateStore (get(agent_name)/set(agent_name, state)/
+    delete(agent_name)), pre-bound to one name. CivitasBridge is the only
+    thing holding a direct reference to the raw StateStore; managers only
+    ever see this name-bound wrapper."""
+    async def get(self) -> dict[str, Any] | None: ...
+    async def set(self, state: dict[str, Any]) -> None: ...
+    async def delete(self) -> None: ...
 ```
 
 ---
@@ -110,9 +116,11 @@ class UngovernedConfigurationError(CivitasBridgeError):
 
 
 class RuntimeRequiredError(CivitasBridgeError):
-    """Raised at construction time when mode="service" but
-    civitas_runtime is None -- service mode is meaningless without
-    something to register supervision/persistence requests against."""
+    """Raised at construction time when mode="service" but civitas_runtime,
+    civitas_state_store, or dynamic_supervisor_name is None -- service mode
+    is meaningless without a runtime and a named supervisor to spawn into,
+    and state persistence needs the real StateStore. All three required
+    together, per CivitasBridge.__init__'s Raises section."""
 ```
 
 `CompactionUnavailableError` (raised by `NullCompactor`, not by
@@ -153,17 +161,29 @@ class CivitasBridge:
         presidium_client: PresidiumClient | None = None,
         allow_ungoverned: bool = False,
         civitas_runtime: CivitasRuntime | None = None,
+        civitas_state_store: StateStore | None = None,
+        dynamic_supervisor_name: str | None = None,
         overrides: dict[str, Literal["library", "service"]] | None = None,
     ) -> None:
         """
         Raises:
             UngovernedConfigurationError: presidium_client is None and
                 allow_ungoverned is False.
-            RuntimeRequiredError: mode="service" and civitas_runtime is None.
+            RuntimeRequiredError: mode="service" and civitas_runtime,
+                civitas_state_store, or dynamic_supervisor_name is None.
+                All three are required together in service mode -- spawning
+                needs a runtime AND a named, already-existing
+                DynamicSupervisor to spawn into; state persistence needs
+                the real StateStore.
 
         summarizer=None is NOT an error -- MemoryManager receives a
         NullCompactor instead of RecencyCompactor (contracts/memory.md).
         Compaction becomes unavailable, not the whole construction.
+
+        dynamic_supervisor_name names a DynamicSupervisor Civitas's own
+        deployment topology must already define -- CivitasBridge spawns
+        managers INTO it, per civitas.runtime.Runtime.spawn's real
+        contract; it never creates a supervisor of its own.
 
         overrides is the v2 per-component mode-granularity hook
         (system-design.md §2) -- present in the signature from v1, even
@@ -184,11 +204,12 @@ class CivitasBridge:
         4. Constructs each manager with its dependencies injected --
            ToolManager, SkillManager get the shared engines +
            presidium_client (or NullPresidiumClient); MemoryManager,
-           PromptManager get their state handles via
+           PromptManager get a ComponentStateHandle via
            request_state_persistence (service mode) or a local default
-           (library mode, no request made at all).
+           store directly (library mode, no request made at all).
         5. In service mode only, calls request_supervision once per
-           component that needs it.
+           GenServer-backed manager, spawning it into
+           dynamic_supervisor_name.
         6. Returns the assembled Fabrica facade, with every manager
            exposed as a public attribute (fabrica.tools, fabrica.skills,
            fabrica.memory, fabrica.prompts) -- never hidden exclusively
@@ -198,15 +219,27 @@ class CivitasBridge:
         instance is NOT specified here -- see Open items.
         """
 
-    async def request_supervision(self, spec: SupervisionSpec) -> SupervisionHandle:
-        """Only called during build(), in service mode. Delegates
-        entirely to civitas_runtime.supervise(spec) -- CivitasBridge adds
-        no logic of its own here beyond the call itself."""
+    async def request_supervision(
+        self, agent_class: type[GenServer], name: str, config: dict[str, Any] | None = None,
+    ) -> str:
+        """Only called during build(), in service mode. Delegates entirely
+        to civitas_runtime.spawn(dynamic_supervisor_name, agent_class, name,
+        config) -- CivitasBridge adds no logic of its own beyond supplying
+        the supervisor name it was configured with. Returns the spawned
+        agent's name (matching Runtime.spawn's real return type).
 
-    async def request_state_persistence(self, component_name: str) -> StateHandle:
+        Raises:
+            SpawnError: propagated unchanged from civitas_runtime.spawn --
+                name collision, capacity limits, or a governance veto via
+                Civitas's own on_spawn_requested hook.
+        """
+
+    async def request_state_persistence(self, component_name: str) -> ComponentStateHandle:
         """Called during build() for PromptManager/MemoryManager in
-        service mode. Delegates entirely to civitas_runtime.persist(...).
-        In library mode, this is never called at all -- library-mode
+        service mode. Returns a ComponentStateHandle wrapping
+        civitas_state_store, pre-bound to component_name -- the manager
+        never sees the raw StateStore or any other component's name. In
+        library mode, this is never called at all -- library-mode
         managers get a local default store directly, matching
         system-design.md's existing "no Civitas dependency in library
         mode" shape."""
@@ -216,9 +249,14 @@ class CivitasBridge:
 
 ## What this contract deliberately does not cover
 
-- **`CivitasRuntime`'s real shape** — explicitly provisional, see above.
-  This contract cannot be considered final until reconciled with Civitas's
-  actual registration API.
+- **Any registration mechanism beyond `spawn`/`despawn`** — `civitas.runtime.Runtime`
+  has a much larger surface (`stop_agent`, health probing, remote workers,
+  `spawn_into`, cross-tree authorization via `spawner_allowlist`); this
+  contract only specifies the subset `CivitasBridge` actually needs, not a
+  full wrapper of Civitas's runtime API.
+- **`DynamicSupervisor` construction or configuration** — `dynamic_supervisor_name`
+  must already exist in Civitas's own deployment topology; `CivitasBridge`
+  never creates, configures, or tunes restart strategy/capacity limits for it.
 - **The bounded runtime extension (a smaller scope of "B")** — deliberately
   left possible via `build()`'s public-attribute requirement, not designed
   here. No method for it exists in this contract.
@@ -229,10 +267,11 @@ class CivitasBridge:
 
 ## Open items for implementation
 
-1. `CivitasRuntime`'s reconciliation with Civitas's actual SDK (above) — the
-   most significant open item across all six contracts, since it's the one
-   piece of a contract acknowledged as possibly wrong in its current form,
-   not just incomplete.
+1. Whether `CivitasBridge` should validate that `dynamic_supervisor_name`
+   actually resolves to a real `DynamicSupervisor` before attempting any
+   `spawn` calls (a clearer, earlier error), or let the first `spawn` call's
+   `SpawnError` surface a misconfiguration — not decided; the real API gives
+   no dedicated "does this supervisor exist" check to call first.
 2. `build()`'s idempotency on repeated calls — construct a second, independent
    `Fabrica` graph each time, return the same cached instance, or raise?
    Not decided.
