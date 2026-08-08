@@ -60,7 +60,23 @@ class MCPToolNamespace:
     exact, unchanged ToolNamespace protocol (tool-execution.md) -- no new
     interface for ToolManager to learn."""
 
-    def __init__(self, client: MCPClient) -> None: ...
+    def __init__(self, client: MCPClient) -> None:
+        """Connects EAGERLY, not lazily -- forced by ToolManager.register()'s
+        existing contract (contracts/managers.md), not a style preference.
+        register() indexes a namespace's tools into the shared Retriever at
+        registration time; for that to work, this namespace must already
+        know its tool list, which means it must already be connected. Lazy
+        connection would leave MCP-sourced tools invisible to find() and
+        code-mode until some arbitrary first-call moment -- silently
+        breaking unified retrieval for this one tool source specifically.
+
+        Real cost, named rather than hidden: a broken MCP server config now
+        fails at build()/registration time, not at first use -- the right
+        trade (fail fast and loud beats failing deep inside a code-mode
+        execution), but it does mean a slow-to-start or flaky MCP server
+        becomes a startup-latency and startup-reliability concern for the
+        whole Fabrica construction, not something isolated to whenever that
+        tool happens to get called."""
 
     def stubs(self) -> str:
         """Progressive-disclosure listing, built from the MCP server's
@@ -77,14 +93,62 @@ class MCPToolNamespace:
         """Proxies to MCPClient.call_tool(name, params). This is the ONLY
         method that crosses the wire to the MCP server -- exactly the same
         call shape as any other ToolNamespace, so code-mode generated code
-        cannot tell an MCP-backed tool from a hand-written one."""
+        cannot tell an MCP-backed tool from a hand-written one.
+
+        Raises:
+            MCPServerUnavailableError: the connection is dead, or the
+                server reports this tool no longer exists (see "Degradation
+                and staleness" below) -- surfaces as a routine outcome via
+                RunResult.success=False (execute_in_sandbox's existing
+                routine-vs-infrastructure split, contracts/managers.md),
+                not a hard crash, since external service degradation is a
+                normal operational reality the model should be able to see
+                and react to.
+        """
+
+
+class MCPServerUnavailableError(Exception):
+    """Distinct from a routine tool-level error so ToolManager can
+    translate it into a clear, actionable RunResult.error_message --
+    "tool X is no longer available on server Y" -- rather than an opaque
+    failure or, worse, a silent stale success."""
 ```
 
 `MCPClient` itself (connect/disconnect/list_tools/call_tool, stdio + SSE
 transport) is retained close to its existing shape — this doc changes where
 it lives and what wraps it, not its internals, which already work.
 
-## Where the `bwrap` sandboxing actually belongs — not `SandboxPool`
+## Per-server isolation — an explicit guarantee, not an implicit side-effect
+
+**Each `MCPToolNamespace`/`MCPClient` pair launches its own separate
+subprocess, independently sandboxed.** An agent using three MCP servers gets
+three independently-launched, independently-sandboxed subprocesses — there
+is no code path where two servers share a subprocess, a sandbox profile, or a
+container, because each namespace is its own independently-constructed object
+managing its own connection lifecycle. This falls straight out of the
+one-namespace-per-server design; it isn't new mechanism, but it deserves to
+be **stated as a guarantee**, not left as an unverified implicit consequence.
+
+**Two things this does NOT close, named rather than overclaimed:**
+
+- **Cross-server side-channels via shared mount points.** If an operator
+  configured two different MCP servers with write access to the *same* host
+  directory, they could communicate through it regardless of per-subprocess
+  sandboxing. The default case is closed (`srt`/`bwrap`'s per-invocation
+  `tmpfs` gives each launch a fresh, private `/tmp`) — but this is a
+  configuration responsibility, not something the sandbox mechanism itself
+  can prevent if an operator explicitly grants two servers the same
+  writable path.
+- **The trusted parent process is not sandboxed from what it parses.**
+  Subprocess isolation protects the host from a malicious server's *code* —
+  arbitrary execution, filesystem/network abuse. It does not protect the
+  host from a maliciously crafted MCP *protocol response* exploiting a bug
+  in `MCPClient`'s own parsing logic, which runs in the trusted parent
+  process, outside any sandbox. Per-server subprocess isolation and
+  defensive protocol parsing are different problems; this design only
+  solves the first.
+
+## Where the sandboxing actually belongs — not `SandboxPool`
 
 Stated plainly, since it would be easy to conflate the two: `SandboxPool`
 isolates **short-lived, discardable executions** of AI-generated or
@@ -92,56 +156,104 @@ author-trusted code (`boot_clean → execute → terminate`, `contracts/sandbox.
 An MCP server is the opposite shape — **connected once, kept running for an
 entire session**, called repeatedly. Routing MCP server isolation through
 `SandboxPool`'s tier system would force a persistent-process problem into an
-abstraction built for ephemeral ones, and would isolate the wrong thing: `bwrap`
-here hardens *a third-party server binary the operator chose to run*, not
-*AI-generated code Fabrica itself doesn't trust* — a different threat model
-from what `SandboxPool` exists to address.
+abstraction built for ephemeral ones, and would isolate the wrong thing: the
+sandbox here hardens *a third-party server binary the operator chose to run*,
+not *AI-generated code Fabrica itself doesn't trust* — a different threat
+model from what `SandboxPool` exists to address.
 
-**`BubblewrapSandbox` stays exactly where it already is conceptually**: an
+**The sandboxing stays exactly where it already is conceptually**: an
 internal detail of how `MCPClient` launches its own subprocess, invisible to
 `ToolManager`, `SandboxPool`, and `execute_in_sandbox` entirely. None of them
 need to know an MCP server is namespace-isolated any more than they need to
 know how a hand-written `ToolNamespace`'s own internals work.
 
-## Platform reality, inherited honestly, not newly discovered
+## Isolation mechanism — resolved: `srt`, not raw `bwrap`, on both Linux and macOS
 
-`bwrap` is Linux-only — the old code's own error message already says so
-plainly (*"macOS: not supported... Windows: not supported"*). This isn't a new
-gap this design introduces; it's the same shape as every other platform
-limitation already accepted elsewhere in this project (macOS Tier 2's missing
-snapshot/restore, Windows Tier 1 being deferred): **ship the real isolation
-where it exists, degrade explicitly and loudly where it doesn't**, rather than
-silently running unsandboxed. On macOS/Windows, `MCPClient.connect()` should
-either refuse with a clear, actionable error (mirroring `BubblewrapSandbox.check_or_raise()`'s
-existing message) or run genuinely unsandboxed with an explicit, unmissable
-warning — not decided here (see Open questions).
+**Original framing was incomplete, not wrong in direction.** The old code
+used `bwrap` directly, Linux-only. Research surfaced a better answer than
+"macOS has no equivalent": **`sandbox-exec` (Seatbelt) is macOS's direct
+analog** — same weight class as `bwrap`, still functional despite Apple's
+long-standing deprecation notice, used in production today by OpenAI's Codex
+CLI, Chromium, and Bazel for exactly this purpose (wrapping a subprocess with
+restricted filesystem/network access).
+
+More significantly: **`srt`** — the same Anthropic tool already spiked and
+validated in this project (`SPIKE-macos-isolation-srt-libkrun.md`) — **is
+already built on top of `bwrap` on Linux and `sandbox-exec` on macOS**,
+unifying both into one cross-platform tool, with a *stronger* network
+isolation model than raw `bwrap` achieves alone (deny-by-default,
+proxy-mediated egress, vs. `bwrap`'s blunter `--unshare-net`).
+
+**Resolved design: `MCPClient` uses `srt` directly — not through
+`SandboxPool`'s pool/lifecycle machinery** (that boundary from the previous
+section still holds; this is the same standalone binary, called directly, the
+way the old code called `bwrap` directly) **— on both Linux and macOS.** This
+replaces the old Linux-only `BubblewrapSandbox` entirely, rather than adding a
+second, separate macOS-specific implementation alongside it.
+
+**This narrows the real remaining platform gap to Windows only** — `srt`'s
+Windows mode was noted as untested in the original spike, and Windows is
+already a deliberately deprioritized platform in this project. Resolved:
+`MCPClient` accepts `allow_unsandboxed: bool = False`, hard-refusing to
+connect on Windows (or anywhere `srt` genuinely isn't available) unless
+explicitly overridden — the same "fail closed by default, explicit named
+opt-in to bypass" shape already used for `NullPresidiumClient`'s
+`allow_ungoverned=True`. Third instance of this pattern now, worth treating as
+a named platform-wide rule: **when a security/governance mechanism is
+unavailable, fail closed by default; the exception is always an explicit,
+greppable opt-in flag, never a silent fallback.**
 
 ## Migration, not deprecation
 
 This gives a concrete resolution to the `civitas-contrib/packages/fabrica`
 question raised earlier: **the code migrates, the stale docs don't.**
-`MCPClient`/`BubblewrapSandbox` move into `civitas-io/fabrica` as the
-validated implementation behind `MCPToolNamespace`; the old package's
-`find_tools`-only framing (its `__init__.py` docstring, its `README.md`, the
-RFC) gets retired as describing an abandoned direction, separately from this
-migration, not conflated with it.
+`MCPClient` moves into `civitas-io/fabrica` close to its existing shape,
+becoming the implementation behind `MCPToolNamespace`; `BubblewrapSandbox`
+specifically does **not** migrate as-is — its Linux-only `bwrap` wrapping is
+replaced by the cross-platform `srt` invocation resolved above, since
+migrating it unchanged would have re-introduced the exact macOS gap this
+design pass just closed. The old package's `find_tools`-only framing (its
+`__init__.py` docstring, its `README.md`, the RFC) gets retired as describing
+an abandoned direction, separately from this migration, not conflated with it.
 
-## Open questions
+## Open questions, resolved through direct walkthrough — four of five closed
 
-1. macOS/Windows behavior when `bwrap` is unavailable — hard refuse vs. loud
-   unsandboxed fallback. Not decided; leans toward hard refuse by default
-   (consistent with how `Sandbox` never silently downgrades isolation),
-   with an explicit opt-in flag for unsandboxed local dev.
-2. Connection lifecycle ownership — does `ToolManager.register()` eagerly
-   connect the MCP server, or does `MCPToolNamespace` connect lazily on
-   first `call()`? Affects `build()`'s startup latency and failure timing.
-3. Multiple MCP servers per agent — this design covers one `MCPClient` per
-   `MCPToolNamespace`; a developer registering several namespaces (one per
-   server) is assumed sufficient, not stress-tested against a real
-   multi-server use case.
-4. Whether `stubs()`'s cache needs invalidation if the MCP server's own tool
-   set changes mid-session (MCP supports server-initiated `list_changed`
-   notifications) — not addressed; the old code never had to consider this.
-5. Zero spike coverage for this design specifically — the old code worked in
-   its original, narrower context; nothing has validated `MCPToolNamespace`
-   as a `ToolNamespace` implementation end-to-end inside code-mode execution.
+All five original questions were walked through directly rather than answered
+in one pass, in this order, since each answer sometimes changed the shape of
+the next:
+
+1. ~~macOS/Windows behavior when `bwrap` is unavailable~~ **Resolved.** `srt`
+   (already spiked in this project) unifies `bwrap` (Linux) and `sandbox-exec`
+   (macOS) into one cross-platform tool with a stronger network-isolation
+   model than either alone — see "Isolation mechanism," above. Narrows the
+   real gap to Windows only, closed with `allow_unsandboxed=False` by default,
+   the same fail-closed-with-explicit-opt-in shape as `NullPresidiumClient`.
+2. ~~Connection lifecycle ownership~~ **Resolved: eager, and not actually a
+   choice.** Forced by `ToolManager.register()`'s existing contract needing a
+   tool list to index at registration time — see `MCPToolNamespace.__init__`,
+   above.
+3. ~~Multiple MCP servers per agent~~ **Resolved: already sufficient, correctly
+   out of scope to extend.** One namespace per server; any cross-server
+   discovery/aggregation would drift into `landscape.md §2`'s rejected
+   "MCP gateway" category. This surfaced a real follow-on question — does
+   this give strong enough *isolation* between servers, not just a clean
+   API shape — answered explicitly in "Per-server isolation," above.
+4. ~~`stubs()` cache invalidation on `list_changed`~~ **Split into a hard
+   guarantee (resolved, ships now) and a soft one (still open).** The hard
+   guarantee — a stale or degraded tool call fails clearly via
+   `MCPServerUnavailableError` → `RunResult.success=False`, never silently —
+   does not wait on anything and is specified above. The soft
+   guarantee — proactively refreshing `Retriever`'s index *before* the model
+   tries a stale entry — genuinely depends on `contracts/retriever.md`'s
+   existing open item on eager-cache invalidation timing/atomicity, and
+   solving it independently here risked deciding the same question twice,
+   inconsistently. This was a real, deliberate trade-off surfaced by pointing
+   out the stakes directly (an LLM being told about a tool that no longer
+   works is a correctness failure, not a caching nicety) — not a question
+   quietly dropped.
+5. **Still open, unchanged**: zero spike coverage for `MCPToolNamespace`
+   specifically. The old code validated a narrower, different context (a
+   standalone MCP client + subprocess sandbox); nothing has validated this
+   namespace implementation working end-to-end inside actual code-mode
+   execution — eager connection, `Retriever` indexing, sandboxed calls, and
+   the new degradation-handling path all together.

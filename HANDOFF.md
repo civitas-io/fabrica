@@ -402,19 +402,29 @@ What's left, roughly in order of how blocking each is:
 2. **Fix the three stale `civitas-contrib` documents**, once naming is
    settled — mark superseded, point at `civitas-io/fabrica`, note the MCP
    code's migration destination specifically (not just "see the new repo").
-3. **Actually perform the `MCPClient`/`BubblewrapSandbox` code migration**
-   into `civitas-io/fabrica`, once real code-writing begins there.
+3. **Actually perform the `MCPClient` code migration + the `srt` rewrite**
+   into `civitas-io/fabrica`, once real code-writing begins there —
+   `BubblewrapSandbox` specifically does NOT migrate as-is (resolved in
+   `mcp-integration.md`: replaced by cross-platform `srt`, not carried over
+   Linux-only).
 4. **No code exists yet anywhere in `civitas-io/fabrica`.** Scaffolding the
    actual `fabrica/` Python package (`pyproject.toml`, source layout) is the
    next phase-level step — `CivitasRuntime` is now resolved, so this is no
    longer blocked on that.
 5. Everything in "What's explicitly left open elsewhere" above — still
    accurate, nothing there has been resolved by the contracts work.
-6. `mcp-integration.md`'s own open questions (macOS/Windows `bwrap`
-   fallback, connection lifecycle/eager-vs-lazy connect, multi-server support,
-   zero spike coverage for `MCPToolNamespace` specifically) — all new, all
-   named, none resolved.
-6. `prompts.md`'s "Explored" survey has two items marked worth prioritizing
+6. `mcp-integration.md`'s open questions — **four of five resolved** through
+   direct walkthrough (isolation mechanism -> `srt`; connection lifecycle ->
+   eager, forced by `ToolManager.register()`'s contract; multi-server ->
+   already sufficient; cache invalidation -> split into a hard guarantee that
+   ships now and a soft one blocked on `Retriever`'s own open item). One
+   genuinely still open: zero spike coverage for `MCPToolNamespace`
+   end-to-end. A new platform-wide rule surfaced along the way, third
+   instance of it now: **when a security/governance mechanism is
+   unavailable, fail closed by default; the exception is always an
+   explicit, greppable opt-in flag, never a silent fallback** (`allow_ungoverned`,
+   now `allow_unsandboxed`).
+7. `prompts.md`'s "Explored" survey has two items marked worth prioritizing
    that got promoted into the contract (cache-boundary, `PROMPT.md` format)
    and several marked correctly deferred — no action needed unless demand
    surfaces.
