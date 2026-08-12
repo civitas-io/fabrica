@@ -21,6 +21,7 @@ classifiers = [
 dependencies = [
     "rank-bm25>=0.2.2",
     "pyzmq>=26.0",
+    "pyyaml>=6.0",
 ]
 
 # Distribution name is "fabrica-context" (fabrica itself is taken on PyPI by
@@ -66,4 +67,8 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "zmq.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "yaml.*"
 ignore_missing_imports = true

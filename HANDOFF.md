@@ -112,9 +112,39 @@ adding this, not by pretending the drift didn't happen.
    just a single lucky pass, given the real subprocess/ZMQ concurrency
    involved. Clean `ruff`/`mypy --strict`.
 
-   Build order from here: `managers.md` (`ToolManager`/`SkillManager`/
-   `execute_in_sandbox`) next, per the dependency-order plan -- the first
-   component that actually composes `Retriever` and `SandboxPool` together.
+   **`managers.md` also now built and tested** -- `src/fabrica/scope.py`
+   (`Scope`), `src/fabrica/presidium.py` (`GrantResult`, the
+   `PresidiumClient` Protocol -- the real REST+mTLS implementation is
+   deferred to `CivitasBridge`'s own build phase, since it needs an actual
+   Presidium deployment to test against), `src/fabrica/tools/`
+   (`ToolSchema`, `ToolResult`, `ToolNamespace`, `DictToolNamespace` --
+   a real, working namespace backed by plain Python callables), and
+   `src/fabrica/managers/` (`execute_in_sandbox`, `ToolManager`,
+   `SkillManager`). 45 tests total (12 new), all passing, including one
+   that proves the FULL composed stack end to end: generated code inside
+   a real `SubprocessSandbox` calls `namespace.call()`, crosses the ZMQ
+   bridge, reaches an actual registered Python function, and the result
+   comes back correctly -- nothing mocked anywhere in that path.
+
+   Two real contract gaps found and fixed BEFORE writing code against
+   them, not patched around afterward: `ToolNamespace` had no way to
+   enumerate a namespace's tools (`stubs()` returns a formatted string,
+   not structured data) -- added `list_schemas()`. And
+   `ToolManager.register()`/`SkillManager.load()` were declared sync in
+   the contract, but both need to await `Retriever.register()`, which is
+   `async def` -- corrected both to async, which also resolved the
+   contract's own open item 3 (previously left open citing "parity with
+   ToolManager.register()" -- now that register() is async, the same
+   parity argument requires load() to be async too).
+
+   `SkillManager`'s `SKILL.md` parser was validated against the REAL
+   `bigpowers` skill catalog (81 skills), not just synthetic test
+   fixtures -- all 81 parsed successfully, matching the same real-corpus
+   discipline `SPIKE-skill-progressive-disclosure.md` used. Clean
+   `ruff`/`mypy --strict`, stable across repeated runs.
+
+   Build order from here: `memory.md`/`prompts.md` next, per the
+   dependency-order plan.
 3. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
    archiving — `MCPClient` moves in close to its current shape;
    `BubblewrapSandbox` gets replaced by `srt` (`mcp-integration.md`), not
