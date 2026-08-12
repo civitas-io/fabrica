@@ -127,7 +127,24 @@ value. Fabrica captures stdout/stderr, enforces limits, and returns only the res
    a shared `find(query, kind)` surface. Memory search remains intentionally
    separate (different semantics — scoped, not a shared registry) but plugs into
    the same underlying engine.
-1. Language of the sandbox API — Python first (matches Civitas); TypeScript later?
+1. ~~Language of the sandbox API — Python first (matches Civitas); TypeScript
+   later?~~ **Resolved: Python-only for v1, explicitly, not left as an
+   unexamined default.** The implementation confirms this is already true
+   everywhere, not just "the current default" — every `code` parameter in
+   `Sandbox`/`SandboxPool`/`execute_in_sandbox`/`ToolManager`/`SkillManager`
+   is a plain `str` with no language dimension at all, and
+   `SubprocessSandbox`'s guest shim `exec()`s it directly as Python.
+   Deliberately NOT building a language-dispatch abstraction
+   (`execute(code, language=...)`) now, since there's no second backend to
+   put behind it — that would be speculative generality: an unused
+   parameter, untested for anything but the one path that already works.
+   Same "ship the default, revisit if forced" discipline applied to
+   Rust/PyO3 packaging, Windows Tier 1, macOS Tier 2, GPU-in-sandbox, and
+   `eager`'s per-deployment override — chosen specifically because the
+   real future demand (TypeScript, or anything else) is genuinely unknown
+   right now, and building for a guess would risk shaping the abstraction
+   around the wrong guess. Revisit if and when real demand for a second
+   language actually surfaces.
 2. Credential propagation into the sandbox — coordinate with Presidium + tessera so
    the sandbox can *use* secrets it can't *read*.
 3. Result-size policy — when a result is itself huge, does it stay in the sandbox as a

@@ -286,6 +286,17 @@ cognee|langmem]` adapters (need real external services to test against,
    `eager=False` always (external servers shouldn't unilaterally claim
    always-visible status). A per-deployment override remains a real,
    deferred idea, not built. 3 new tests (180 total).
+
+   **Second one resolved, documentation-only**: `tool-execution.md` open
+   item 1 (sandbox API language -- Python now, TypeScript later?).
+   Confirmed the implementation already answers this unconditionally --
+   every `code` parameter across `Sandbox`/`SandboxPool`/
+   `execute_in_sandbox`/`ToolManager`/`SkillManager` is a plain `str`
+   with no language dimension at all. Resolved as Python-only for v1,
+   explicitly, not left an unexamined default -- deliberately NOT
+   building a language-dispatch abstraction now, since there's no second
+   backend to put behind it and the real future demand is genuinely
+   unknown. No code change; `docs/tool-execution.md` updated.
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without
