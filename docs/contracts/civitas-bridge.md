@@ -72,13 +72,20 @@ class CivitasRuntime(Protocol):
         config: dict[str, Any] | None = None, *, wait: bool = True,
     ) -> str: ...
     async def despawn(self, supervisor_name: str, name: str) -> None: ...
-
-
-class SpawnError(Exception):
-    """Re-exported from civitas.process -- not redefined by Fabrica.
-    Raised by CivitasRuntime.spawn on failure (name collision, max_children
-    reached, governance veto via on_spawn_requested, ...)."""
 ```
+
+`SpawnError` is NOT redefined or re-exported by Fabrica as its own class --
+an earlier draft of this contract sketched a re-exported `class SpawnError`
+here; implementation found that would be dead code, since
+`CivitasBridge.request_supervision` never catches or wraps anything, it
+just lets whatever exception the injected `CivitasRuntime` actually raises
+propagate unchanged (the real `civitas.runtime.Runtime.spawn` raises
+`civitas.errors.SpawnError` -- an earlier guess said `civitas.process`,
+fixed here after reading the real source). A Fabrica-defined `SpawnError`
+class nothing ever raises would only invite an `except
+fabrica...SpawnError` that silently never matches. `request_supervision`'s
+`Raises` section documents this as "propagated unchanged", not as a type
+this package defines.
 
 ---
 
@@ -204,12 +211,14 @@ class CivitasBridge:
         4. Constructs each manager with its dependencies injected --
            ToolManager, SkillManager get the shared engines +
            presidium_client (or NullPresidiumClient); MemoryManager,
-           PromptManager get a ComponentStateHandle via
-           request_state_persistence (service mode) or a local default
-           store directly (library mode, no request made at all).
-        5. In service mode only, calls request_supervision once per
-           GenServer-backed manager, spawning it into
-           dynamic_supervisor_name.
+           PromptManager get their default in-memory stores directly, in
+           BOTH modes for now -- see the second correction below for why
+           service mode does not yet actually swap these for a
+           StateStore-backed store, despite this step's own name.
+        5. request_supervision is NOT called for Fabrica's own managers in
+           v1 at all, in either mode (see the first correction below,
+           despite system-design.md's component matrix labeling them all
+           "GenServer" under service mode).
         6. Returns the assembled Fabrica facade, with every manager
            exposed as a public attribute (fabrica.tools, fabrica.skills,
            fabrica.memory, fabrica.prompts) -- never hidden exclusively
@@ -247,6 +256,80 @@ class CivitasBridge:
 
 ---
 
+## Correction found during implementation: `request_supervision` is real and tested, but Fabrica's own managers don't call it in v1
+
+`system-design.md`'s component matrix (§4) labels `ToolManager`,
+`SkillManager`, `MemoryManager`, `PromptManager`, `Retriever`, and
+`SandboxPool` all as `GenServer` under service-mode deployment topology,
+and an earlier draft of this contract's `build()` step 5 said
+`request_supervision` gets called "once per GenServer-backed manager."
+Reading `civitas.runtime.Runtime.spawn`'s and `DynamicSupervisor`'s real
+implementation directly (not just its public signature) during
+implementation found this doesn't fit, for a structural reason, not a
+minor detail:
+
+Civitas's real dynamic-spawn mechanism reconstructs the agent class **from
+scratch**, by dotted class path, with only `agent_class(name=child_name)`
+-- no constructor arguments beyond `name`. Whatever `config: dict[str,
+Any]` was passed to `spawn()` is attached to the fresh instance as a plain
+data attribute (`agent.config = config`) *after* construction, not passed
+into `__init__`. There is no way to hand a `DynamicSupervisor` an
+already-constructed Python object with live references inside it (a
+`ToolManager` holding a real `Retriever`, `SandboxPool`,
+`PresidiumClient`) and have it spawn *that instance* -- it can only spawn
+a fresh one, built from nothing but its class path and a plain-data
+config dict.
+
+That is fundamentally incompatible with how every manager in this
+codebase is actually built: constructor-injected dependencies
+(`ToolManager(retriever, sandbox_pool, presidium_client)`), assembled
+once by `CivitasBridge.build()`'s existing object-graph logic. Making a
+manager "GenServer-backed" for real would mean rewriting it to build its
+own dependencies internally inside `init()`/`on_start()` from primitive
+config values -- a different shape entirely, not an incidental adapter.
+
+**Resolved:** `request_supervision` stays in this contract exactly as
+written, and is implemented and tested against Civitas's real `Runtime`/
+`DynamicSupervisor` -- it is a real, working mechanism, for whenever a
+genuinely fresh, self-contained `GenServer` class is the right shape.
+But **no manager in this codebase calls it in v1.** Service mode's actual
+difference from library mode, for what's built today, is narrower than
+`system-design.md`'s matrix implied: managers stay the same
+constructor-injected plain objects in both modes; only `MemoryManager`/
+`PromptManager`'s *persistent state* moves from a local in-memory default
+to a `ComponentStateHandle` backed by Civitas's real `StateStore`, via
+`request_state_persistence`. `system-design.md`'s component matrix is
+left as directional intent for a future supervised-process shape, not
+corrected to match this narrower v1 reality -- flagged here as the
+authoritative correction for anyone implementing against it now.
+
+## Second correction found during implementation: `request_state_persistence` is real and tested, but `build()` doesn't call it for managers yet either
+
+A second, smaller gap of the same shape: `request_state_persistence`
+returns a `ComponentStateHandle` -- a name-bound `get()`/`set()`/`delete()`
+over a whole `dict[str, Any]` blob. Neither `contracts/memory.md` nor
+`contracts/prompts.md` designs a `MemoryStore`/`PromptStore`
+implementation that actually stores its state as one such blob and knows
+how to serialize/deserialize its own internal structure into and out of
+it -- both contracts only specify `InMemoryMemoryStore`/`InMemoryPromptStore`,
+which have no persistence at all.
+
+Building that adapter for real (deciding a snapshot format, a
+read-modify-write strategy given `StateStore` has no partial-update
+operation, and testing it against a real `StateStore`) is a genuine,
+separate unit of work this contract never scoped -- not something to
+bolt on ad hoc while wiring `CivitasBridge` together.
+
+**Resolved:** `request_state_persistence` itself is implemented and
+tested for real, against `civitas.plugins.state.StateStore`'s real shape
+(including `InMemoryStateStore`) -- proving the name-binding and the
+real call succeed. But `build()` does not call it for `MemoryManager`/
+`PromptManager` in v1, in either mode -- both keep using their in-memory
+default stores regardless of `mode`. A `StateStore`-backed `MemoryStore`/
+`PromptStore` adapter, and wiring it into `build()`'s service-mode path,
+is new, explicitly-scoped future work -- not designed here, not silently
+assumed to already work.
+
 ## What this contract deliberately does not cover
 
 - **Any registration mechanism beyond `spawn`/`despawn`** — `civitas.runtime.Runtime`
@@ -275,11 +358,25 @@ class CivitasBridge:
 2. `build()`'s idempotency on repeated calls — construct a second, independent
    `Fabrica` graph each time, return the same cached instance, or raise?
    Not decided.
-3. Partial-failure behavior during `build()` — if `request_supervision`
-   succeeds for `ToolManager` but fails for `SkillManager`, is the whole
-   `build()` call rolled back, or does it return a partially-supervised
-   `Fabrica`? Not specified; leans toward "roll back entirely," consistent
-   with fail-closed patterns elsewhere, but not decided as a contract rule.
+3. ~~Partial-failure behavior during `build()` if `request_supervision`
+   succeeds for one manager but fails for another~~ **Moot for v1**: no
+   manager calls `request_supervision` at all now (see the first
+   "Correction found during implementation" section above) — nothing in
+   `build()` can partially fail this way today. Revisit if a genuinely
+   fresh, self-contained `GenServer`-shaped component is ever added.
 4. Whether `overrides`' per-component granularity (v2) needs its own
    validation — e.g., rejecting an override key that doesn't name a real
    component — is unspecified, since v1 doesn't exercise this path at all.
+5. **New**: designing a `StateStore`-backed `MemoryStore`/`PromptStore`
+   adapter (snapshot format, read-modify-write strategy over
+   `ComponentStateHandle`'s whole-blob `get`/`set`) and wiring it into
+   `build()`'s service-mode path — see the second "Correction found
+   during implementation" section above. Not designed yet; `build()`
+   uses in-memory default stores in both modes until this exists.
+6. **New**: `warm_size`/`max_concurrent` for the default `SandboxPool`
+   `build()` constructs have no contract-specified default values
+   (`contracts/sandbox.md` leaves them caller-supplied with no default).
+   `CivitasBridge` picks `warm_size=2, max_concurrent=4` as reasonable,
+   zero-infra-quickstart-appropriate values — not validated against any
+   real workload, a placeholder default like every other zero-infra
+   default in this project, not a tuned recommendation.

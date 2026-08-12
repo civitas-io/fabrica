@@ -22,6 +22,15 @@ dependencies = [
     "rank-bm25>=0.2.2",
     "pyzmq>=26.0",
     "pyyaml>=6.0",
+    # civitas IS a real runtime dependency here, deliberately, unlike
+    # everywhere else in fabrica (Presidium, model providers, etc. are all
+    # duck-typed Protocols, never imported packages). CivitasBridge is the
+    # one component architecture.md §1a licenses to integrate tightly with
+    # Civitas -- and civitas.genserver.GenServer specifically is needed as
+    # a real type, not a structural stand-in, because Civitas's dynamic-
+    # spawn mechanism is nominally coupled to that concrete class (see
+    # src/fabrica/civitas_bridge/runtime.py's inline note).
+    "civitas>=0.11.0",
 ]
 
 # Distribution name is "fabrica-context" (fabrica itself is taken on PyPI by

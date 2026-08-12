@@ -19,10 +19,9 @@ validated by spike to be both ~79% cheaper *and* more correct than traditional
 direct tool-calling (`SPIKE-code-mode-execution.md`).
 
 Repo: `civitas-io/fabrica` (public). Design/validate/critique/architecture/
-system-design/contracts is complete, and **implementation is now underway**:
-five of six object-model contracts are real, tested code
-(`src/fabrica/`) — see "Current state" immediately below for exactly what
-exists.
+system-design/contracts is complete, and **all six object-model contracts
+are now real, tested code** (`src/fabrica/`) — see "Current state"
+immediately below for exactly what exists and what's left (MCP, mostly).
 
 ---
 
@@ -49,10 +48,10 @@ default, explicit greppable opt-in to bypass** (four confirmed instances:
 `allow_ungoverned`, `allow_unsandboxed`, `allow_weak_isolation_for_external_callers`,
 plus the general rule itself).
 
-### Implementation phase: five of six object-model contracts are real code
+### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 99 tests total, clean
+mocked stubs standing in for untested logic), 120 tests total, clean
 `ruff`/`mypy --strict`, stable across repeated runs:
 
 - **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
@@ -75,6 +74,43 @@ mocked stubs standing in for untested logic), 99 tests total, clean
 - **`PromptManager`** (`src/fabrica/prompts/`) — `InMemoryPromptStore` with
   real atomic version assignment under concurrency, `PromptManager`'s cache,
   `load()`'s `PROMPT.md` parser. 24 tests.
+- **`CivitasBridge`** (`src/fabrica/civitas_bridge/`) — resolved via option
+  (b): defer `PresidiumClient`'s real REST+mTLS engineering (no real
+  Presidium endpoint exists to validate it against), build the
+  `civitas`-facing half for real instead. `CivitasRuntime`/`StateStore` are
+  structural Protocols (no hard `civitas` dependency for those); `GenServer`
+  is a genuine, deliberate exception — imported directly, because
+  Civitas's real dynamic-spawn mechanism is nominally coupled to that
+  concrete class, not just its structural shape (mypy caught this for
+  real when a first attempt at a structural `CivitasGenServer` Protocol
+  failed contravariance checking against `Runtime.spawn`'s actual
+  signature). `civitas>=0.11.0` is now a real runtime dependency of
+  `fabrica-context`, not dev-only — the one deliberate exception to
+  "depend on shapes, not packages", consistent with `CivitasBridge` being
+  the one component `architecture.md §1a` licenses to integrate tightly.
+  `request_supervision`/`request_state_persistence` are both real and
+  tested against a genuine `civitas.runtime.Runtime`/`DynamicSupervisor`/
+  `InMemoryStateStore` (spawning a real `GenServer`, real name-collision
+  `SpawnError`, real name-bound state isolation) — not against a
+  hand-rolled test double. 21 tests.
+
+  **Two real gaps found and fixed in `contracts/civitas-bridge.md` before
+  writing code against it, not papered over**: (1) `system-design.md`'s
+  component matrix calls every manager a `GenServer` under service mode,
+  but Civitas's real spawn mechanism reconstructs an agent class from a
+  dotted path with only `name` — structurally incompatible with this
+  codebase's constructor-injected managers (`ToolManager(retriever,
+  sandbox_pool, presidium_client)`, etc). Resolved: `request_supervision`
+  stays real and tested, but no manager calls it in v1 — it's available
+  for a genuinely fresh, self-contained `GenServer`-shaped component,
+  which none of Fabrica's own managers are. (2) `request_state_persistence`
+  returns a `ComponentStateHandle` over a whole-blob `get`/`set`, but no
+  `StateStore`-backed `MemoryStore`/`PromptStore` adapter exists to
+  receive it (never designed in `contracts/memory.md`/`contracts/prompts.md`).
+  Resolved the same way: the method itself is real and tested, `build()`
+  just doesn't call it for managers yet — both `MemoryManager`/
+  `PromptManager` use their in-memory default stores in both modes until
+  that adapter is designed as its own unit of work.
 
 Real bugs found and fixed by actually running things, not caught by review —
 worth knowing these exist as a class, not just as history: macOS's long tmp
@@ -93,33 +129,19 @@ corrected to async).
 **Not built yet, deliberately**: the real `fabrica-contrib[mem0|zep|letta|
 cognee|langmem]` adapters (need real external services to test against,
 `memory.md`'s own "wrap, don't build" thesis); `MCPToolNamespace`/
-`FabricaMCPServer` (see item 2 below).
+`FabricaMCPServer` (see item 1 below); a `StateStore`-backed
+`MemoryStore`/`PromptStore` adapter for `CivitasBridge`'s service mode
+(see `CivitasBridge`'s own entry above for why).
 
 ### What's left, in priority order
 
-1. **`CivitasBridge`** — the only remaining object-model contract, and it's
-   genuinely blocked on a real decision, not just "next in line." Its two
-   dependencies are in very different states:
-   - **`civitas` core (`Runtime`/`Supervisor`/`DynamicSupervisor`/
-     `StateStore`)** is real, local, and published on PyPI (`civitas`,
-     confirmed v0.11.1 matches the local checkout) — genuinely buildable and
-     testable right now, no faking needed.
-   - **Presidium has no REST server anywhere** — the real Presidium codebase
-     is `PolicyEngine.evaluate()`, an in-process library call. There is
-     nothing real to point a REST+mTLS client at. Two honest paths: (a) build
-     `PresidiumClient`'s real engineering content (mTLS loading, circuit
-     breaker, fail-closed timeout) tested against a local fake HTTP server —
-     validates everything the client actually *does*, even without
-     Presidium's real business logic behind it; (b) defer this specific piece
-     and state plainly that it has no real endpoint to validate against yet.
-   **This was the open decision point when this compaction was triggered —
-   resume by picking (a) or (b), not by re-deriving the analysis above.**
-2. **`MCPToolNamespace`/`FabricaMCPServer`** — both contracted
+1. **`MCPToolNamespace`/`FabricaMCPServer`** — both contracted
    (`contracts/mcp-integration.md`, `contracts/mcp-server.md`), neither
-   implemented. `MCPToolNamespace`'s eager-connect-in-`__init__` needs an
-   async factory (Python constructors can't be coroutines — flagged in the
-   contract, not resolved).
-3. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
+   implemented, and now the only remaining object-model-adjacent surface
+   with no real code. `MCPToolNamespace`'s eager-connect-in-`__init__`
+   needs an async factory (Python constructors can't be coroutines —
+   flagged in the contract, not resolved).
+2. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
    archiving — `MCPClient` moves in close to its current shape;
    `BubblewrapSandbox` gets replaced by `srt`, not carried over Linux-only.
    **New, actionable finding from fixing that repo's long-broken CI**
@@ -132,10 +154,24 @@ cognee|langmem]` adapters (need real external services to test against,
    duplicates. **When the migration happens, standardize on civitas core's
    current types from the start** — don't carry the inconsistency into
    `civitas-io/fabrica` unresolved.
-4. **`civitas-contrib` PR #2** itself needs checking on and likely merging
+3. **`civitas-contrib` PR #2** itself needs checking on and likely merging
    (same pattern as the earlier TruffleHog fix: check CI, merge if green) —
-   was left open when this compaction was triggered.
-5. A batch of older, explicitly-fine-to-leave-deferred design-layer items
+   still open.
+4. **`PresidiumClient`'s real REST+mTLS implementation** — deliberately
+   deferred (option (b), chosen over building it against a self-written
+   fake HTTP server), since no real Presidium deployment/endpoint exists
+   anywhere to validate it against. `NullPresidiumClient` and the
+   `PresidiumClient` Protocol are real and sufficient for everything built
+   so far; revisit only once a real Presidium endpoint exists, or the fake-
+   server-tested option is deliberately chosen instead.
+5. **A `StateStore`-backed `MemoryStore`/`PromptStore` adapter** for
+   `CivitasBridge`'s service mode — `request_state_persistence` itself is
+   real and tested, but nothing consumes the `ComponentStateHandle` it
+   returns yet (see `CivitasBridge`'s own entry above). Needs its own
+   design pass: a snapshot format and a read-modify-write strategy over
+   `ComponentStateHandle`'s whole-blob `get`/`set` — not designed in
+   `contracts/memory.md`/`contracts/prompts.md` at all.
+6. A batch of older, explicitly-fine-to-leave-deferred design-layer items
    (`tool-execution.md`, `retrieval.md`, `isolation.md`, `skills-gateway.md`
    open questions) and smaller contract-level wrinkles (`WeakIsolationError`'s
    construction-time-only check, `RecencyCompactor`'s `preserve_last_n=6`
@@ -143,10 +179,10 @@ cognee|langmem]` adapters (need real external services to test against,
    log` and the contracts themselves for the full list; none of these block
    anything above.
 
-**Immediate next action**: resume the `CivitasBridge` decision point (item 1) —
-whether to build a real fake-server-tested `PresidiumClient`, or defer it
-honestly and build the `civitas`-facing half of `CivitasBridge` for real now.
-Separately, check and likely merge `civitas-contrib` PR #2 (item 4) — an
+**Immediate next action**: implement `MCPToolNamespace`/`FabricaMCPServer`
+(item 1) — migrating `civitas-contrib/packages/fabrica`'s real `MCPClient`
+code in as the validated implementation, per `mcp-integration.md`.
+Separately, check and likely merge `civitas-contrib` PR #2 (item 3) — an
 unrelated, already-resolved task that just never got closed out.
 ## Read in this order if you're new to this
 
