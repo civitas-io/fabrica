@@ -55,22 +55,29 @@ adding this, not by pretending the drift didn't happen.
   confirmed instances now).
 
 **Not done, genuinely open, in rough priority order:**
-1. **A live PyPI naming collision, unresolved.** `fabrica` is already taken
-   by an unrelated third party. Candidates checked available:
-   `civitas-fabrica`, `fabrica-context`, `pyfabrica`, `fabrica-ctx`,
-   `civitas-context`, `fabrica-agent`, `fabricapy`. This blocks: fixing
-   `civitas-contrib`'s three stale docs (can't write an accurate "here's the
-   real package" pointer without a name) and ever actually publishing. **It
-   does NOT block starting implementation** — code can be written under a
-   placeholder name and renamed later; worth not conflating "naming is
-   undecided" with "we can't start building."
+1. ~~A live PyPI naming collision, unresolved~~ **Resolved: `fabrica-context`.**
+   `fabrica` (the plain name) is taken by an unrelated third party; a
+   thorough check across PyPI, Homebrew formulae, and Homebrew casks
+   confirmed 18 of 23 candidates fully available. Chose `fabrica-context`
+   over the tempting `civitas-fabrica` for a specific reason: `civitas` and
+   `presidium` are both standalone, unprefixed top-level names — this
+   project's whole thesis treats the three pillars as parallel, not
+   hierarchical (*"Civitas keeps agents alive. Presidium keeps them
+   accountable. Fabrica decides what they see."*). `civitas-fabrica` would
+   have made Fabrica look like a Civitas sub-component in every `pip
+   install`, undermining that. `fabrica-context` keeps "Fabrica" as the
+   unchanged project name (zero disruption to everything already written)
+   and the suffix reinforces the identity already stated everywhere
+   ("the context layer"). This unblocks fixing `civitas-contrib`'s three
+   stale docs.
 2. **Zero code exists anywhere in `civitas-io/fabrica`.** Nothing has been
    scaffolded (no `pyproject.toml`, no source layout).
 3. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
    archiving — `MCPClient` moves in close to its current shape;
    `BubblewrapSandbox` gets replaced by `srt` (`mcp-integration.md`), not
-   carried over Linux-only. Blocked on real code-writing starting, and on
-   item 1 for the docs half of this.
+   carried over Linux-only. The docs half of this is now unblocked (naming
+   resolved, item 1); the actual code migration still waits on real
+   code-writing starting in `civitas-io/fabrica`.
 4. **A set of older design-layer open items, explicitly fine to leave
    deferred** (confirmed directly, not an oversight): `tool-execution.md`
    (sandbox API language, credential propagation into the sandbox, huge-result
@@ -448,14 +455,17 @@ All six object-model contracts are done: `Retriever`, `Sandbox`,
 The design/validate/critique/architecture/system-design/contracts arc that
 `README.md`'s reading order describes is now complete end to end.
 
-**A live PyPI naming collision was also found and is unresolved**: the name
-`fabrica` is already taken on PyPI by an unrelated third party (a Codex-transport
+**A live PyPI naming collision was also found** — the name `fabrica` is
+already taken on PyPI by an unrelated third party (a Codex-transport
 scaffold, v0.0.7) — neither this repo NOR `civitas-contrib/packages/fabrica`
 (a real, separate, code-containing package that also claims `name = "fabrica"`
 in its `pyproject.toml`, discovered while investigating this) can ever ship
-under that name. Candidate alternates already checked available:
+under that name. Candidate alternates checked available at the time:
 `civitas-fabrica`, `fabrica-context`, `pyfabrica`, `fabrica-ctx`,
-`civitas-context`, `fabrica-agent`, `fabricapy`. Not decided which, if any.
+`civitas-context`, `fabrica-agent`, `fabricapy`.
+**Resolved later, after a more thorough second pass (18 of 23 candidates
+checked across PyPI + both Homebrew registries): `fabrica-context`** — see
+"Current state" at the top of this document for the full reasoning.
 
 **`civitas-contrib`'s three stale Fabrica documents are still unfixed** —
 `docs/design/fabrica.md`, `packages/fabrica/README.md`,
@@ -485,12 +495,12 @@ migrates.
 
 What's left, roughly in order of how blocking each is:
 
-1. **Resolve the PyPI naming collision** — blocks writing an accurate
-   pointer in the stale `civitas-contrib` docs, and blocks ever actually
-   publishing this package.
-2. **Fix the three stale `civitas-contrib` documents**, once naming is
-   settled — mark superseded, point at `civitas-io/fabrica`, note the MCP
-   code's migration destination specifically (not just "see the new repo").
+1. ~~Resolve the PyPI naming collision~~ **Resolved: `fabrica-context`** —
+   see "Current state" at the top of this document.
+2. **Fix the three stale `civitas-contrib` documents** — now unblocked,
+   mark superseded, point at `civitas-io/fabrica` and its `pip install
+   fabrica-context` name, note the MCP code's migration destination
+   specifically (not just "see the new repo").
 3. **Actually perform the `MCPClient` code migration + the `srt` rewrite**
    into `civitas-io/fabrica`, once real code-writing begins there —
    `BubblewrapSandbox` specifically does NOT migrate as-is (resolved in

@@ -3,6 +3,9 @@
 **The context layer for Python agents.**
 
 Part of the [Civitas](https://github.com/civitas-io/python-civitas) platform.
+Distributed as `fabrica-context` (`pip install fabrica-context`) — `fabrica`
+itself is already taken on PyPI by an unrelated project; the project and repo
+keep the "Fabrica" name, only the package name differs.
 
 > **Resuming after a break or a context compaction? Read [`HANDOFF.md`](HANDOFF.md)
 > first** — it leads with the current state (what's done, what's genuinely
@@ -13,8 +16,9 @@ Part of the [Civitas](https://github.com/civitas-io/python-civitas) platform.
 > [`specs/archive/spikes/`](specs/archive/spikes/) against real hardware and
 > real API calls, not simulated). **Zero code exists yet, anywhere, by design**
 > — see [`docs/critique.md`](docs/critique.md) for what held up under evidence
-> and what got corrected. Code lands after a naming decision (a live PyPI
-> collision, unresolved) and `plan-work` turn this into an implementation plan.
+> and what got corrected. **Distribution name resolved: `pip install
+> fabrica-context`** (`fabrica` itself is taken on PyPI by an unrelated
+> project). Code lands after `plan-work` turns this into an implementation plan.
 
 ---
 
@@ -168,7 +172,7 @@ current-state section for what's actually true today.
 | **P3 — Skills** | `SKILL.md`-conformant skills gateway with progressive disclosure. | Contracted (`SkillManager` in `managers.md`); exact frontmatter field list still open |
 | **P4 — Memory & Prompts** | `MemoryStore` protocol + adapters; versioned `PromptStore`. | Contracted (`contracts/memory.md`, `contracts/prompts.md`); reframed mid-project into three memory facets, not just one |
 | **P5 — MCP integration** *(not in the original plan)* | Fabrica as both an MCP client and server | Both directions designed and contracted |
-| **P6 — Implementation** *(not started)* | Actual `fabrica/` Python package | Blocked on a naming decision (PyPI collision), then `plan-work` |
+| **P6 — Implementation** *(not started)* | Actual `fabrica/` Python package, `pip install fabrica-context` | Naming resolved; blocked on `plan-work` turning contracts into tasks |
 
 ---
 
