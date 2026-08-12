@@ -200,7 +200,30 @@ adding this, not by pretending the drift didn't happen.
    archiving — `MCPClient` moves in close to its current shape;
    `BubblewrapSandbox` gets replaced by `srt` (`mcp-integration.md`), not
    carried over Linux-only. Still waiting on real code-writing to reach
-   the MCP layer specifically (in progress now, starting from `Retriever`).
+   the MCP layer specifically.
+
+   **New wrinkle found while fixing that repo's long-broken CI
+   ([civitas-contrib#2](https://github.com/civitas-io/civitas-contrib/pull/2),
+   [civitas-contrib#3](https://github.com/civitas-io/civitas-contrib/issues/3)):**
+   `civitas` core has grown its own parallel `civitas.mcp.types`/
+   `civitas.sandbox.config` since `packages/fabrica` was originally written,
+   and that package's code is now inconsistently split between civitas's
+   versions and its own separate, still-present duplicates --
+   `mcp/client.py` imports `MCPServerConfig` from `civitas.mcp.types`,
+   `mcp/tool.py` imports `MCPToolSchema` from `fabrica.mcp.types` (this
+   package's own), in the same small package. A real `mypy` error
+   (`BubblewrapSandbox` expects `fabrica.sandbox.config.SandboxConfig`, gets
+   handed `civitas.sandbox.config.SandboxConfig` instead) was silently
+   hidden the whole time, since `ruff lint` failing first meant `mypy`
+   never actually ran in CI on any prior commit.
+
+   **Actionable for the migration**: when the real code migration into
+   `civitas-io/fabrica` happens, standardize on `civitas` core's current
+   types from the start (`civitas.mcp.types`, `civitas.sandbox.config`, if
+   they're still the right shape by then) rather than carrying forward
+   `fabrica.mcp.types`/`fabrica.sandbox.config`'s own duplicate
+   definitions -- this inconsistency should be resolved BY the migration,
+   not carried into the new repo unresolved.
 4. **A set of older design-layer open items, explicitly fine to leave
    deferred** (confirmed directly, not an oversight): `tool-execution.md`
    (sandbox API language, credential propagation into the sandbox, huge-result
