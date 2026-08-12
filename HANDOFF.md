@@ -143,8 +143,27 @@ adding this, not by pretending the drift didn't happen.
    discipline `SPIKE-skill-progressive-disclosure.md` used. Clean
    `ruff`/`mypy --strict`, stable across repeated runs.
 
-   Build order from here: `memory.md`/`prompts.md` next, per the
-   dependency-order plan.
+   **`memory.md` also now built and tested** -- `src/fabrica/memory/`: all
+   three facets. `InMemoryWorkingMemoryStore` (real, scoped by the full
+   `Scope` tuple, quota-enforced). `RecencyCompactor`/`NullCompactor`
+   (the actual preserve-last-N-verbatim-plus-summarize algorithm,
+   including its two named edge cases: preserve_last_n as a ceiling not a
+   guarantee, and the pathological single-message-exceeds-budget case --
+   both implemented as literal, mechanical extensions of the stated rule,
+   not papered over with invented special-casing). `InMemoryMemoryStore`
+   (long-term facet's zero-infra default, reusing the same `rank-bm25`
+   approach as `KeywordBackend` -- `MemoryItem.score` populated on search
+   results, deliberately unlike `RankedMatch`, per the contract's own
+   stated reasoning). `MemoryManager` facade. 23 new tests (68 total),
+   each proving a specific algorithmic behavior, not just "it returns
+   something" -- including both named edge cases exercised directly.
+   Clean `ruff`/`mypy --strict`, stable across repeated runs. Real
+   external adapters (Mem0/Zep/Letta/Cognee/LangMem) are NOT built here --
+   `memory.md`'s own "wrap, don't build" thesis means each needs a real
+   external service to wrap and test against, deferred deliberately, not
+   an oversight.
+
+   Build order from here: `prompts.md` next, per the dependency-order plan.
 3. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
    archiving — `MCPClient` moves in close to its current shape;
    `BubblewrapSandbox` gets replaced by `srt` (`mcp-integration.md`), not
