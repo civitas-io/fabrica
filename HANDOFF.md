@@ -18,237 +18,136 @@ sandbox, and only the final result crosses back into the model's context —
 validated by spike to be both ~79% cheaper *and* more correct than traditional
 direct tool-calling (`SPIKE-code-mode-execution.md`).
 
-Repo: `civitas-io/fabrica` (public). Currently pure design/docs — **no code
-exists yet**, by deliberate sequencing (design → validate → critique →
-architecture → system design → contracts → *then* implementation).
+Repo: `civitas-io/fabrica` (public). Design/validate/critique/architecture/
+system-design/contracts is complete, and **implementation is now underway**:
+five of six object-model contracts are real, tested code
+(`src/fabrica/`) — see "Current state" immediately below for exactly what
+exists.
 
 ---
 
 ## Current state — read this section, not the chronological log below, for "where are we"
 
-**This section is authoritative. Everything after "The full arc of work"
-below is the detailed reasoning trail for HOW each thing below became true —
-read it for the *why*, not to figure out the *what*.** This section itself
-exists because the log below grew two different, sequentially-contradicting
-"here's the current state" sections over the course of one long session —
-exactly the kind of drift a resume-point doc should never have. Fixed by
-adding this, not by pretending the drift didn't happen.
+**This section is authoritative — rewritten in full for this compaction, not
+appended to, since the previous version had drifted: the opening paragraph
+above still said "no code exists yet" while this section's own nested detail
+had grown to 225 lines describing five real, tested components.** Detailed
+narrative for each component (bugs found, exact reasoning) lives in `git log`
+commit messages, not repeated here — this section states facts, not stories.
 
-**Done:**
-- Full discovery→define→design→validate→critique→architecture→system-design arc.
-- **Eight contracts**, implementation-ready: `Retriever`, `Sandbox`,
-  `managers.md` (`PresidiumClient`/`execute_in_sandbox`/`ToolManager`/`SkillManager`),
-  `memory.md`, `prompts.md`, `civitas-bridge.md`, `mcp-integration.md`, `mcp-server.md`.
-- **Ten spikes**, all real hardware/API evidence, none simulated.
-- Both MCP directions designed and contracted (Fabrica as client, Fabrica as server).
-- `CivitasRuntime` reconciled against `python-civitas`'s actual source, not left provisional.
-- The memory reframe (three facets: working memory, compaction, long-term) and
-  its "related work" grounding (Generative Agents, MemGPT, MemOS) explaining a
-  deliberate divergence from unified scoring.
-- Four platform-wide rules confirmed multiple times each, safe to apply
-  without re-deriving: **library-first/low-coupling** (`architecture.md §1a`);
-  **requests, never reaches in** (toward Civitas AND toward Presidium);
-  **external dependencies are always fully-constructed objects, never raw
-  config** (`Summarizer`, `PresidiumClient`); **fail closed by default,
-  explicit greppable opt-in to bypass** (`allow_ungoverned`,
-  `allow_unsandboxed`, `allow_weak_isolation_for_external_callers` — four
-  confirmed instances now).
+### Design phase: complete
 
-**Not done, genuinely open, in rough priority order:**
-1. ~~A live PyPI naming collision, unresolved~~ **Resolved: `fabrica-context`.**
-   `fabrica` (the plain name) is taken by an unrelated third party; a
-   thorough check across PyPI, Homebrew formulae, and Homebrew casks
-   confirmed 18 of 23 candidates fully available. Chose `fabrica-context`
-   over the tempting `civitas-fabrica` for a specific reason: `civitas` and
-   `presidium` are both standalone, unprefixed top-level names — this
-   project's whole thesis treats the three pillars as parallel, not
-   hierarchical (*"Civitas keeps agents alive. Presidium keeps them
-   accountable. Fabrica decides what they see."*). `civitas-fabrica` would
-   have made Fabrica look like a Civitas sub-component in every `pip
-   install`, undermining that. `fabrica-context` keeps "Fabrica" as the
-   unchanged project name (zero disruption to everything already written)
-   and the suffix reinforces the identity already stated everywhere
-   ("the context layer"). This unblocks fixing `civitas-contrib`'s three
-   stale docs.
-2. ~~Zero code exists anywhere in `civitas-io/fabrica`~~ **First real code
-   landed: `Retriever` fully implemented and tested.** `pyproject.toml`
-   (hatchling, not maturin -- resolves `retrieval.md`'s open item 1 in
-   favor of NOT deciding Rust tooling before there's a performance number
-   to justify it; `KeywordBackend` is pure-Python BM25 via `rank-bm25` for
-   now, same "ship the default, revisit if forced" logic used throughout
-   design), `src/fabrica/retriever/` (types, errors, `RetrieverBackend`
-   protocol, `KeywordBackend`, `Retriever` itself), and 16 tests proving
-   the contract's specific stated behaviors (idempotent register, no-op
-   deregister on unknown, optional `kind` search, rank-not-score ordering,
-   automatic fallback on primary failure) -- all passing, plus clean
-   `ruff`/`mypy --strict`. One precision bug caught and fixed while
-   implementing, not left in: duplicate-detection must compare only
-   `kind`/`name`/`description` (the contract's stated identity-bearing
-   fields), not full dataclass equality -- comparing everything would have
-   incorrectly rejected a legitimate `eager`-flag update.
+Full discovery→define→design→validate→critique→architecture→system-design→contracts
+arc. Ten spikes, all real hardware/API evidence. Eight contracts written
+(`Retriever`, `Sandbox`, `managers.md`, `memory.md`, `prompts.md`,
+`civitas-bridge.md`, `mcp-integration.md`, `mcp-server.md`). Four platform-wide
+rules confirmed multiple times, safe to apply without re-deriving:
+**library-first/low-coupling** (`architecture.md §1a`); **requests, never
+reaches in** (toward Civitas and Presidium alike); **external dependencies are
+always fully-constructed objects, never raw config**; **fail closed by
+default, explicit greppable opt-in to bypass** (four confirmed instances:
+`allow_ungoverned`, `allow_unsandboxed`, `allow_weak_isolation_for_external_callers`,
+plus the general rule itself).
 
-   **`Sandbox` also now built and tested** -- `src/fabrica/sandbox/`:
-   `SandboxHandle`/`RunResult`/`ToolCallCallback` types, the `Sandbox`
-   protocol, `SubprocessSandbox` (a real, working Tier 0 backend, not a
-   stub), `SandboxPool` (warm-pool + bounded-overflow + the corrected
-   always-terminate-never-reuse `release()` semantics). 33 tests total
-   passing (23 new), including one that proves the actual ZMQ `ipc://`
-   tool-call bridge from `system-design.md §3`/`SPIKE-zmq-sandbox-channel-
-   feasibility.md` works end to end -- sandboxed code calls
-   `namespace.call()`, crosses a real subprocess boundary via a real ZMQ
-   round trip, gets a real result back. Not mocked.
+### Implementation phase: five of six object-model contracts are real code
 
-   Two real bugs found and fixed by actually running this, not caught by
-   review: (1) `tempfile.mkdtemp()` on macOS produces paths long enough to
-   exceed the 103-character Unix domain socket limit once combined with a
-   UUID -- fixed by using `/tmp` directly with a short id; (2) this
-   package's own `fabrica/sandbox/types.py` shadowed Python's stdlib
-   `types` module whenever the guest shim ran as a directly-invoked
-   script (which puts its own directory on `sys.path[0]`), breaking
-   `enum`/`functools`/`dataclasses` transitively inside the subprocess --
-   fixed by invoking the shim as `python -m fabrica.sandbox._guest_shim`
-   instead of by file path, a more robust fix than renaming around the
-   symptom. Confirmed stable across three repeated full-suite runs, not
-   just a single lucky pass, given the real subprocess/ZMQ concurrency
-   involved. Clean `ruff`/`mypy --strict`.
+`src/fabrica/` — all built to their exact contracts, all with real tests (not
+mocked stubs standing in for untested logic), 99 tests total, clean
+`ruff`/`mypy --strict`, stable across repeated runs:
 
-   **`managers.md` also now built and tested** -- `src/fabrica/scope.py`
-   (`Scope`), `src/fabrica/presidium.py` (`GrantResult`, the
-   `PresidiumClient` Protocol -- the real REST+mTLS implementation is
-   deferred to `CivitasBridge`'s own build phase, since it needs an actual
-   Presidium deployment to test against), `src/fabrica/tools/`
-   (`ToolSchema`, `ToolResult`, `ToolNamespace`, `DictToolNamespace` --
-   a real, working namespace backed by plain Python callables), and
-   `src/fabrica/managers/` (`execute_in_sandbox`, `ToolManager`,
-   `SkillManager`). 45 tests total (12 new), all passing, including one
-   that proves the FULL composed stack end to end: generated code inside
-   a real `SubprocessSandbox` calls `namespace.call()`, crosses the ZMQ
-   bridge, reaches an actual registered Python function, and the result
-   comes back correctly -- nothing mocked anywhere in that path.
+- **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
+  BM25 via `rank-bm25`, deliberately not Rust/PyO3 yet — no performance
+  number justifies that tooling cost). 16 tests.
+- **`Sandbox`/`SandboxPool`** (`src/fabrica/sandbox/`) — `SubprocessSandbox`
+  (Tier 0), a REAL subprocess + ZMQ `ipc://` tool-call bridge, not a stub.
+  17 tests, including one real end-to-end tool-call round trip through an
+  actual subprocess boundary.
+- **`managers.md`** (`src/fabrica/managers/`, `src/fabrica/tools/`,
+  `src/fabrica/presidium.py`, `src/fabrica/scope.py`) — `execute_in_sandbox`,
+  `ToolManager`, `SkillManager`. `SkillManager`'s `SKILL.md` parser validated
+  against the real 81-skill `bigpowers` catalog. `PresidiumClient` here is
+  the Protocol only — the real REST+mTLS implementation is deliberately
+  deferred (see "Immediate next action" below for why). 12 tests.
+- **`MemoryManager`** (`src/fabrica/memory/`) — all three facets:
+  `InMemoryWorkingMemoryStore`, `RecencyCompactor`/`NullCompactor` (both named
+  edge cases from the contract exercised directly, not glossed over),
+  `InMemoryMemoryStore`. 23 tests.
+- **`PromptManager`** (`src/fabrica/prompts/`) — `InMemoryPromptStore` with
+  real atomic version assignment under concurrency, `PromptManager`'s cache,
+  `load()`'s `PROMPT.md` parser. 24 tests.
 
-   Two real contract gaps found and fixed BEFORE writing code against
-   them, not patched around afterward: `ToolNamespace` had no way to
-   enumerate a namespace's tools (`stubs()` returns a formatted string,
-   not structured data) -- added `list_schemas()`. And
-   `ToolManager.register()`/`SkillManager.load()` were declared sync in
-   the contract, but both need to await `Retriever.register()`, which is
-   `async def` -- corrected both to async, which also resolved the
-   contract's own open item 3 (previously left open citing "parity with
-   ToolManager.register()" -- now that register() is async, the same
-   parity argument requires load() to be async too).
+Real bugs found and fixed by actually running things, not caught by review —
+worth knowing these exist as a class, not just as history: macOS's long tmp
+paths breaking `ipc://` socket length limits; a package submodule named
+`types.py` shadowing Python's own stdlib `types` when run as a script;
+`pytest` needing unique test-module basenames across the whole suite unless
+test directories are proper packages (fixed by adding `__init__.py`
+everywhere under `tests/`).
 
-   `SkillManager`'s `SKILL.md` parser was validated against the REAL
-   `bigpowers` skill catalog (81 skills), not just synthetic test
-   fixtures -- all 81 parsed successfully, matching the same real-corpus
-   discipline `SPIKE-skill-progressive-disclosure.md` used. Clean
-   `ruff`/`mypy --strict`, stable across repeated runs.
+Two real contract gaps found and fixed in the docs *before* writing code
+against them: `ToolNamespace` had no enumeration method (added
+`list_schemas()`); `ToolManager.register()`/`SkillManager.load()` were
+declared sync but need to await `Retriever.register()`'s `async def` (both
+corrected to async).
 
-   **`memory.md` also now built and tested** -- `src/fabrica/memory/`: all
-   three facets. `InMemoryWorkingMemoryStore` (real, scoped by the full
-   `Scope` tuple, quota-enforced). `RecencyCompactor`/`NullCompactor`
-   (the actual preserve-last-N-verbatim-plus-summarize algorithm,
-   including its two named edge cases: preserve_last_n as a ceiling not a
-   guarantee, and the pathological single-message-exceeds-budget case --
-   both implemented as literal, mechanical extensions of the stated rule,
-   not papered over with invented special-casing). `InMemoryMemoryStore`
-   (long-term facet's zero-infra default, reusing the same `rank-bm25`
-   approach as `KeywordBackend` -- `MemoryItem.score` populated on search
-   results, deliberately unlike `RankedMatch`, per the contract's own
-   stated reasoning). `MemoryManager` facade. 23 new tests (68 total),
-   each proving a specific algorithmic behavior, not just "it returns
-   something" -- including both named edge cases exercised directly.
-   Clean `ruff`/`mypy --strict`, stable across repeated runs. Real
-   external adapters (Mem0/Zep/Letta/Cognee/LangMem) are NOT built here --
-   `memory.md`'s own "wrap, don't build" thesis means each needs a real
-   external service to wrap and test against, deferred deliberately, not
-   an oversight.
+**Not built yet, deliberately**: the real `fabrica-contrib[mem0|zep|letta|
+cognee|langmem]` adapters (need real external services to test against,
+`memory.md`'s own "wrap, don't build" thesis); `MCPToolNamespace`/
+`FabricaMCPServer` (see item 2 below).
 
-   **`prompts.md` also now built and tested** -- `src/fabrica/prompts/`:
-   `PromptTemplate`, `InMemoryPromptStore` (real, atomic version
-   assignment under concurrency via `asyncio.Lock` -- open item 2,
-   resolved for the default backend and tested directly with 20
-   concurrent `put()` calls landing on distinct, gap-free version
-   numbers), `PromptManager` (the read cache, `load()`'s `PROMPT.md`
-   parser). Two contract open items resolved with explicit, documented
-   decisions rather than left unmade: open item 1 (no eviction policy
-   specified) resolved as unbounded in-process caching, since prompt
-   catalogs are expected to be small and curated, unlike tool/skill
-   catalogs or memory; open item 4 (`cache_boundary` validation)
-   resolved as never-validated, consistent with the contract's own
-   never-parses-content stance.
+### What's left, in priority order
 
-   A real structural bug surfaced and fixed while adding this: `pytest`
-   requires unique test-module basenames across the whole suite unless
-   test directories are proper packages -- `tests/memory/test_manager.py`
-   and `tests/prompts/test_manager.py` (same generic name, different
-   components) collided the moment both existed, breaking full-suite
-   collection even though each file ran fine alone. Fixed at the root by
-   adding `__init__.py` to every `tests/` subdirectory, not by renaming
-   files to avoid the symptom.
-
-   31 new tests (99 total), all passing, including `DictToolNamespace`
-   now tested directly rather than only exercised indirectly through
-   `ToolManager`. Clean `ruff`/`mypy --strict`, stable across repeated
-   runs.
-
-   All five non-MCP object-model contracts are now implemented:
-   `Retriever`, `Sandbox`, `managers.md`, `memory.md`, `prompts.md`.
-   Remaining: `CivitasBridge` (needs the real `PresidiumClient`
-   REST+mTLS implementation and `CivitasRuntime` reconciliation to mean
-   something) and the two MCP-direction contracts.
+1. **`CivitasBridge`** — the only remaining object-model contract, and it's
+   genuinely blocked on a real decision, not just "next in line." Its two
+   dependencies are in very different states:
+   - **`civitas` core (`Runtime`/`Supervisor`/`DynamicSupervisor`/
+     `StateStore`)** is real, local, and published on PyPI (`civitas`,
+     confirmed v0.11.1 matches the local checkout) — genuinely buildable and
+     testable right now, no faking needed.
+   - **Presidium has no REST server anywhere** — the real Presidium codebase
+     is `PolicyEngine.evaluate()`, an in-process library call. There is
+     nothing real to point a REST+mTLS client at. Two honest paths: (a) build
+     `PresidiumClient`'s real engineering content (mTLS loading, circuit
+     breaker, fail-closed timeout) tested against a local fake HTTP server —
+     validates everything the client actually *does*, even without
+     Presidium's real business logic behind it; (b) defer this specific piece
+     and state plainly that it has no real endpoint to validate against yet.
+   **This was the open decision point when this compaction was triggered —
+   resume by picking (a) or (b), not by re-deriving the analysis above.**
+2. **`MCPToolNamespace`/`FabricaMCPServer`** — both contracted
+   (`contracts/mcp-integration.md`, `contracts/mcp-server.md`), neither
+   implemented. `MCPToolNamespace`'s eager-connect-in-`__init__` needs an
+   async factory (Python constructors can't be coroutines — flagged in the
+   contract, not resolved).
 3. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
    archiving — `MCPClient` moves in close to its current shape;
-   `BubblewrapSandbox` gets replaced by `srt` (`mcp-integration.md`), not
-   carried over Linux-only. Still waiting on real code-writing to reach
-   the MCP layer specifically.
+   `BubblewrapSandbox` gets replaced by `srt`, not carried over Linux-only.
+   **New, actionable finding from fixing that repo's long-broken CI**
+   ([civitas-contrib#2](https://github.com/civitas-io/civitas-contrib/pull/2)
+   — open, not yet merged;
+   [civitas-contrib#3](https://github.com/civitas-io/civitas-contrib/issues/3)
+   — filed): `civitas` core has grown its own parallel `civitas.mcp.types`/
+   `civitas.sandbox.config` since `packages/fabrica` was written, and that
+   package is now inconsistently split between civitas's versions and its own
+   duplicates. **When the migration happens, standardize on civitas core's
+   current types from the start** — don't carry the inconsistency into
+   `civitas-io/fabrica` unresolved.
+4. **`civitas-contrib` PR #2** itself needs checking on and likely merging
+   (same pattern as the earlier TruffleHog fix: check CI, merge if green) —
+   was left open when this compaction was triggered.
+5. A batch of older, explicitly-fine-to-leave-deferred design-layer items
+   (`tool-execution.md`, `retrieval.md`, `isolation.md`, `skills-gateway.md`
+   open questions) and smaller contract-level wrinkles (`WeakIsolationError`'s
+   construction-time-only check, `RecencyCompactor`'s `preserve_last_n=6`
+   still unvalidated, multi-tenant `FabricaMCPServer` untested) — see `git
+   log` and the contracts themselves for the full list; none of these block
+   anything above.
 
-   **New wrinkle found while fixing that repo's long-broken CI
-   ([civitas-contrib#2](https://github.com/civitas-io/civitas-contrib/pull/2),
-   [civitas-contrib#3](https://github.com/civitas-io/civitas-contrib/issues/3)):**
-   `civitas` core has grown its own parallel `civitas.mcp.types`/
-   `civitas.sandbox.config` since `packages/fabrica` was originally written,
-   and that package's code is now inconsistently split between civitas's
-   versions and its own separate, still-present duplicates --
-   `mcp/client.py` imports `MCPServerConfig` from `civitas.mcp.types`,
-   `mcp/tool.py` imports `MCPToolSchema` from `fabrica.mcp.types` (this
-   package's own), in the same small package. A real `mypy` error
-   (`BubblewrapSandbox` expects `fabrica.sandbox.config.SandboxConfig`, gets
-   handed `civitas.sandbox.config.SandboxConfig` instead) was silently
-   hidden the whole time, since `ruff lint` failing first meant `mypy`
-   never actually ran in CI on any prior commit.
-
-   **Actionable for the migration**: when the real code migration into
-   `civitas-io/fabrica` happens, standardize on `civitas` core's current
-   types from the start (`civitas.mcp.types`, `civitas.sandbox.config`, if
-   they're still the right shape by then) rather than carrying forward
-   `fabrica.mcp.types`/`fabrica.sandbox.config`'s own duplicate
-   definitions -- this inconsistency should be resolved BY the migration,
-   not carried into the new repo unresolved.
-4. **A set of older design-layer open items, explicitly fine to leave
-   deferred** (confirmed directly, not an oversight): `tool-execution.md`
-   (sandbox API language, credential propagation into the sandbox, huge-result
-   policy, determinism/replay), `retrieval.md` (Rust/PyO3 packaging shape,
-   eager-per-deployment-vs-per-item, matching quality at a combined
-   tools+skills index), `isolation.md` (self-host-vs-managed Firecracker for
-   v1, GPU-in-sandbox, snapshot image supply-chain signing), `skills-gateway.md`
-   (exact `SKILL.md` fields to index, reconciling with Civitas's own
-   skill/prompt roadmap).
-5. **Smaller contract-level open items**, each named in its own contract, not
-   blocking: `MCPToolNamespace`'s eager-connect-in-`__init__` needs an async
-   factory (Python constructors can't be coroutines — a real implementation
-   wrinkle the design sketch glossed over); `WeakIsolationError` only checks
-   once at construction, no live re-check; `RecencyCompactor`'s core
-   mechanism is now spike-validated but `preserve_last_n=6` itself isn't;
-   multi-tenant `FabricaMCPServer` deployments aren't stress-tested.
-
-**Immediate next action**: resolve the naming decision (item 1), OR start
-scaffolding the actual `fabrica/` package under a placeholder name if naming
-is taking a while — these are not mutually blocking, and treating them as if
-they were would stall real progress over a decision that doesn't need to
-block it.
-
----
-
+**Immediate next action**: resume the `CivitasBridge` decision point (item 1) —
+whether to build a real fake-server-tested `PresidiumClient`, or defer it
+honestly and build the `civitas`-facing half of `CivitasBridge` for real now.
+Separately, check and likely merge `civitas-contrib` PR #2 (item 4) — an
+unrelated, already-resolved task that just never got closed out.
 ## Read in this order if you're new to this
 
 1. `README.md` — entry point, links to everything.
