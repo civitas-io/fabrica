@@ -70,14 +70,28 @@ adding this, not by pretending the drift didn't happen.
    and the suffix reinforces the identity already stated everywhere
    ("the context layer"). This unblocks fixing `civitas-contrib`'s three
    stale docs.
-2. **Zero code exists anywhere in `civitas-io/fabrica`.** Nothing has been
-   scaffolded (no `pyproject.toml`, no source layout).
+2. ~~Zero code exists anywhere in `civitas-io/fabrica`~~ **First real code
+   landed: `Retriever` fully implemented and tested.** `pyproject.toml`
+   (hatchling, not maturin -- resolves `retrieval.md`'s open item 1 in
+   favor of NOT deciding Rust tooling before there's a performance number
+   to justify it; `KeywordBackend` is pure-Python BM25 via `rank-bm25` for
+   now, same "ship the default, revisit if forced" logic used throughout
+   design), `src/fabrica/retriever/` (types, errors, `RetrieverBackend`
+   protocol, `KeywordBackend`, `Retriever` itself), and 16 tests proving
+   the contract's specific stated behaviors (idempotent register, no-op
+   deregister on unknown, optional `kind` search, rank-not-score ordering,
+   automatic fallback on primary failure) -- all passing, plus clean
+   `ruff`/`mypy --strict`. One precision bug caught and fixed while
+   implementing, not left in: duplicate-detection must compare only
+   `kind`/`name`/`description` (the contract's stated identity-bearing
+   fields), not full dataclass equality -- comparing everything would have
+   incorrectly rejected a legitimate `eager`-flag update. Build order from
+   here: `Sandbox` next, per the dependency-order plan.
 3. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
    archiving — `MCPClient` moves in close to its current shape;
    `BubblewrapSandbox` gets replaced by `srt` (`mcp-integration.md`), not
-   carried over Linux-only. The docs half of this is now unblocked (naming
-   resolved, item 1); the actual code migration still waits on real
-   code-writing starting in `civitas-io/fabrica`.
+   carried over Linux-only. Still waiting on real code-writing to reach
+   the MCP layer specifically (in progress now, starting from `Retriever`).
 4. **A set of older design-layer open items, explicitly fine to leave
    deferred** (confirmed directly, not an oversight): `tool-execution.md`
    (sandbox API language, credential propagation into the sandbox, huge-result
