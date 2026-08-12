@@ -95,7 +95,31 @@ see that doc for `Indexable`/`RankedMatch`.
    engine and one `find(query, kind)` surface across tools and skills, validated on
    real data in [SPIKE-skill-progressive-disclosure.md](../specs/archive/spikes/SPIKE-skill-progressive-disclosure.md)
    (4/4 exact picks on genuinely ambiguous real skills).
-2. Exact `SKILL.md` frontmatter fields to index — track the published standard.
+2. ~~Exact `SKILL.md` frontmatter fields to index — track the published
+   standard.~~ **Resolved: only the two required spec fields (`name`,
+   `description`) for v1, explicitly.** The implementation already does
+   exactly this — `SkillManager.load()` reads four frontmatter keys
+   total: `name`/`description` (required, spec-conformant) plus two
+   Fabrica-specific extensions (`script`, `eager`). Every optional spec
+   field (`license`, `allowed-tools`, `version`, `author`,
+   `compatibility`) and any vendor extension (bigpowers' own `model`
+   field) is parsed by `yaml.safe_load()` but never read out — not
+   rejected, just silently ignored, matching this doc's own
+   real-corpus-driven permissiveness recommendation above.
+
+   The deciding fact for NOT indexing/surfacing any optional field yet:
+   the real-corpus check above found **0/81 bigpowers skills use any
+   optional spec field at all** — zero current evidence anything needs
+   this. There is also nowhere in the architecture today that would even
+   consume it: `Indexable` (what `Retriever`/`find()` actually returns)
+   only carries `name`/`description`/`eager`, and there is no
+   `SkillManager.open(name)`-equivalent to `ToolNamespace.open()` that
+   would expose richer per-skill metadata. Building storage/indexing for
+   fields nothing currently uses would be the same premature-generality
+   risk already named and avoided for the sandbox-language question
+   (`tool-execution.md` open item 1) and `eager`'s per-deployment
+   override (`retrieval.md` open item 2) — revisit only if a real
+   consumer for one of these fields actually surfaces.
 3. Trust model for third-party skills (signing, provenance) — **deferred, not
    dropped**, same posture as Elena's log-tamper deferral: get discovery + loading
    working end-to-end first, add provenance once there's a real ecosystem to protect.

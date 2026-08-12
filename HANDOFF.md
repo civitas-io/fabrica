@@ -297,6 +297,21 @@ cognee|langmem]` adapters (need real external services to test against,
    building a language-dispatch abstraction now, since there's no second
    backend to put behind it and the real future demand is genuinely
    unknown. No code change; `docs/tool-execution.md` updated.
+
+   **Third one resolved, also documentation-only**: `skills-gateway.md`
+   open item 2 (exact `SKILL.md` frontmatter fields to index).
+   `SkillManager.load()` already reads only `name`/`description`
+   (required, spec-conformant) plus two Fabrica extensions
+   (`script`/`eager`) -- every optional spec field (`license`,
+   `allowed-tools`, `version`, `author`, `compatibility`) and vendor
+   extension is parsed but never read out, not rejected. Resolved as
+   deliberate: the doc's own real-corpus check found 0/81 bigpowers
+   skills use any optional field, and there's no consumer anywhere in
+   the architecture for one yet (no `SkillManager.open(name)`-equivalent
+   to `ToolNamespace.open()`). No code change; `docs/skills-gateway.md`
+   updated. All three quick decisions in this batch are now done --
+   remaining items need either a real spike or a bigger product call,
+   not a quick resolution.
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without
