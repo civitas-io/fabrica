@@ -367,12 +367,15 @@ assumed to already work.
 4. Whether `overrides`' per-component granularity (v2) needs its own
    validation — e.g., rejecting an override key that doesn't name a real
    component — is unspecified, since v1 doesn't exercise this path at all.
-5. **New**: designing a `StateStore`-backed `MemoryStore`/`PromptStore`
-   adapter (snapshot format, read-modify-write strategy over
-   `ComponentStateHandle`'s whole-blob `get`/`set`) and wiring it into
-   `build()`'s service-mode path — see the second "Correction found
-   during implementation" section above. Not designed yet; `build()`
-   uses in-memory default stores in both modes until this exists.
+5. ~~designing a `StateStore`-backed `MemoryStore`/`PromptStore` adapter~~
+   **Resolved**: `PersistedMemoryStore`/`PersistedPromptStore`
+   (`contracts/memory.md`/`contracts/prompts.md`'s own "Real addition"
+   sections), write-through on every mutation, loaded once at
+   construction. `CivitasBridge.build()` now wires these in for service
+   mode (via `request_state_persistence`), keeping the original in-memory
+   defaults for library mode unchanged. A service-mode `Fabrica` rebuilt
+   over the same `civitas_state_store` now genuinely recovers prior
+   memory/prompt state -- tested directly, not just asserted.
 6. **New**: `warm_size`/`max_concurrent` for the default `SandboxPool`
    `build()` constructs have no contract-specified default values
    (`contracts/sandbox.md` leaves them caller-supplied with no default).

@@ -289,6 +289,52 @@ harness holds one object, not three.
 - **`Message` ↔ Civitas's runtime-loop representation conversion** — flagged
   above as unreconciled, not assumed away.
 
+## Real addition, built after `contracts/civitas-bridge.md`'s own open item: `PersistedMemoryStore`
+
+`civitas-bridge.md`'s "Correction found during implementation" section
+flagged a real gap: `CivitasBridge.request_state_persistence` returns a
+`ComponentStateHandle`, but no `MemoryStore` implementation existed to
+receive it. `PersistedMemoryStore` (`fabrica/memory/store.py`) closes this.
+
+**Shape, decided through implementation**: a `BlobStore` Protocol (`get()`/
+`set()` over a whole `dict[str, Any]`) is defined LOCALLY in
+`fabrica.memory.store` -- not an import of
+`fabrica.civitas_bridge.state.ComponentStateHandle` -- for two reasons, one
+architectural and one structural. Architecturally: `fabrica.memory`
+depending on `fabrica.civitas_bridge` would invert the dependency direction
+`architecture.md §1a` establishes (only `CivitasBridge` integrates tightly;
+every other component stays independently usable). Structurally: it would
+also be a genuine circular import, since `fabrica.civitas_bridge` already
+imports `fabrica.memory` for `MemoryManager`. `ComponentStateHandle`
+already satisfies `BlobStore`'s shape today -- `CivitasBridge.build()`
+passes one in without `fabrica.memory` ever needing to know that type
+exists, the same "depend on shapes, not packages" pattern used for
+`PresidiumClient`/`Summarizer`/`CivitasRuntime`.
+
+**Write-through, not lazy, and load-once, not per-read**: `BlobStore` has
+no partial-update operation -- every `write()`/`forget()` persists the
+ENTIRE current snapshot immediately (`_memory_snapshot`/
+`_restore_memory_snapshot`), and the full state is loaded exactly once, at
+construction (`PersistedMemoryStore.create()`, an async factory --
+`__init__` itself stays synchronous, same pattern as
+`MCPToolNamespace.create()`). This is correct, not just simple: a
+`ComponentStateHandle` has exactly one owning writer per `component_name`
+by construction (`CivitasBridge` binds one per manager), never a fanned-out
+reader that could miss another process's concurrent update.
+
+**Reuses `InMemoryMemoryStore` internally via composition**, not
+duplicated matching/scoring logic -- `PersistedMemoryStore` delegates
+`write()`/`search()`/`get()`/`forget()` to a real `InMemoryMemoryStore`
+instance, intercepting only the mutating calls to persist afterward. The
+two implementations' actual behavior can never silently drift apart.
+
+Tested against both a minimal `BlobStore` test double (isolating this
+class's own logic) AND a real `civitas.plugins.state.InMemoryStateStore` +
+`ComponentStateHandle` (proving the duck-typing genuinely works against
+the real class, not just an idealized one) -- including a real
+"restart" scenario: a second, independent `PersistedMemoryStore.create()`
+over the same underlying store sees everything the first one wrote.
+
 ## Open items for implementation
 
 1. The single-message-exceeds-budget edge case in `RecencyCompactor` (above) —

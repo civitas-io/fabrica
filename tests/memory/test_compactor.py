@@ -5,6 +5,8 @@ edge case, not just "it returns something".
 
 from __future__ import annotations
 
+from typing import Literal
+
 import pytest
 
 from fabrica.memory import (
@@ -26,7 +28,7 @@ class _FakeSummarizer:
         return self.response
 
 
-def msg(role: str, content: str, tokens: int) -> Message:
+def msg(role: Literal["system", "user", "assistant", "tool"], content: str, tokens: int) -> Message:
     return Message(role=role, content=content, tokens=tokens)
 
 
@@ -100,7 +102,7 @@ async def test_single_message_exceeding_budget_preserves_nothing_verbatim() -> N
 
 async def test_compaction_error_wraps_summarizer_failure() -> None:
     class _FailingSummarizer:
-        async def summarize(self, messages, *, target_tokens):
+        async def summarize(self, messages: list[Message], *, target_tokens: int) -> str:
             raise RuntimeError("model call failed")
 
     compactor = RecencyCompactor(_FailingSummarizer(), preserve_last_n=1)

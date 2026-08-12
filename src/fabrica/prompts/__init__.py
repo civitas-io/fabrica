@@ -2,11 +2,18 @@
 
 from fabrica.prompts.errors import PromptBackendError, PromptError, PromptParseError
 from fabrica.prompts.manager import PromptManager
-from fabrica.prompts.store import InMemoryPromptStore, PromptStore
+from fabrica.prompts.store import (
+    BlobStore,
+    InMemoryPromptStore,
+    PersistedPromptStore,
+    PromptStore,
+)
 from fabrica.prompts.types import PromptTemplate
 
 __all__ = [
+    "BlobStore",
     "InMemoryPromptStore",
+    "PersistedPromptStore",
     "PromptBackendError",
     "PromptError",
     "PromptManager",

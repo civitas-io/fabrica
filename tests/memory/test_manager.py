@@ -4,6 +4,8 @@ together, not each facet in isolation.
 
 from __future__ import annotations
 
+from typing import Any
+
 from fabrica.memory import (
     InMemoryMemoryStore,
     InMemoryWorkingMemoryStore,
@@ -42,7 +44,7 @@ async def test_manager_delegates_long_term_memory() -> None:
 
 async def test_manager_delegates_compaction() -> None:
     class _FakeSummarizer:
-        async def summarize(self, messages, *, target_tokens):
+        async def summarize(self, messages: list[Any], *, target_tokens: int) -> str:
             return "summarized"
 
     from fabrica.memory import RecencyCompactor

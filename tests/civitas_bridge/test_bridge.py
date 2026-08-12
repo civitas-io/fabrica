@@ -22,6 +22,7 @@ from fabrica.civitas_bridge import (
 )
 from fabrica.managers import SkillManager, ToolManager
 from fabrica.memory import MemoryManager
+from fabrica.memory.types import MemoryItem
 from fabrica.memory.types import Message as FabricaMessage
 from fabrica.presidium import GrantResult
 from fabrica.prompts import PromptManager
@@ -162,6 +163,73 @@ class TestBuild:
         second = await bridge.build()
         assert first is not second
         assert first.tools is not second.tools
+
+
+# ---------------------------------------------------------------------------
+# Service-mode persistence -- build() wires PersistedMemoryStore/
+# PersistedPromptStore over a real civitas.plugins.state.StateStore
+# ---------------------------------------------------------------------------
+
+
+class TestServiceModePersistence:
+    def _service_mode_bridge(
+        self, state_store: InMemoryStateStore, runtime: Runtime
+    ) -> CivitasBridge:
+        return CivitasBridge(
+            mode="service",
+            allow_ungoverned=True,
+            civitas_runtime=runtime,
+            civitas_state_store=state_store,
+            dynamic_supervisor_name="dyn",
+        )
+
+    async def test_memory_written_in_one_build_survives_a_second_build_over_the_same_store(
+        self,
+    ) -> None:
+        state_store = InMemoryStateStore()
+        runtime = Runtime(supervisor=Supervisor("root", children=[DynamicSupervisor("dyn")]))
+        await runtime.start()
+        try:
+            first_fabrica = await self._service_mode_bridge(state_store, runtime).build()
+            await first_fabrica.memory.write(
+                Scope(agent_id="a1"), MemoryItem(id=None, content="survives a restart")
+            )
+
+            # A SECOND, independent build() over the SAME state_store --
+            # simulates a process restart, not just a second in-process call.
+            second_fabrica = await self._service_mode_bridge(state_store, runtime).build()
+            results = await second_fabrica.memory.search(Scope(agent_id="a1"), "survives")
+            assert len(results) == 1
+            assert results[0].content == "survives a restart"
+        finally:
+            await runtime.stop()
+
+    async def test_prompts_written_in_one_build_survive_a_second_build_over_the_same_store(
+        self,
+    ) -> None:
+        state_store = InMemoryStateStore()
+        runtime = Runtime(supervisor=Supervisor("root", children=[DynamicSupervisor("dyn")]))
+        await runtime.start()
+        try:
+            first_fabrica = await self._service_mode_bridge(state_store, runtime).build()
+            await first_fabrica.prompts.put("greeting", "Hello!")
+
+            second_fabrica = await self._service_mode_bridge(state_store, runtime).build()
+            template = await second_fabrica.prompts.get("greeting")
+            assert template is not None
+            assert template.content == "Hello!"
+        finally:
+            await runtime.stop()
+
+    async def test_library_mode_never_persists_across_separate_builds(self) -> None:
+        # Contrast case -- proves library mode's in-memory defaults are
+        # NOT accidentally shared/persisted anywhere, unlike service mode.
+        first_fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        await first_fabrica.memory.write(Scope(agent_id="a1"), MemoryItem(id=None, content="x"))
+
+        second_fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        results = await second_fabrica.memory.search(Scope(agent_id="a1"), "x")
+        assert results == []
 
 
 # ---------------------------------------------------------------------------

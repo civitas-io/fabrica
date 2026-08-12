@@ -37,11 +37,14 @@ from fabrica.memory import (
     InMemoryWorkingMemoryStore,
     MemoryManager,
     NullCompactor,
+    PersistedMemoryStore,
     RecencyCompactor,
     Summarizer,
 )
+from fabrica.memory import MemoryStore as MemoryStoreProtocol
 from fabrica.presidium import GrantResult, PresidiumClient
-from fabrica.prompts import InMemoryPromptStore, PromptManager
+from fabrica.prompts import InMemoryPromptStore, PersistedPromptStore, PromptManager
+from fabrica.prompts import PromptStore as PromptStoreProtocol
 from fabrica.retriever import KeywordBackend, Retriever
 from fabrica.sandbox import SandboxPool, SubprocessSandbox
 from fabrica.scope import Scope
@@ -151,8 +154,16 @@ class CivitasBridge:
     async def build(self) -> Fabrica:
         """Assembles the full object graph exactly once. See the module
         docstring and contracts/civitas-bridge.md for what this
-        deliberately does NOT do yet (request_supervision for managers,
-        StateStore-backed persistence for MemoryManager/PromptManager).
+        deliberately does NOT do yet (request_supervision for managers --
+        structurally incompatible with this codebase's DI-constructed
+        managers, see the module docstring).
+
+        In service mode, MemoryManager/PromptManager get a
+        PersistedMemoryStore/PersistedPromptStore backed by a real
+        ComponentStateHandle via request_state_persistence -- restarting a
+        service-mode CivitasBridge against the same civitas_state_store
+        restores prior state, not just a fresh empty store. Library mode
+        keeps the original in-memory-only defaults, unchanged.
         """
         presidium_client: PresidiumClient = self._presidium_client or NullPresidiumClient()
         compactor: Compactor = (
@@ -166,8 +177,20 @@ class CivitasBridge:
 
         tools = ToolManager(retriever, sandbox_pool, presidium_client)
         skills = SkillManager(retriever, sandbox_pool, presidium_client)
-        memory = MemoryManager(InMemoryWorkingMemoryStore(), InMemoryMemoryStore(), compactor)
-        prompts = PromptManager(InMemoryPromptStore())
+
+        long_term_store: MemoryStoreProtocol
+        prompt_store: PromptStoreProtocol
+        if self._mode == "service":
+            memory_handle = await self.request_state_persistence("memory_manager")
+            prompts_handle = await self.request_state_persistence("prompts_manager")
+            long_term_store = await PersistedMemoryStore.create(memory_handle)
+            prompt_store = await PersistedPromptStore.create(prompts_handle)
+        else:
+            long_term_store = InMemoryMemoryStore()
+            prompt_store = InMemoryPromptStore()
+
+        memory = MemoryManager(InMemoryWorkingMemoryStore(), long_term_store, compactor)
+        prompts = PromptManager(prompt_store)
 
         return Fabrica(tools=tools, skills=skills, memory=memory, prompts=prompts)
 

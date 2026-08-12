@@ -233,6 +233,25 @@ this component performs on a consumer's behalf.
   whether prompt template access needs governance is unresolved
   (`prompts.md` open question 4), not silently assumed to be "no."
 
+## Real addition, mirroring `memory.md`'s `PersistedMemoryStore`: `PersistedPromptStore`
+
+Same gap, same resolution shape: `PersistedPromptStore`
+(`fabrica/prompts/store.py`) is a `PromptStore` backed by a locally-defined
+`BlobStore` Protocol (not an import of
+`fabrica.civitas_bridge.state.ComponentStateHandle`, for the identical
+architectural + circular-import reasons documented in `memory.md`'s
+matching section) -- write-through on every `put()`/`delete()`, loaded
+once at construction via an async `create()` factory, delegating to a real
+`InMemoryPromptStore` internally so open item 2's atomic-version-assignment
+guarantee is never duplicated or allowed to drift.
+
+Version numbers become string keys in the JSON snapshot (JSON object keys
+are always strings) -- converted back to `int` on restore, never left as
+strings for a caller to trip over. Tested against both a minimal
+`BlobStore` double and a real `civitas.plugins.state.InMemoryStateStore` +
+`ComponentStateHandle`, including a real "restart" scenario across
+multiple prompt versions.
+
 ## Open items for implementation
 
 1. `PromptManager`'s cache has no eviction policy specified (size ceiling,

@@ -53,7 +53,7 @@ plus the general rule itself).
 ### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 154 tests total, clean
+mocked stubs standing in for untested logic), 171 tests total, clean
 `ruff`/`mypy --strict`, stable across repeated runs:
 
 - **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
@@ -76,6 +76,36 @@ mocked stubs standing in for untested logic), 154 tests total, clean
 - **`PromptManager`** (`src/fabrica/prompts/`) — `InMemoryPromptStore` with
   real atomic version assignment under concurrency, `PromptManager`'s cache,
   `load()`'s `PROMPT.md` parser. 24 tests.
+- **`PersistedMemoryStore`/`PersistedPromptStore`** (`fabrica/memory/store.py`,
+  `fabrica/prompts/store.py`) — closes `civitas-bridge.md`'s own flagged
+  gap (item 2, resolved below): `request_state_persistence` returned a
+  `ComponentStateHandle` with nothing to receive it. Both are backed by a
+  LOCALLY-defined `BlobStore` Protocol (`get`/`set` over a whole-dict
+  blob) — deliberately NOT an import of
+  `fabrica.civitas_bridge.state.ComponentStateHandle`, since
+  `fabrica.civitas_bridge` already imports `fabrica.memory`/
+  `fabrica.prompts`, making the reverse import a real circular import, not
+  just an architecture preference. `ComponentStateHandle` already
+  satisfies `BlobStore`'s shape today, duck-typed. Write-through on every
+  mutation (no partial updates possible over a whole-blob store), loaded
+  once at construction via an async `create()` factory; both delegate to
+  their existing `InMemory*` implementations internally so matching/
+  scoring/atomic-versioning logic is never duplicated. `CivitasBridge.build()`
+  now wires these in for service mode only — library mode is unchanged.
+  17 new tests: a minimal `BlobStore` test double for each (isolating the
+  persistence logic itself), a real `civitas.plugins.state.InMemoryStateStore`
+  + `ComponentStateHandle` round trip for each (proving the duck-typing
+  against the real class, not an idealized one), and three
+  `CivitasBridge`-level integration tests proving a SECOND, independent
+  `build()` over the same `civitas_state_store` genuinely recovers prior
+  memory/prompt state (a real restart scenario) while library mode never
+  persists across builds at all.
+  **Found and fixed along the way, unrelated to this feature**: two
+  pre-existing `mypy --strict` failures in `tests/memory/test_manager.py`/
+  `test_compactor.py` (a missing type annotation, a `str` where a
+  `Literal` was required) — never surfaced before because `tests/memory`/
+  `tests/prompts` had never actually been included in this project's
+  `mypy` invocation until this pass added them.
 - **`CivitasBridge`** (`src/fabrica/civitas_bridge/`) — resolved via option
   (b): defer `PresidiumClient`'s real REST+mTLS engineering (no real
   Presidium endpoint exists to validate it against), build the
@@ -192,20 +222,13 @@ cognee|langmem]` adapters (need real external services to test against,
    `PresidiumClient` Protocol are real and sufficient for everything built
    so far; revisit only once a real Presidium endpoint exists, or the fake-
    server-tested option is deliberately chosen instead.
-2. **A `StateStore`-backed `MemoryStore`/`PromptStore` adapter** for
-   `CivitasBridge`'s service mode — `request_state_persistence` itself is
-   real and tested, but nothing consumes the `ComponentStateHandle` it
-   returns yet (see `CivitasBridge`'s own entry above). Needs its own
-   design pass: a snapshot format and a read-modify-write strategy over
-   `ComponentStateHandle`'s whole-blob `get`/`set` — not designed in
-   `contracts/memory.md`/`contracts/prompts.md` at all.
-3. **`WeakIsolationError`'s real tier check** — `SandboxPool` has no
+2. **`WeakIsolationError`'s real tier check** — `SandboxPool` has no
    queryable tier attribute yet (`contracts/sandbox.md` never specified
    one), so `FabricaMCPServer`'s `allow_weak_isolation_for_external_callers`
    is accepted and stored but currently has no effect. Needs a
    `SandboxPool.tier` (or equivalent) surface added to `contracts/sandbox.md`
    first.
-4. A batch of older, explicitly-fine-to-leave-deferred design-layer items
+3. A batch of older, explicitly-fine-to-leave-deferred design-layer items
    (`tool-execution.md`, `retrieval.md`, `isolation.md`, `skills-gateway.md`
    open questions) and smaller contract-level wrinkles (`RecencyCompactor`'s
    `preserve_last_n=6` still unvalidated, multi-tenant `FabricaMCPServer`
@@ -214,9 +237,8 @@ cognee|langmem]` adapters (need real external services to test against,
 
 **Immediate next action**: none of the remaining items are blocking each
 other or anything already built -- pick whichever matters most next.
-All three `civitas-contrib` housekeeping items (docs superseded, CI
-lint/tests, the mypy type-duplication + optional-import fix) are now
-fully closed out -- nothing pending there anymore.
+All three `civitas-contrib` housekeeping items, and the
+`StateStore`-backed persistence adapter, are now fully closed out.
 
 ## Read in this order if you're new to this
 
