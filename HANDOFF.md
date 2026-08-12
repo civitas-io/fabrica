@@ -85,8 +85,36 @@ adding this, not by pretending the drift didn't happen.
    implementing, not left in: duplicate-detection must compare only
    `kind`/`name`/`description` (the contract's stated identity-bearing
    fields), not full dataclass equality -- comparing everything would have
-   incorrectly rejected a legitimate `eager`-flag update. Build order from
-   here: `Sandbox` next, per the dependency-order plan.
+   incorrectly rejected a legitimate `eager`-flag update.
+
+   **`Sandbox` also now built and tested** -- `src/fabrica/sandbox/`:
+   `SandboxHandle`/`RunResult`/`ToolCallCallback` types, the `Sandbox`
+   protocol, `SubprocessSandbox` (a real, working Tier 0 backend, not a
+   stub), `SandboxPool` (warm-pool + bounded-overflow + the corrected
+   always-terminate-never-reuse `release()` semantics). 33 tests total
+   passing (23 new), including one that proves the actual ZMQ `ipc://`
+   tool-call bridge from `system-design.md §3`/`SPIKE-zmq-sandbox-channel-
+   feasibility.md` works end to end -- sandboxed code calls
+   `namespace.call()`, crosses a real subprocess boundary via a real ZMQ
+   round trip, gets a real result back. Not mocked.
+
+   Two real bugs found and fixed by actually running this, not caught by
+   review: (1) `tempfile.mkdtemp()` on macOS produces paths long enough to
+   exceed the 103-character Unix domain socket limit once combined with a
+   UUID -- fixed by using `/tmp` directly with a short id; (2) this
+   package's own `fabrica/sandbox/types.py` shadowed Python's stdlib
+   `types` module whenever the guest shim ran as a directly-invoked
+   script (which puts its own directory on `sys.path[0]`), breaking
+   `enum`/`functools`/`dataclasses` transitively inside the subprocess --
+   fixed by invoking the shim as `python -m fabrica.sandbox._guest_shim`
+   instead of by file path, a more robust fix than renaming around the
+   symptom. Confirmed stable across three repeated full-suite runs, not
+   just a single lucky pass, given the real subprocess/ZMQ concurrency
+   involved. Clean `ruff`/`mypy --strict`.
+
+   Build order from here: `managers.md` (`ToolManager`/`SkillManager`/
+   `execute_in_sandbox`) next, per the dependency-order plan -- the first
+   component that actually composes `Retriever` and `SandboxPool` together.
 3. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
    archiving — `MCPClient` moves in close to its current shape;
    `BubblewrapSandbox` gets replaced by `srt` (`mcp-integration.md`), not

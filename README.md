@@ -15,9 +15,10 @@ keep the "Fabrica" name, only the package name differs.
 > model plus both MCP directions (eight contracts, ten spikes
 > [`specs/archive/spikes/`](specs/archive/spikes/) against real hardware and
 > real API calls, not simulated). **Implementation has started: `Retriever`
-> is built and tested** (`src/fabrica/retriever/`, 16 tests, clean `ruff`/
-> `mypy --strict`) — see [`docs/critique.md`](docs/critique.md) for what held
-> up under evidence and what got corrected. **Distribution name resolved:
+> and `Sandbox` are built and tested** (`src/fabrica/`, 33 tests including a
+> real ZMQ subprocess tool-call round trip, clean `ruff`/`mypy --strict`) —
+> see [`docs/critique.md`](docs/critique.md) for what held up under evidence
+> and what got corrected. **Distribution name resolved:
 > `pip install fabrica-context`** (`fabrica` itself is taken on PyPI by an unrelated
 > project). Code lands after `plan-work` turns this into an implementation plan.
 
@@ -173,7 +174,7 @@ current-state section for what's actually true today.
 | **P3 — Skills** | `SKILL.md`-conformant skills gateway with progressive disclosure. | Contracted (`SkillManager` in `managers.md`); exact frontmatter field list still open |
 | **P4 — Memory & Prompts** | `MemoryStore` protocol + adapters; versioned `PromptStore`. | Contracted (`contracts/memory.md`, `contracts/prompts.md`); reframed mid-project into three memory facets, not just one |
 | **P5 — MCP integration** *(not in the original plan)* | Fabrica as both an MCP client and server | Both directions designed and contracted |
-| **P6 — Implementation** *(started)* | Actual `fabrica/` Python package, `pip install fabrica-context` | `Retriever` built and tested (`src/fabrica/retriever/`); `Sandbox` next, per dependency order |
+| **P6 — Implementation** *(started)* | Actual `fabrica/` Python package, `pip install fabrica-context` | `Retriever` + `Sandbox`/`SandboxPool` built and tested, including a real Tier 0 `SubprocessSandbox` with a working ZMQ tool-call bridge; `managers.md` next |
 
 ---
 

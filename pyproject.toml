@@ -20,6 +20,7 @@ classifiers = [
 ]
 dependencies = [
     "rank-bm25>=0.2.2",
+    "pyzmq>=26.0",
 ]
 
 # Distribution name is "fabrica-context" (fabrica itself is taken on PyPI by
@@ -61,4 +62,8 @@ strict = true
 # rank-bm25 ships no type stubs and no py.typed marker -- a known upstream
 # gap, not something to work around by loosening strictness project-wide.
 module = "rank_bm25"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "zmq.*"
 ignore_missing_imports = true
