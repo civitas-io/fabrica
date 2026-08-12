@@ -14,13 +14,15 @@ keep the "Fabrica" name, only the package name differs.
 > **Status:** Pre-alpha — design and validation complete for the whole object
 > model plus both MCP directions (eight contracts, ten spikes
 > [`specs/archive/spikes/`](specs/archive/spikes/) against real hardware and
-> real API calls, not simulated). **Implementation has started: `Retriever`,
-> `Sandbox`, `ToolManager`, `SkillManager`, and `MemoryManager` (all three
-> facets) are built and tested** (`src/fabrica/`, 68 tests including a
-> full end-to-end run through a real subprocess sandbox and ZMQ tool-call
+> real API calls, not simulated). **Implementation has started: five of
+> six object-model contracts are built and tested** — `Retriever`,
+> `Sandbox`, `ToolManager`, `SkillManager`, `MemoryManager` (all three
+> facets), `PromptManager` (`src/fabrica/`, 99 tests including a full
+> end-to-end run through a real subprocess sandbox and ZMQ tool-call
 > bridge, clean `ruff`/`mypy --strict`) — see
 > [`docs/critique.md`](docs/critique.md) for what held up under evidence
-> and what got corrected. **Distribution name resolved:
+> and what got corrected. Only `CivitasBridge` remains, blocked on a real
+> `PresidiumClient` deployment to build against. **Distribution name resolved:
 > `pip install fabrica-context`** (`fabrica` itself is taken on PyPI by an unrelated
 > project). Code lands after `plan-work` turns this into an implementation plan.
 
@@ -176,7 +178,7 @@ current-state section for what's actually true today.
 | **P3 — Skills** | `SKILL.md`-conformant skills gateway with progressive disclosure. | Contracted (`SkillManager` in `managers.md`); exact frontmatter field list still open |
 | **P4 — Memory & Prompts** | `MemoryStore` protocol + adapters; versioned `PromptStore`. | Contracted (`contracts/memory.md`, `contracts/prompts.md`); reframed mid-project into three memory facets, not just one |
 | **P5 — MCP integration** *(not in the original plan)* | Fabrica as both an MCP client and server | Both directions designed and contracted |
-| **P6 — Implementation** *(started)* | Actual `fabrica/` Python package, `pip install fabrica-context` | `Retriever`, `Sandbox`/`SandboxPool`, `ToolManager`, `SkillManager`, `MemoryManager` (all three facets) built and tested end to end; `prompts.md` next |
+| **P6 — Implementation** *(started)* | Actual `fabrica/` Python package, `pip install fabrica-context` | Five of six object-model contracts built and tested end to end (`Retriever`, `Sandbox`, `ToolManager`, `SkillManager`, `MemoryManager`, `PromptManager`); `CivitasBridge` remains, needs a real Presidium deployment to build against |
 
 ---
 

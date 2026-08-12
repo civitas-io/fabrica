@@ -163,7 +163,39 @@ adding this, not by pretending the drift didn't happen.
    external service to wrap and test against, deferred deliberately, not
    an oversight.
 
-   Build order from here: `prompts.md` next, per the dependency-order plan.
+   **`prompts.md` also now built and tested** -- `src/fabrica/prompts/`:
+   `PromptTemplate`, `InMemoryPromptStore` (real, atomic version
+   assignment under concurrency via `asyncio.Lock` -- open item 2,
+   resolved for the default backend and tested directly with 20
+   concurrent `put()` calls landing on distinct, gap-free version
+   numbers), `PromptManager` (the read cache, `load()`'s `PROMPT.md`
+   parser). Two contract open items resolved with explicit, documented
+   decisions rather than left unmade: open item 1 (no eviction policy
+   specified) resolved as unbounded in-process caching, since prompt
+   catalogs are expected to be small and curated, unlike tool/skill
+   catalogs or memory; open item 4 (`cache_boundary` validation)
+   resolved as never-validated, consistent with the contract's own
+   never-parses-content stance.
+
+   A real structural bug surfaced and fixed while adding this: `pytest`
+   requires unique test-module basenames across the whole suite unless
+   test directories are proper packages -- `tests/memory/test_manager.py`
+   and `tests/prompts/test_manager.py` (same generic name, different
+   components) collided the moment both existed, breaking full-suite
+   collection even though each file ran fine alone. Fixed at the root by
+   adding `__init__.py` to every `tests/` subdirectory, not by renaming
+   files to avoid the symptom.
+
+   31 new tests (99 total), all passing, including `DictToolNamespace`
+   now tested directly rather than only exercised indirectly through
+   `ToolManager`. Clean `ruff`/`mypy --strict`, stable across repeated
+   runs.
+
+   All five non-MCP object-model contracts are now implemented:
+   `Retriever`, `Sandbox`, `managers.md`, `memory.md`, `prompts.md`.
+   Remaining: `CivitasBridge` (needs the real `PresidiumClient`
+   REST+mTLS implementation and `CivitasRuntime` reconciliation to mean
+   something) and the two MCP-direction contracts.
 3. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
    archiving — `MCPClient` moves in close to its current shape;
    `BubblewrapSandbox` gets replaced by `srt` (`mcp-integration.md`), not
