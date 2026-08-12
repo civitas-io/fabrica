@@ -39,6 +39,14 @@ class SandboxPool:
         self._concurrent_count = 0
         self._condition = asyncio.Condition()
 
+    @property
+    def tier(self) -> int:
+        """Delegates to the wrapped backend -- SandboxPool never chooses
+        or changes tier itself, only CivitasBridge's platform dispatch
+        does (isolation.md), once, at construction.
+        """
+        return self._backend.tier
+
     async def prewarm(self) -> None:
         """Not part of the contract's method list, but needed to actually
         populate the warm pool at startup -- otherwise every deployment

@@ -234,14 +234,21 @@ async def _handle_prompts_get(self, name: str, version: int | None = None) -> Pr
 1. ~~`fabrica_prompts_list` has no backing method~~ **Resolved**: `list_names()`
    added directly to `contracts/prompts.md`'s `PromptStore`/`PromptManager`
    while writing this handler, rather than left as a dangling gap.
-2. **Still open, and now more precisely scoped**: `WeakIsolationError`'s
-   real tier check cannot run at all yet, not just "no re-check after
-   construction" — implementation found `SandboxPool` has no queryable
-   tier attribute whatsoever (`contracts/sandbox.md` never specified one).
-   `allow_weak_isolation_for_external_callers` is accepted and stored by
-   `FabricaMCPServer.__init__` but currently has zero effect. Needs a
-   `SandboxPool.tier` (or equivalent) surface added to
-   `contracts/sandbox.md` first, before this can be implemented for real.
+2. ~~`WeakIsolationError`'s real tier check cannot run at all yet~~
+   **Resolved**: `contracts/sandbox.md` now specifies a real, queryable
+   `Sandbox.tier`/`SandboxPool.tier` (its own "Real addition" section) --
+   `FabricaMCPServer.__init__` checks `fabrica.tools.tier < 2` for real
+   and raises `WeakIsolationError` when true and
+   `allow_weak_isolation_for_external_callers` is false, tested directly
+   against a real `CivitasBridge`-built `Fabrica`. **Still genuinely
+   open, a DIFFERENT, smaller gap than before**: the check runs once, at
+   construction -- if a service-mode deployment's tier changed live
+   after `FabricaMCPServer` is already running, there is still no
+   re-check. Also honestly worth restating: only Tier 0
+   (`SubprocessSandbox`) exists anywhere in this codebase today, so every
+   real HTTP deployment must currently pass
+   `allow_weak_isolation_for_external_callers=True` to construct at all
+   -- the fail-closed default working as intended, not a bug.
 3. Multi-tenant HTTP deployments (`mcp-server.md` open question 3) — this
    contract resolves the single-token-per-connection shape (confirmed
    working: multiple distinct bearer tokens resolve to multiple distinct

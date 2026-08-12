@@ -126,6 +126,27 @@ class TestConstruction:
         with pytest.raises(ValueError, match="requires host, port, and authenticator"):
             ServerTransportConfig(kind="http", authenticator=_Auth())
 
+    async def test_weak_isolation_raises_by_default_against_a_real_tier_0_fabrica(self) -> None:
+        # CivitasBridge.build() only ever constructs a SubprocessSandbox
+        # (Tier 0) today -- this is the REAL current state, not a
+        # simulated one, proving the check actually fires against what
+        # this codebase genuinely produces.
+        from fabrica.mcp.server import WeakIsolationError
+
+        fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        assert fabrica.tools.tier == 0
+        with pytest.raises(WeakIsolationError, match="Tier 0"):
+            FabricaMCPServer(fabrica, ServerTransportConfig(kind="stdio"))
+
+    async def test_weak_isolation_allowed_with_explicit_opt_in(self) -> None:
+        fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        # Must not raise.
+        FabricaMCPServer(
+            fabrica,
+            ServerTransportConfig(kind="stdio"),
+            allow_weak_isolation_for_external_callers=True,
+        )
+
 
 def test_to_content_serializes_dataclass_lists_as_json() -> None:
     from fabrica.retriever.types import Indexable, RankedMatch
@@ -173,7 +194,13 @@ class _RunningHttpServer:
         transport = ServerTransportConfig(
             kind="http", host=_HTTP_HOST, port=_HTTP_PORT, authenticator=_FixedTokenAuthenticator()
         )
-        self._server = FabricaMCPServer(fabrica, transport)
+        # allow_weak_isolation_for_external_callers=True: honest, not a
+        # workaround -- CivitasBridge.build() only ever constructs a
+        # SubprocessSandbox (Tier 0) today, and this fixture genuinely IS
+        # exposing it to an external caller over real HTTP.
+        self._server = FabricaMCPServer(
+            fabrica, transport, allow_weak_isolation_for_external_callers=True
+        )
         self._task = asyncio.ensure_future(self._server.start())
         await asyncio.sleep(0.4)  # real socket bind -- give uvicorn time to start listening
         return self._server

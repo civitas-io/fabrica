@@ -15,6 +15,19 @@ from fabrica.sandbox.types import RunResult, SandboxHandle, ToolCallCallback
 
 @runtime_checkable
 class Sandbox(Protocol):
+    @property
+    def tier(self) -> int:
+        """0/1/2 -- isolation.md's capability levels (3, Kata, has no
+        Fabrica backend and is out of scope). A plain int, not an enum:
+        the only thing ever done with it is a `< 2` comparison
+        (WeakIsolationError, contracts/mcp-server.md) -- an enum would add
+        ceremony with no behavior this doesn't already have. Fixed per
+        backend instance, never changes at runtime -- SandboxPool wraps
+        exactly one backend for its whole lifetime (isolation.md's
+        platform dispatch happens once, at CivitasBridge.build() time).
+        """
+        ...
+
     async def boot_clean(self) -> SandboxHandle:
         """Boot, or restore-from-snapshot, a fresh instance in a known
         clean state. This is the ONLY way an instance is created -- there

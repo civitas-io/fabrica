@@ -250,6 +250,43 @@ async def release(self, handle: SandboxHandle) -> None:
 - **Presidium's grant check** happens in `ToolManager`, before `acquire()` is
   even called (`system-design.md §3`, step 4) — not inside this contract.
 
+## Real addition: a queryable `tier` property, closing `contracts/mcp-server.md`'s open `WeakIsolationError` gap
+
+Neither `Sandbox` nor `SandboxPool` originally exposed which isolation tier
+a backend actually provides -- `contracts/mcp-server.md`'s
+`WeakIsolationError` needed exactly this and had nothing to check against,
+so its check was accepted-but-inert. Closed by adding a read-only
+`tier: int` property to both:
+
+```python
+class Sandbox(Protocol):
+    @property
+    def tier(self) -> int:
+        """0/1/2 -- isolation.md's capability levels. Fixed per backend
+        instance, never changes at runtime."""
+        ...
+    # ... boot_clean/execute/terminate/health_check unchanged
+```
+
+`SandboxPool.tier` delegates straight to `self._backend.tier` -- `SandboxPool`
+never chooses or changes tier itself, only `CivitasBridge`'s platform
+dispatch does, once, at construction. `ToolManager.tier`/`SkillManager.tier`
+(`contracts/managers.md`) delegate the same way one level up, so
+`FabricaMCPServer` can check isolation strength (`fabrica.tools.tier`)
+without reaching into either manager's private `SandboxPool` reference.
+
+A plain `int`, not an enum -- the only thing ever done with it is a `< 2`
+comparison; an enum would add ceremony with no behavior this doesn't
+already have.
+
+**Honest consequence, stated directly rather than glossed over**: only
+`SubprocessSandbox` (Tier 0) is actually implemented anywhere in this
+codebase today. This means, as of this writing, every real
+`FabricaMCPServer(kind="http")` deployment must pass
+`allow_weak_isolation_for_external_callers=True` to construct at all --
+that is the fail-closed default working exactly as intended (see
+`contracts/mcp-server.md`'s own note on this), not a bug to work around.
+
 ## Open items for implementation
 
 1. `boot_clean()`'s background-replenishment trigger (on `release()`, per

@@ -8,7 +8,13 @@ import asyncio
 
 import pytest
 
-from fabrica.sandbox import SandboxHandle, SandboxPool, SandboxPoolExhaustedError
+from fabrica.sandbox import (
+    RunResult,
+    SandboxHandle,
+    SandboxPool,
+    SandboxPoolExhaustedError,
+    ToolCallCallback,
+)
 
 
 class _FakeBackend:
@@ -16,15 +22,27 @@ class _FakeBackend:
     bookkeeping in isolation from real subprocess/ZMQ cost.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, tier: int = 0) -> None:
         self.boot_count = 0
         self.terminated: list[str] = []
+        self._tier = tier
+
+    @property
+    def tier(self) -> int:
+        return self._tier
 
     async def boot_clean(self) -> SandboxHandle:
         self.boot_count += 1
         return SandboxHandle(id=f"h{self.boot_count}", tier=0)
 
-    async def execute(self, handle, code, *, on_tool_call, timeout):
+    async def execute(
+        self,
+        handle: SandboxHandle,
+        code: str,
+        *,
+        on_tool_call: ToolCallCallback,
+        timeout: float,
+    ) -> RunResult:
         raise NotImplementedError("not exercised by these tests")
 
     async def terminate(self, handle: SandboxHandle) -> None:
@@ -32,6 +50,11 @@ class _FakeBackend:
 
     async def health_check(self) -> bool:
         return True
+
+
+def test_tier_property_delegates_to_backend() -> None:
+    pool = SandboxPool(_FakeBackend(tier=2), warm_size=1, max_concurrent=1)
+    assert pool.tier == 2
 
 
 async def test_prewarm_fills_warm_pool() -> None:
@@ -55,8 +78,7 @@ async def test_acquire_prefers_warm_pool_over_cold_start() -> None:
     assert backend.boot_count == 2
 
 
-async def test_acquire_cold_starts_when_warm_pool_empty_and_under_max(
-) -> None:
+async def test_acquire_cold_starts_when_warm_pool_empty_and_under_max() -> None:
     backend = _FakeBackend()
     pool = SandboxPool(backend, warm_size=0, max_concurrent=5)
 
@@ -75,8 +97,7 @@ async def test_acquire_raises_exhausted_when_at_max_concurrent() -> None:
         await pool.acquire()
 
 
-async def test_release_always_terminates_never_reuses(
-) -> None:
+async def test_release_always_terminates_never_reuses() -> None:
     """The corrected release() semantics from contracts/sandbox.md: the
     USED instance is always terminated, never handed back out live --
     even though the pool "regrows" back toward warm_size afterward.

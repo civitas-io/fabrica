@@ -150,6 +150,15 @@ class ToolManager:
         where "real tool access" is implemented, not inside
         execute_in_sandbox itself, which knows nothing about what a
         tool call actually does."""
+
+    @property
+    def tier(self) -> int:
+        """Real addition, closing contracts/mcp-server.md's own flagged
+        gap: delegates to sandbox_pool.tier (contracts/sandbox.md's own
+        "Real addition" section) — read-only, ToolManager never changes
+        tier itself. Added specifically so FabricaMCPServer can check
+        isolation strength without reaching into ToolManager's private
+        SandboxPool reference directly."""
 ```
 
 ---
@@ -210,6 +219,11 @@ class SkillManager:
         Raises:
             SkillNotFoundError: name isn't registered.
         """
+
+    @property
+    def tier(self) -> int:
+        """Real addition, same rationale as ToolManager.tier above --
+        delegates to sandbox_pool.tier."""
 ```
 
 ---

@@ -4,6 +4,8 @@ callback bridge actually works, not just that the code looks plausible.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from fabrica.sandbox import SandboxCrashedError, SandboxTimeoutError, SubprocessSandbox
@@ -14,8 +16,12 @@ def backend() -> SubprocessSandbox:
     return SubprocessSandbox()
 
 
-async def _no_tool_calls(tool: str, params: dict) -> dict:
+async def _no_tool_calls(tool: str, params: dict[str, Any]) -> dict[str, Any]:
     raise AssertionError(f"unexpected tool call: {tool}({params})")
+
+
+def test_tier_property_is_0(backend: SubprocessSandbox) -> None:
+    assert backend.tier == 0
 
 
 async def test_boot_clean_returns_tier_0_handle(backend: SubprocessSandbox) -> None:
@@ -64,7 +70,7 @@ async def test_execute_real_tool_call_round_trip(backend: SubprocessSandbox) -> 
     """
     handle = await backend.boot_clean()
 
-    async def echo_tool(tool: str, params: dict) -> dict:
+    async def echo_tool(tool: str, params: dict[str, Any]) -> dict[str, Any]:
         assert tool == "get_weather"
         assert params == {"city": "Lisbon"}
         return {"temperature_c": 22, "condition": "sunny"}
@@ -83,7 +89,7 @@ print(f"It is {result['temperature_c']}C and {result['condition']}")
 async def test_execute_counts_multiple_tool_calls(backend: SubprocessSandbox) -> None:
     handle = await backend.boot_clean()
 
-    async def add_one(tool: str, params: dict) -> dict:
+    async def add_one(tool: str, params: dict[str, Any]) -> dict[str, Any]:
         return {"result": params["n"] + 1}
 
     code = """

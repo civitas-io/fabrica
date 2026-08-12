@@ -52,6 +52,13 @@ class SkillManager:
         self._presidium_client = presidium_client
         self._skills: dict[str, _RegisteredSkill] = {}
 
+    @property
+    def tier(self) -> int:
+        """Delegates to the underlying SandboxPool -- same rationale as
+        ToolManager.tier (contracts/mcp-server.md's WeakIsolationError).
+        """
+        return self._sandbox_pool.tier
+
     async def load(self, skill_dir: Path) -> None:
         """Parses SKILL.md's frontmatter, registers as Indexable(kind="skill").
 

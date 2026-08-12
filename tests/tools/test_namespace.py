@@ -65,6 +65,7 @@ async def test_call_unknown_tool_returns_routine_error_not_exception() -> None:
     namespace = make_namespace()
     result = await namespace.call("nonexistent", {})
     assert result.success is False
+    assert result.error_message is not None
     assert "unknown tool" in result.error_message
 
 
@@ -79,4 +80,5 @@ async def test_call_function_that_raises_returns_routine_error() -> None:
     result = await namespace.call("broken", {"x": 1})
 
     assert result.success is False
+    assert result.error_message is not None
     assert "deliberate failure" in result.error_message

@@ -16,7 +16,7 @@ from fabrica.scope import Scope
 
 
 class _AllowClient:
-    async def check_grant(self, *, agent_id, action, scope):
+    async def check_grant(self, *, agent_id: str, action: str, scope: Scope) -> GrantResult:
         return GrantResult(decision="allow")
 
 
@@ -34,6 +34,10 @@ def write_skill(tmp_path: Path, name: str, frontmatter_extra: str = "", body: st
         f"---\nname: {name}\ndescription: a test skill\n{frontmatter_extra}---\n{body}"
     )
     return skill_dir
+
+
+def test_tier_delegates_to_sandbox_pool(skill_manager: SkillManager) -> None:
+    assert skill_manager.tier == 0  # SubprocessSandbox is Tier 0
 
 
 async def test_load_then_find(skill_manager: SkillManager, tmp_path: Path) -> None:
@@ -74,9 +78,7 @@ async def test_load_raises_on_invalid_name_charset(
 ) -> None:
     skill_dir = tmp_path / "bad-skill"
     skill_dir.mkdir()
-    (skill_dir / "SKILL.md").write_text(
-        "---\nname: Bad Skill Name!\ndescription: x\n---\n"
-    )
+    (skill_dir / "SKILL.md").write_text("---\nname: Bad Skill Name!\ndescription: x\n---\n")
 
     with pytest.raises(SkillParseError):
         await skill_manager.load(skill_dir)

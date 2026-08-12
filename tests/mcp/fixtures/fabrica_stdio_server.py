@@ -17,7 +17,13 @@ from fabrica.mcp.server import FabricaMCPServer, ServerTransportConfig
 
 async def main() -> None:
     fabrica = await CivitasBridge(allow_ungoverned=True).build()
-    server = FabricaMCPServer(fabrica, ServerTransportConfig(kind="stdio"))
+    # allow_weak_isolation_for_external_callers=True: honest, not a
+    # workaround -- see tests/mcp/test_server.py's identical note.
+    server = FabricaMCPServer(
+        fabrica,
+        ServerTransportConfig(kind="stdio"),
+        allow_weak_isolation_for_external_callers=True,
+    )
     await server.start()
 
 

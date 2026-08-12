@@ -156,6 +156,16 @@ class _ToolSpec:
     handler: Any  # Callable[[str, dict[str, Any]], Awaitable[Any]]
 
 
+_MIN_SAFE_TIER_FOR_EXTERNAL_CALLERS = 2
+"""isolation.md's Tier 2 (Firecracker/libkrun -- hardware-grade isolation).
+An external MCP caller is, by definition, less trusted than an in-process
+model already running inside Fabrica's own deployment -- Tier 0/1 are
+accepted defaults for internal code-mode, but exposing the same execution
+path to arbitrary external callers without hardware-grade isolation is a
+genuinely different risk, per mcp-server.md's resolved isolation rule.
+"""
+
+
 class FabricaMCPServer:
     def __init__(
         self,
@@ -170,17 +180,38 @@ class FabricaMCPServer:
                 below Tier 2 and allow_weak_isolation_for_external_callers
                 is False.
 
-        NOTE on WeakIsolationError: SandboxPool does not currently expose
-        its backend's tier as a queryable attribute (contracts/sandbox.md
-        never specified one) -- there is nothing to check yet. This is a
-        real, named gap, not a silent skip: see Open items below. Until a
-        tier-query surface exists on SandboxPool, this check cannot run
-        for real, so it is not performed -- allow_weak_isolation_for_
-        external_callers is accepted and stored but currently has no
-        effect. Wraps an ALREADY-BUILT Fabrica facade -- this is an
-        additional front door, never a replacement for direct in-process
-        use.
+        Checked against fabrica.tools.tier -- ToolManager/SkillManager
+        share the same SandboxPool (CivitasBridge.build() constructs one
+        pool for both), so checking either would give the same answer;
+        tools is checked since fabrica_run_code is the tool this matters
+        most for. Real as of this contract's tier-query addition to
+        contracts/sandbox.md -- previously this check could not run at
+        all (SandboxPool exposed no queryable tier), and
+        allow_weak_isolation_for_external_callers was accepted but inert.
+
+        Honest consequence, worth stating plainly: only Tier 0
+        (SubprocessSandbox) is actually implemented anywhere in this
+        codebase today (contracts/sandbox.md) -- so, as of this writing,
+        EVERY real FabricaMCPServer(kind="http") deployment must pass
+        allow_weak_isolation_for_external_callers=True to construct at
+        all. That is the fail-closed default working exactly as intended,
+        not a bug -- it forces an explicit, greppable acknowledgment of a
+        real, current limitation, rather than a false sense of safety.
+
+        Wraps an ALREADY-BUILT Fabrica facade -- this is an additional
+        front door, never a replacement for direct in-process use.
         """
+        if (
+            fabrica.tools.tier < _MIN_SAFE_TIER_FOR_EXTERNAL_CALLERS
+            and not allow_weak_isolation_for_external_callers
+        ):
+            raise WeakIsolationError(
+                f"fabrica's SandboxPool is Tier {fabrica.tools.tier}, below the "
+                f"Tier {_MIN_SAFE_TIER_FOR_EXTERNAL_CALLERS} minimum recommended for "
+                "external MCP callers. Set allow_weak_isolation_for_external_callers=True "
+                "to run anyway (e.g. for local development, or before a Tier 2 backend "
+                "is deployed)."
+            )
         self._fabrica = fabrica
         self._transport = transport
         self._allow_weak_isolation_for_external_callers = allow_weak_isolation_for_external_callers

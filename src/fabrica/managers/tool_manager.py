@@ -28,6 +28,16 @@ class ToolManager:
         # needing to know which namespace is which.
         self._tools_by_name: dict[str, ToolNamespace] = {}
 
+    @property
+    def tier(self) -> int:
+        """Delegates to the underlying SandboxPool -- added specifically
+        for FabricaMCPServer's WeakIsolationError check
+        (contracts/mcp-server.md), which needs to know isolation strength
+        without reaching into ToolManager's private SandboxPool directly.
+        Read-only -- ToolManager never changes tier itself.
+        """
+        return self._sandbox_pool.tier
+
     async def register(self, namespace: ToolNamespace) -> None:
         """Registers every tool in namespace as Indexable(kind="tool") with
         the shared Retriever. Delegates idempotency to Retriever.register --

@@ -53,7 +53,7 @@ plus the general rule itself).
 ### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 171 tests total, clean
+mocked stubs standing in for untested logic), 177 tests total, clean
 `ruff`/`mypy --strict`, stable across repeated runs:
 
 - **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
@@ -200,12 +200,39 @@ corrected to async).
   accept/reject (unauthenticated rejected, wrong token rejected, correct
   token resolves to the right `agent_id`, memory writes/searches stay
   correctly `Scope`-isolated per resolved `agent_id`).
-  **Deliberately still NOT built, stated honestly rather than stubbed**:
-  `WeakIsolationError`'s real tier check — `SandboxPool` has no queryable
-  tier attribute to check against yet, a pre-existing contract gap this
-  pass surfaced but didn't introduce; the legacy SSE transport (distinct
-  from the modern streamable-HTTP transport implemented here) — building
-  the deprecated `mcp` transport first would be backwards.
+  **`WeakIsolationError`'s real tier check is now implemented too** (see
+  its own entry below) — the only thing still deliberately NOT built is
+  the legacy SSE transport (distinct from the modern streamable-HTTP
+  transport implemented here) — building the deprecated `mcp` transport
+  first would be backwards.
+- **`WeakIsolationError`'s real tier check** (`src/fabrica/sandbox/`,
+  `src/fabrica/managers/`, `src/fabrica/mcp/server.py`) — closes the gap
+  `mcp-server.md` flagged: `Sandbox`/`SandboxPool` gained a real, queryable
+  `tier: int` property (`SubprocessSandbox.tier == 0`), delegated one level
+  up through `ToolManager.tier`/`SkillManager.tier` so `FabricaMCPServer`
+  can check isolation strength without reaching into either manager's
+  private `SandboxPool` reference. `FabricaMCPServer.__init__` now
+  genuinely raises `WeakIsolationError` when `fabrica.tools.tier < 2` and
+  `allow_weak_isolation_for_external_callers` is false — tested directly
+  against a real `CivitasBridge`-built `Fabrica`.
+  **Honest, stated-not-hidden consequence**: only Tier 0
+  (`SubprocessSandbox`) exists anywhere in this codebase today, so every
+  real `FabricaMCPServer(kind="http")` deployment must currently pass
+  `allow_weak_isolation_for_external_callers=True` to construct at all —
+  the fail-closed default working exactly as intended, not a bug. All
+  existing HTTP/stdio test fixtures were updated to this explicit opt-in
+  once the real check started firing (confirmed: it broke all 10 of them
+  immediately, exactly as it should have).
+  8 new tests: `tier` on `SubprocessSandbox`/`SandboxPool`/`ToolManager`/
+  `SkillManager`, plus `WeakIsolationError` actually raising (and NOT
+  raising with the opt-in) against a real `Fabrica`.
+  **Found and fixed along the way, unrelated to this feature, same Boy
+  Scout Rule pattern as the previous item**: 11 more pre-existing
+  `mypy --strict` failures across `tests/tools`/`tests/retriever`/
+  `tests/sandbox`/`tests/managers` (missing parameter/return type
+  annotations, an un-narrowed `str | None`) — every test directory in
+  this project has now actually been mypy-checked at least once; none had
+  been, systematically, before this pass.
 
 **Not built yet, deliberately**: the real `fabrica-contrib[mem0|zep|letta|
 cognee|langmem]` adapters (need real external services to test against,
@@ -221,24 +248,28 @@ cognee|langmem]` adapters (need real external services to test against,
    anywhere to validate it against. `NullPresidiumClient` and the
    `PresidiumClient` Protocol are real and sufficient for everything built
    so far; revisit only once a real Presidium endpoint exists, or the fake-
-   server-tested option is deliberately chosen instead.
-2. **`WeakIsolationError`'s real tier check** — `SandboxPool` has no
-   queryable tier attribute yet (`contracts/sandbox.md` never specified
-   one), so `FabricaMCPServer`'s `allow_weak_isolation_for_external_callers`
-   is accepted and stored but currently has no effect. Needs a
-   `SandboxPool.tier` (or equivalent) surface added to `contracts/sandbox.md`
-   first.
-3. A batch of older, explicitly-fine-to-leave-deferred design-layer items
+   server-tested option is deliberately chosen instead. **The only item
+   left from the original priority list** — everything else on it is done.
+2. A batch of older, explicitly-fine-to-leave-deferred design-layer items
    (`tool-execution.md`, `retrieval.md`, `isolation.md`, `skills-gateway.md`
    open questions) and smaller contract-level wrinkles (`RecencyCompactor`'s
    `preserve_last_n=6` still unvalidated, multi-tenant `FabricaMCPServer`
-   untested under real concurrent load) — see `git log` and the contracts
-   themselves for the full list; none of these block anything above.
+   untested under real concurrent load, `WeakIsolationError`'s
+   construction-time-only check with no live re-check if a deployment's
+   tier changes) — see `git log` and the contracts themselves for the full
+   list; none of these block anything above.
+3. **New, small, and genuinely optional**: a Tier 1 backend
+   (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
+   deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without
+   the explicit opt-in — not required (the opt-in exists specifically so
+   this isn't blocking), but worth noting as the natural next isolation
+   milestone if `FabricaMCPServer(kind="http")` sees real external use.
 
-**Immediate next action**: none of the remaining items are blocking each
-other or anything already built -- pick whichever matters most next.
-All three `civitas-contrib` housekeeping items, and the
-`StateStore`-backed persistence adapter, are now fully closed out.
+**Immediate next action**: `PresidiumClient`'s REST client is the only
+remaining item from the original priority list — everything else (both
+MCP directions, the persistence adapter, the tier check) is done. Pick it
+up, or spend time on the deferred design-layer batch (item 2) instead --
+neither blocks the other.
 
 ## Read in this order if you're new to this
 

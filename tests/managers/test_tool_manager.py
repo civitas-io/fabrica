@@ -16,17 +16,17 @@ from fabrica.tools import DictToolNamespace, ToolSchema
 
 
 class _AllowClient:
-    async def check_grant(self, *, agent_id, action, scope):
+    async def check_grant(self, *, agent_id: str, action: str, scope: Scope) -> GrantResult:
         return GrantResult(decision="allow")
 
 
 class _DenyClient:
-    async def check_grant(self, *, agent_id, action, scope):
+    async def check_grant(self, *, agent_id: str, action: str, scope: Scope) -> GrantResult:
         return GrantResult(decision="deny", reason="test denial")
 
 
 def make_weather_namespace() -> DictToolNamespace:
-    def get_weather(city: str) -> dict:
+    def get_weather(city: str) -> dict[str, str | int]:
         return {"city": city, "temperature_c": 22}
 
     return DictToolNamespace(
@@ -48,6 +48,10 @@ def tool_manager() -> ToolManager:
     retriever = Retriever(primary=KeywordBackend())
     sandbox_pool = SandboxPool(SubprocessSandbox(), warm_size=0, max_concurrent=5)
     return ToolManager(retriever, sandbox_pool, _AllowClient())
+
+
+def test_tier_delegates_to_sandbox_pool(tool_manager: ToolManager) -> None:
+    assert tool_manager.tier == 0  # SubprocessSandbox is Tier 0
 
 
 async def test_register_then_find(tool_manager: ToolManager) -> None:

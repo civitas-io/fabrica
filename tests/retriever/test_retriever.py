@@ -6,6 +6,8 @@ automatic fallback on primary failure.
 
 from __future__ import annotations
 
+from typing import Literal
+
 import pytest
 
 from fabrica.retriever import (
@@ -176,7 +178,9 @@ class _AlwaysFailsBackend:
     async def remove(self, ids: list[str]) -> None:
         raise RuntimeError("primary is down")
 
-    async def query(self, query: str, kind, limit: int) -> list[RankedMatch]:
+    async def query(
+        self, query: str, kind: Literal["tool", "skill"] | None, limit: int
+    ) -> list[RankedMatch]:
         raise RuntimeError("primary is down")
 
     async def health_check(self) -> bool:

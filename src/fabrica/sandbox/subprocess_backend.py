@@ -43,6 +43,10 @@ class SubprocessSandbox:
     a pre-warmed one.
     """
 
+    @property
+    def tier(self) -> int:
+        return 0
+
     def __init__(self) -> None:
         # Deliberately /tmp directly, not tempfile.mkdtemp(): macOS's real
         # tmpdir (`$TMPDIR`, under /var/folders/...) is long enough that a
