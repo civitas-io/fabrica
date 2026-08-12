@@ -22,7 +22,6 @@ from fabrica.mcp.server import (
     FabricaMCPServerError,
     ServerTransportConfig,
     TokenAuthenticator,
-    UnsupportedTransportError,
     WeakIsolationError,
 )
 from fabrica.mcp.types import (
@@ -56,6 +55,5 @@ __all__ = [
     "ToolResult",
     "ToolSchema",
     "UnsupportedSandboxConfigurationError",
-    "UnsupportedTransportError",
     "WeakIsolationError",
 ]

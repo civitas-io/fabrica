@@ -1,12 +1,61 @@
 # Contract: `FabricaMCPServer`
 
-**Status:** Contract — implementation-ready · **Last updated:** 2026-08
+**Status:** Implemented (`src/fabrica/mcp/server.py`), both stdio and HTTP
+transports real · **Last updated:** 2026-08
 **Depends on:** [mcp-server.md](../mcp-server.md) (the design this formalizes),
 [contracts/civitas-bridge.md](civitas-bridge.md) (`Fabrica`, the facade this
 wraps), [contracts/managers.md](managers.md) (`execute_in_sandbox`, reused
 unchanged underneath every tool handler)
 
 ---
+
+## Correction found during implementation: HTTP transport reuses the `mcp` library's OWN real auth support, not hand-rolled ASGI middleware
+
+The original sketch above implied `FabricaMCPServer` would need its own
+ASGI app assembly and its own bearer-token extraction. Reading
+`mcp.server.lowlevel.Server`'s real, current API during implementation
+found this already exists, built-in: `Server.streamable_http_app(auth=...,
+token_verifier=...)` returns a real `Starlette` app with
+`AuthenticationMiddleware`/`BearerAuthBackend` (extracts the bearer token,
+calls `token_verifier.verify_token`) and `RequireAuthMiddleware` (rejects
+any request with no authenticated user) already wired in -- confirmed
+working end to end (a real `uvicorn` server, a real
+`mcp.client.streamable_http` client, real accept/reject) before writing
+any of `FabricaMCPServer`'s own code, not assumed from the library's docs.
+
+`TokenAuthenticator` (this contract's own DI boundary) is adapted onto the
+real `mcp.server.auth.provider.TokenVerifier` Protocol via a small
+`_TokenVerifierAdapter` -- `agent_id` is carried in the real
+`AccessToken.subject` field (not `client_id`, which means something
+different in OAuth: the calling application, not the resolved end-user
+identity) and retrieved per-request via `get_access_token()`'s contextvar
+inside `_on_call_tool`, exactly where `stdio_agent_id` is used for stdio.
+
+Two required-but-otherwise-unused fields on the real `AuthSettings`
+pydantic model, `issuer_url` and `resource_server_url`, must both be
+supplied even though no real OAuth authorization-server flow is used here
+-- confirmed directly (not from docs) that `streamable_http_app` only adds
+OAuth discovery *routes* when `auth_server_provider` is ALSO set, which it
+never is in this contract; `issuer_url` is a required placeholder value in
+that configuration, not a real identity this server asserts.
+
+**A real gap found and fixed at the same time**: this contract's
+`ServerTransportConfig` never actually enforced "authenticator: Required
+if kind == 'http'" -- it was stated in the docstring only.
+`ServerTransportConfig.__post_init__` now raises `ValueError` for
+`kind="http"` missing any of `host`/`port`/`authenticator`, matching
+`MCPServerConfig`'s own validation pattern (`contracts/mcp-integration.md`).
+
+**`AuthenticationError` is no longer constructed or raised anywhere in
+this module** -- `RequireAuthMiddleware` rejects unauthenticated requests
+with a real HTTP 401 response, not a Python exception `FabricaMCPServer`
+could catch and re-raise. Kept in the public error hierarchy for a caller
+who wants one `FabricaMCPServerError` subtree to catch, but nothing in
+`src/fabrica/mcp/server.py` raises it.
+
+**`UnsupportedTransportError` (originally sketched for an unimplemented
+HTTP path) no longer exists** -- both transports are real now, so there
+is nothing left for it to guard.
 
 ## Types
 
@@ -28,10 +77,18 @@ class ServerTransportConfig:
     host: str | None = None           # required if kind == "http"
     port: int | None = None           # required if kind == "http"
     authenticator: TokenAuthenticator | None = None
-    """Required if kind == "http" -- HTTP/SSE connections need bearer-token
+    """Required if kind == "http" -- HTTP connections need bearer-token
     resolution to an agent_id (mcp-server.md's resolved auth layer). None
     for stdio -- see stdio_agent_id below."""
     stdio_agent_id: str = "mcp-stdio-client"
+
+    def __post_init__(self) -> None:
+        """Real gap found and fixed during implementation: this contract's
+        first draft stated "required if kind == 'http'" only in a
+        docstring, never enforced it. Enforced now -- raises ValueError
+        for kind="http" missing any of host/port/authenticator, matching
+        MCPServerConfig's own __post_init__ validation pattern
+        (contracts/mcp-integration.md)."""
     """The agent_id assigned to every stdio connection. Only one trusted
     local caller exists per stdio session (implicit trust via process
     spawn, same as every local MCP server) -- no per-connection identity
@@ -160,8 +217,12 @@ async def _handle_prompts_get(self, name: str, version: int | None = None) -> Pr
 ## What this contract deliberately does not cover
 
 - **The MCP protocol/transport implementation itself** (JSON-RPC framing,
-  stdio/SSE wire details) — assumed to come from the `mcp` library already
-  used by `MCPClient`, not reimplemented here.
+  wire details) — comes from the real `mcp` library (`Server.run`,
+  `Server.streamable_http_app`), not reimplemented here.
+- **The legacy SSE transport** (distinct from the modern "streamable HTTP"
+  transport implemented here) — streamable HTTP is the currently-
+  recommended transport in the real `mcp` SDK; building the deprecated
+  transport first would be backwards.
 - **Token issuance, rotation, or revocation** — `TokenAuthenticator` is the
   boundary; how an operator actually mints/manages tokens is out of scope,
   per `mcp-server.md` open question 1.
@@ -173,12 +234,21 @@ async def _handle_prompts_get(self, name: str, version: int | None = None) -> Pr
 1. ~~`fabrica_prompts_list` has no backing method~~ **Resolved**: `list_names()`
    added directly to `contracts/prompts.md`'s `PromptStore`/`PromptManager`
    while writing this handler, rather than left as a dangling gap.
-2. `WeakIsolationError`'s check happens once, at construction — if an
-   operator changes `SandboxPool`'s tier after `FabricaMCPServer` is already
-   running (in a service-mode deployment where this could happen live),
-   there's no re-check. Not addressed.
+2. **Still open, and now more precisely scoped**: `WeakIsolationError`'s
+   real tier check cannot run at all yet, not just "no re-check after
+   construction" — implementation found `SandboxPool` has no queryable
+   tier attribute whatsoever (`contracts/sandbox.md` never specified one).
+   `allow_weak_isolation_for_external_callers` is accepted and stored by
+   `FabricaMCPServer.__init__` but currently has zero effect. Needs a
+   `SandboxPool.tier` (or equivalent) surface added to
+   `contracts/sandbox.md` first, before this can be implemented for real.
 3. Multi-tenant HTTP deployments (`mcp-server.md` open question 3) — this
-   contract resolves the single-token-per-connection shape but doesn't
-   stress-test many simultaneous distinct `agent_id`s against shared
-   `SandboxPool`/`Retriever` state.
-4. Zero spike coverage — carried forward unchanged.
+   contract resolves the single-token-per-connection shape (confirmed
+   working: multiple distinct bearer tokens resolve to multiple distinct
+   `agent_id`s, each with its own `Scope`-isolated memory, tested directly)
+   but doesn't stress-test MANY simultaneous distinct `agent_id`s against
+   shared `SandboxPool`/`Retriever` state under real concurrent load.
+4. Zero spike coverage — carried forward unchanged. Real, working tests
+   exist (`tests/mcp/test_server.py`) proving correctness; a spike would
+   be about production-scale characteristics (latency, concurrent
+   connection limits under `uvicorn`), which is a different question.

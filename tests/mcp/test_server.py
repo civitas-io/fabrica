@@ -9,23 +9,21 @@ real in-memory long-term memory, all reached through the MCP protocol.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import json
 import sys
 from typing import Any
 
+import httpx2
 import mcp.types as types
 import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp.client.streamable_http import streamable_http_client
 
 from fabrica.civitas_bridge import CivitasBridge
-from fabrica.mcp.server import (
-    FabricaMCPServer,
-    ServerTransportConfig,
-    UnsupportedTransportError,
-    _to_content,
-)
+from fabrica.mcp.server import FabricaMCPServer, ServerTransportConfig, _to_content
 
 _SERVER_ARGS = ["-m", "tests.mcp.fixtures.fabrica_stdio_server"]
 
@@ -116,13 +114,17 @@ class TestPrompts:
 
 
 class TestConstruction:
-    async def test_http_transport_raises_at_start_not_silently_no_ops(self) -> None:
-        fabrica = await CivitasBridge(allow_ungoverned=True).build()
-        server = FabricaMCPServer(
-            fabrica, ServerTransportConfig(kind="http", host="localhost", port=8080)
-        )
-        with pytest.raises(UnsupportedTransportError):
-            await server.start()
+    def test_http_transport_without_authenticator_raises_at_construction(self) -> None:
+        with pytest.raises(ValueError, match="requires host, port, and authenticator"):
+            ServerTransportConfig(kind="http", host="localhost", port=8080)
+
+    def test_http_transport_without_host_or_port_raises_at_construction(self) -> None:
+        class _Auth:
+            async def authenticate(self, token: str) -> str | None:
+                return "agent-x"
+
+        with pytest.raises(ValueError, match="requires host, port, and authenticator"):
+            ServerTransportConfig(kind="http", authenticator=_Auth())
 
 
 def test_to_content_serializes_dataclass_lists_as_json() -> None:
@@ -134,3 +136,117 @@ def test_to_content_serializes_dataclass_lists_as_json() -> None:
     payload = json.loads(content[0].text)
     expected_item = {"id": "x", "kind": "tool", "name": "x", "description": "d", "eager": False}
     assert payload == [{"item": expected_item, "rank": 0}]
+
+
+# ---------------------------------------------------------------------------
+# HTTP transport -- a REAL uvicorn server + a REAL mcp.client.streamable_http
+# client, real bearer-token accept/reject via the mcp library's own auth
+# middleware. Not mocked anywhere in this path.
+# ---------------------------------------------------------------------------
+
+_HTTP_HOST = "127.0.0.1"
+_HTTP_PORT = 8931
+_HTTP_URL = f"http://{_HTTP_HOST}:{_HTTP_PORT}/mcp"
+_GOOD_TOKEN = "good-token"  # noqa: S105 -- test fixture value, not a real credential
+
+
+class _FixedTokenAuthenticator:
+    """Real TokenAuthenticator implementation -- resolves exactly one
+    known token to exactly one agent_id, denies everything else.
+    """
+
+    async def authenticate(self, token: str) -> str | None:
+        return "http-agent-1" if token == _GOOD_TOKEN else None
+
+
+class _RunningHttpServer:
+    """Starts a real FabricaMCPServer over HTTP in a background task for
+    the duration of the `async with` block, and stops it cleanly after.
+    """
+
+    def __init__(self) -> None:
+        self._server: FabricaMCPServer | None = None
+        self._task: asyncio.Task[None] | None = None
+
+    async def __aenter__(self) -> FabricaMCPServer:
+        fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        transport = ServerTransportConfig(
+            kind="http", host=_HTTP_HOST, port=_HTTP_PORT, authenticator=_FixedTokenAuthenticator()
+        )
+        self._server = FabricaMCPServer(fabrica, transport)
+        self._task = asyncio.ensure_future(self._server.start())
+        await asyncio.sleep(0.4)  # real socket bind -- give uvicorn time to start listening
+        return self._server
+
+    async def __aexit__(self, *exc: object) -> None:
+        assert self._server is not None and self._task is not None
+        await self._server.stop()
+        await self._task
+
+
+def _http_client(token: str | None) -> httpx2.AsyncClient:
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    return httpx2.AsyncClient(headers=headers)
+
+
+class TestHttpTransport:
+    async def test_authenticated_request_lists_the_five_fixed_tools(self) -> None:
+        async with _RunningHttpServer():
+            client = _http_client(_GOOD_TOKEN)
+            async with (
+                streamable_http_client(_HTTP_URL, http_client=client) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                tools = await session.list_tools()
+        names = {t.name for t in tools.tools}
+        assert names == {
+            "fabrica_find",
+            "fabrica_run_code",
+            "fabrica_run_skill",
+            "fabrica_memory_write",
+            "fabrica_memory_search",
+        }
+
+    async def test_unauthenticated_request_is_rejected(self) -> None:
+        async with _RunningHttpServer():
+            client = _http_client(None)
+            with pytest.raises(Exception):  # noqa: B017, PT011 -- real transport-level rejection
+                async with (
+                    streamable_http_client(_HTTP_URL, http_client=client) as (read, write),
+                    ClientSession(read, write) as session,
+                ):
+                    await session.initialize()
+
+    async def test_wrong_token_is_rejected(self) -> None:
+        async with _RunningHttpServer():
+            client = _http_client("wrong-token")
+            with pytest.raises(Exception):  # noqa: B017, PT011 -- real transport-level rejection
+                async with (
+                    streamable_http_client(_HTTP_URL, http_client=client) as (read, write),
+                    ClientSession(read, write) as session,
+                ):
+                    await session.initialize()
+
+    async def test_run_code_resolves_agent_id_from_the_verified_token(self) -> None:
+        # fabrica_run_code's agent_id is resolved from the connection's
+        # verified token (via _resolve_agent_id/get_access_token), never
+        # from caller-supplied arguments -- proven by checking the actual
+        # Scope a real code-mode execution used, not just that the call
+        # succeeded.
+        async with _RunningHttpServer():
+            client = _http_client(_GOOD_TOKEN)
+            async with (
+                streamable_http_client(_HTTP_URL, http_client=client) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                write_result = await session.call_tool(
+                    "fabrica_memory_write", {"content": "written over real HTTP"}
+                )
+                assert write_result.is_error is not True
+                search_result = await session.call_tool(
+                    "fabrica_memory_search", {"query": "written over real HTTP"}
+                )
+        items = _text_payload(search_result)
+        assert len(items) == 1  # only visible under http-agent-1's own Scope

@@ -32,6 +32,11 @@ dependencies = [
     # src/fabrica/civitas_bridge/runtime.py's inline note).
     "civitas>=0.11.0",
     "mcp>=2.0",
+    # Already a transitive dependency of mcp (mcp.server.lowlevel.Server's
+    # HTTP transport needs an ASGI host) -- listed explicitly here since
+    # FabricaMCPServer imports and calls it directly (uvicorn.Config/
+    # uvicorn.Server), not just relying on it existing on disk.
+    "uvicorn>=0.31",
 ]
 
 # Distribution name is "fabrica-context" (fabrica itself is taken on PyPI by

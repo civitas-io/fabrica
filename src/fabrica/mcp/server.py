@@ -14,10 +14,13 @@ older `mcp` SDK versions used). Confirmed directly by reading the
 installed package's real signature, same "reconcile against real source"
 discipline as CivitasRuntime/MCPClient.
 
-Only stdio transport is implemented here. HTTP/SSE transport
-(ServerTransportConfig(kind="http")) is a real, documented gap, not a
-silent stub -- see the module-level "What this module deliberately does
-not cover" note near the bottom.
+Both stdio and HTTP transports are real. HTTP reuses the `mcp` library's
+own real bearer-auth support (`Server.streamable_http_app(token_verifier=...)`,
+`mcp.server.auth`'s `AuthenticationMiddleware`/`BearerAuthBackend`/
+`RequireAuthMiddleware`) rather than hand-rolled ASGI middleware --
+confirmed working end to end (a real uvicorn server, a real
+`mcp.client.streamable_http` client, real bearer-token accept/reject)
+before wiring it in here, not assumed from the library's docs.
 """
 
 from __future__ import annotations
@@ -29,9 +32,15 @@ from dataclasses import dataclass
 from typing import Any, Literal, Protocol, runtime_checkable
 
 import mcp.types as types
+import uvicorn
 from mcp.server import ServerRequestContext
+from mcp.server.auth.middleware.auth_context import get_access_token
+from mcp.server.auth.provider import AccessToken
+from mcp.server.auth.provider import TokenVerifier as _TokenVerifierProtocol
+from mcp.server.auth.settings import AuthSettings
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
+from pydantic import AnyHttpUrl
 
 from fabrica.civitas_bridge import Fabrica
 from fabrica.memory.types import MemoryItem
@@ -56,6 +65,42 @@ class ServerTransportConfig:
     authenticator: TokenAuthenticator | None = None
     stdio_agent_id: str = "mcp-stdio-client"
 
+    def __post_init__(self) -> None:
+        """Real gap found and fixed here, not just in the docstring: the
+        contract states authenticator is "Required if kind == 'http'" but
+        never enforced it. Enforced now, matching MCPServerConfig's own
+        __post_init__ validation pattern (fabrica.mcp.types).
+        """
+        missing_http_fields = self.host is None or self.port is None or self.authenticator is None
+        if self.kind == "http" and missing_http_fields:
+            raise ValueError(
+                "ServerTransportConfig(kind='http') requires host, port, and authenticator "
+                "together."
+            )
+
+
+class _TokenVerifierAdapter(_TokenVerifierProtocol):
+    """Wraps a TokenAuthenticator to satisfy mcp.server.auth.provider's
+    real TokenVerifier Protocol -- reuses the mcp library's own bearer-auth
+    middleware (AuthenticationMiddleware/BearerAuthBackend/
+    RequireAuthMiddleware) instead of hand-rolling ASGI auth. Subclasses
+    the real Protocol directly (not just structurally matching it) so
+    mypy verifies verify_token()'s signature against it exactly. agent_id
+    is carried in AccessToken.subject -- the one field OAuth's AccessToken
+    shape has that maps onto "resolved caller identity" without overloading
+    client_id (which means something different: the OAuth client
+    application, not the end caller).
+    """
+
+    def __init__(self, authenticator: TokenAuthenticator) -> None:
+        self._authenticator = authenticator
+
+    async def verify_token(self, token: str) -> AccessToken | None:
+        agent_id = await self._authenticator.authenticate(token)
+        if agent_id is None:
+            return None
+        return AccessToken(token=token, client_id="fabrica-mcp-client", scopes=[], subject=agent_id)
+
 
 class FabricaMCPServerError(Exception):
     """Base for FabricaMCPServer-specific errors."""
@@ -70,17 +115,13 @@ class WeakIsolationError(FabricaMCPServerError):
 
 
 class AuthenticationError(FabricaMCPServerError):
-    """Raised when an HTTP/SSE connection presents a token that
-    authenticator.authenticate() resolves to None.
-    """
-
-
-class UnsupportedTransportError(FabricaMCPServerError):
-    """Raised by start() for kind="http" -- not implemented in this pass.
-    See the module docstring's "What this module deliberately does not
-    cover" note. Not a silent no-op: an operator who configures http
-    transport gets a clear, typed error at start() time, not a server
-    that appears to run but never actually listens.
+    """NOT raised by this module directly -- authentication rejection is
+    enforced by the real mcp.server.auth middleware
+    (RequireAuthMiddleware), which returns a 401 HTTP response rather than
+    raising a Python exception FabricaMCPServer could catch. Kept in this
+    module's public surface per the contract, for a caller who wants to
+    catch a single FabricaMCPServerError subclass hierarchy -- but nothing
+    in src/fabrica/mcp/server.py constructs or raises it today.
     """
 
 
@@ -152,6 +193,22 @@ class FabricaMCPServer:
             on_get_prompt=self._on_get_prompt,
         )
         self._stop_event = asyncio.Event()
+        self._uvicorn_server: uvicorn.Server | None = None
+
+    def _resolve_agent_id(self) -> str:
+        """stdio: one trusted local caller per session, a single
+        configured default agent_id suffices (contracts/mcp-server.md).
+        http: resolved once per request by RequireAuthMiddleware +
+        _TokenVerifierAdapter, retrieved via get_access_token()'s
+        contextvar -- always present here, since RequireAuthMiddleware
+        already rejected any request that didn't authenticate before this
+        handler ever runs.
+        """
+        if self._transport.kind == "stdio":
+            return self._transport.stdio_agent_id
+        access_token = get_access_token()
+        assert access_token is not None and access_token.subject is not None
+        return access_token.subject
 
     def _build_tool_specs(self) -> list[_ToolSpec]:
         return [
@@ -281,7 +338,7 @@ class FabricaMCPServer:
                 content=[types.TextContent(type="text", text=f"unknown tool: {params.name}")],
                 is_error=True,
             )
-        agent_id = self._transport.stdio_agent_id
+        agent_id = self._resolve_agent_id()
         try:
             result = await spec.handler(agent_id, **(params.arguments or {}))
         except Exception as exc:  # noqa: BLE001 -- surfaced to the caller as is_error, not raised
@@ -322,19 +379,15 @@ class FabricaMCPServer:
     # -- lifecycle -----------------------------------------------------------
 
     async def start(self) -> None:
-        """Begins listening. Blocks until stop() is called or the process
-        ends.
-
-        Raises:
-            UnsupportedTransportError: transport.kind == "http" -- not
-                implemented in this pass.
+        """Begins listening (stdio: reads from stdin; http: binds
+        host:port). Blocks until stop() is called or the process ends.
         """
         if self._transport.kind == "http":
-            raise UnsupportedTransportError(
-                "ServerTransportConfig(kind='http') is not implemented yet -- "
-                "see docs/contracts/mcp-server.md's implementation notes. "
-                "Only kind='stdio' is real today."
-            )
+            await self._start_http()
+        else:
+            await self._start_stdio()
+
+    async def _start_stdio(self) -> None:
         self._stop_event = asyncio.Event()
         async with stdio_server() as (read_stream, write_stream):
             init_options = self._server.create_initialization_options()
@@ -351,23 +404,55 @@ class FabricaMCPServer:
                 if task is run_task:
                     task.result()  # re-raise a real server-side failure, if any
 
-    async def stop(self) -> None:
-        """Signals start() to return. Closing the underlying stdio streams
-        themselves is stdio_server()'s own responsibility, exited when
-        start()'s `async with` block returns.
+    async def _start_http(self) -> None:
+        """Real ASGI app + real bearer-auth, both from the `mcp` library
+        itself, not hand-rolled. AuthSettings.issuer_url/resource_server_url
+        are both REQUIRED fields on the real pydantic model even though
+        no real OAuth authorization-server flow is used here -- only
+        token_verifier's bearer-token path is exercised (confirmed
+        directly: streamable_http_app only adds OAuth discovery ROUTES
+        when auth_server_provider is also set, which it never is here).
+        issuer_url is a required-but-otherwise-unused placeholder in that
+        configuration, not a real identity for this server to assert.
         """
-        self._stop_event.set()
+        assert self._transport.host is not None
+        assert self._transport.port is not None
+        assert self._transport.authenticator is not None  # enforced by ServerTransportConfig
+
+        app = self._server.streamable_http_app(
+            host=self._transport.host,
+            auth=AuthSettings(
+                issuer_url=AnyHttpUrl(f"http://{self._transport.host}:{self._transport.port}"),
+                resource_server_url=None,
+            ),
+            token_verifier=_TokenVerifierAdapter(self._transport.authenticator),
+        )
+        config = uvicorn.Config(
+            app, host=self._transport.host, port=self._transport.port, log_level="warning"
+        )
+        self._uvicorn_server = uvicorn.Server(config)
+        await self._uvicorn_server.serve()
+
+    async def stop(self) -> None:
+        """Signals start() to return. For stdio: closing the underlying
+        streams is stdio_server()'s own responsibility, exited when
+        start()'s `async with` block returns. For http: sets uvicorn's own
+        should_exit flag, which start()'s serve() call is awaiting on.
+        """
+        if self._transport.kind == "http":
+            if self._uvicorn_server is not None:
+                self._uvicorn_server.should_exit = True
+        else:
+            self._stop_event.set()
 
 
 # What this module deliberately does not cover:
 #
-# - HTTP/SSE transport (ServerTransportConfig(kind="http")) -- real ASGI
-#   app assembly (mcp.server.streamable_http/streamable_http_manager),
-#   bearer-token extraction, and TokenAuthenticator wiring into a live
-#   HTTP listener is a genuinely separate, larger unit of engineering
-#   (a real running HTTP server, an ASGI framework choice, a dedicated
-#   test harness) that this pass did not reach. start() raises
-#   UnsupportedTransportError for it rather than silently no-op'ing.
+# - SSE transport specifically (the OLDER, now-legacy `mcp` transport,
+#   distinct from the modern "streamable HTTP" transport implemented
+#   here) -- streamable HTTP is the currently-recommended transport in
+#   the real `mcp` SDK; the legacy SSE transport was never built, since
+#   building the deprecated one first would be backwards.
 # - WeakIsolationError's real tier check -- SandboxPool has no queryable
 #   tier attribute yet (contracts/sandbox.md never specified one); until
 #   it does, allow_weak_isolation_for_external_callers is accepted but

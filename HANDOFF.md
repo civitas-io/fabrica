@@ -53,7 +53,7 @@ plus the general rule itself).
 ### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 149 tests total, clean
+mocked stubs standing in for untested logic), 154 tests total, clean
 `ruff`/`mypy --strict`, stable across repeated runs:
 
 - **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
@@ -151,82 +151,72 @@ corrected to async).
   (`on_list_tools`/`on_call_tool`/`on_list_prompts`/`on_get_prompt`), not
   an older decorator-based `FastMCP` style some `mcp` SDK versions use.
   Five fixed MCP tools + native Prompts mapping, exactly per the contract.
-  8 tests, all against a REAL `mcp.ClientSession` connected over a real
-  stdio subprocess to a real `CivitasBridge`-built `Fabrica`
-  (`tests/mcp/fixtures/fabrica_stdio_server.py`) — including one genuine
-  code-mode execution reached entirely through the MCP protocol.
-  **Deliberately NOT built in this pass, stated honestly rather than
-  stubbed**: HTTP/SSE transport (`start()` raises
-  `UnsupportedTransportError` for it) — real ASGI app assembly and bearer-
-  token wiring is a separately-scoped unit of engineering; and
-  `WeakIsolationError`'s real tier check (`SandboxPool` has no queryable
-  tier attribute yet to check against, a pre-existing contract gap, not
-  something this pass introduced).
+  **Both stdio AND HTTP transports are real** — HTTP reuses the `mcp`
+  library's OWN bearer-auth support (`Server.streamable_http_app
+  (token_verifier=...)`, real `AuthenticationMiddleware`/`BearerAuthBackend`/
+  `RequireAuthMiddleware`) via a small `_TokenVerifierAdapter`, rather than
+  hand-rolled ASGI middleware — confirmed working end to end with a real
+  `uvicorn` server + real bearer-token accept/reject before wiring it in,
+  not assumed from docs. `agent_id` is resolved from the verified token's
+  `AccessToken.subject`, never from caller-supplied arguments.
+  A real, previously-undocumented gap found and fixed at the same time:
+  `ServerTransportConfig`'s "authenticator required if kind='http'" was
+  only ever a docstring claim — `__post_init__` now actually enforces it.
+  13 tests total: 8 against a REAL `mcp.ClientSession` over a real stdio
+  subprocess to a real `CivitasBridge`-built `Fabrica`
+  (`tests/mcp/fixtures/fabrica_stdio_server.py`, including one genuine
+  code-mode execution reached entirely through the MCP protocol), 5 more
+  against a REAL `uvicorn`-hosted HTTP server with real bearer-token
+  accept/reject (unauthenticated rejected, wrong token rejected, correct
+  token resolves to the right `agent_id`, memory writes/searches stay
+  correctly `Scope`-isolated per resolved `agent_id`).
+  **Deliberately still NOT built, stated honestly rather than stubbed**:
+  `WeakIsolationError`'s real tier check — `SandboxPool` has no queryable
+  tier attribute to check against yet, a pre-existing contract gap this
+  pass surfaced but didn't introduce; the legacy SSE transport (distinct
+  from the modern streamable-HTTP transport implemented here) — building
+  the deprecated `mcp` transport first would be backwards.
 
 **Not built yet, deliberately**: the real `fabrica-contrib[mem0|zep|letta|
 cognee|langmem]` adapters (need real external services to test against,
 `memory.md`'s own "wrap, don't build" thesis); a `StateStore`-backed
 `MemoryStore`/`PromptStore` adapter for `CivitasBridge`'s service mode
-(see `CivitasBridge`'s own entry above for why); `FabricaMCPServer`'s
-HTTP/SSE transport (see above).
+(see `CivitasBridge`'s own entry above for why).
 
 ### What's left, in priority order
 
-1. **`FabricaMCPServer`'s HTTP/SSE transport** — `start()` raises
-   `UnsupportedTransportError` for `kind="http"` today, deliberately, not
-   silently. Real ASGI app assembly (`mcp.server.streamable_http`),
-   bearer-token extraction, and `TokenAuthenticator` wiring into a live
-   listener is a genuinely separate unit of engineering this pass didn't
-   reach — stdio transport (the common case: Claude Desktop/Claude Code-
-   style local connections) is real and tested.
-2. **`civitas-contrib/packages/fabrica`'s real code has now been migrated**
-   into `civitas-io/fabrica` (`src/fabrica/mcp/` — `MCPClient` close to its
-   original shape, `BubblewrapSandbox` replaced by `SrtIsolation`, per the
-   contract's resolution). The old package in `civitas-contrib` itself is
-   now fully superseded, not just documented as such — nothing left there
-   needs porting.
-   **Still open, unrelated to the migration itself**: the
-   civitas-core-vs-fabrica-own type-duplication finding
-   ([civitas-contrib#3](https://github.com/civitas-io/civitas-contrib/issues/3))
-   was about that OLD package's own internal inconsistency, not about this
-   migration -- moot now that the migration is done using fabrica's own,
-   self-consistent types throughout (`fabrica.mcp.types`, not a mix of
-   `civitas.mcp.types` and its own).
-3. **`civitas-contrib` PR #2** itself still needs checking on and likely
-   merging (same pattern as the earlier TruffleHog fix: check CI, merge if
-   green) — still open, unrelated to anything above.
-4. **`PresidiumClient`'s real REST+mTLS implementation** — deliberately
+1. **`PresidiumClient`'s real REST+mTLS implementation** — deliberately
    deferred (option (b), chosen over building it against a self-written
    fake HTTP server), since no real Presidium deployment/endpoint exists
    anywhere to validate it against. `NullPresidiumClient` and the
    `PresidiumClient` Protocol are real and sufficient for everything built
    so far; revisit only once a real Presidium endpoint exists, or the fake-
    server-tested option is deliberately chosen instead.
-5. **A `StateStore`-backed `MemoryStore`/`PromptStore` adapter** for
+2. **A `StateStore`-backed `MemoryStore`/`PromptStore` adapter** for
    `CivitasBridge`'s service mode — `request_state_persistence` itself is
    real and tested, but nothing consumes the `ComponentStateHandle` it
    returns yet (see `CivitasBridge`'s own entry above). Needs its own
    design pass: a snapshot format and a read-modify-write strategy over
    `ComponentStateHandle`'s whole-blob `get`/`set` — not designed in
    `contracts/memory.md`/`contracts/prompts.md` at all.
-6. **`WeakIsolationError`'s real tier check** — `SandboxPool` has no
+3. **`WeakIsolationError`'s real tier check** — `SandboxPool` has no
    queryable tier attribute yet (`contracts/sandbox.md` never specified
    one), so `FabricaMCPServer`'s `allow_weak_isolation_for_external_callers`
    is accepted and stored but currently has no effect. Needs a
    `SandboxPool.tier` (or equivalent) surface added to `contracts/sandbox.md`
    first.
-7. A batch of older, explicitly-fine-to-leave-deferred design-layer items
+4. A batch of older, explicitly-fine-to-leave-deferred design-layer items
    (`tool-execution.md`, `retrieval.md`, `isolation.md`, `skills-gateway.md`
    open questions) and smaller contract-level wrinkles (`RecencyCompactor`'s
    `preserve_last_n=6` still unvalidated, multi-tenant `FabricaMCPServer`
-   untested) — see `git log` and the contracts themselves for the full
-   list; none of these block anything above.
+   untested under real concurrent load) — see `git log` and the contracts
+   themselves for the full list; none of these block anything above.
 
 **Immediate next action**: none of the remaining items are blocking each
 other or anything already built -- pick whichever matters most next.
-Lowest-effort, highest-value pending item is probably checking and
-merging `civitas-contrib` PR #2 (item 3), since it's an unrelated,
-already-resolved task that just never got closed out.
+All three `civitas-contrib` housekeeping items (docs superseded, CI
+lint/tests, the mypy type-duplication + optional-import fix) are now
+fully closed out -- nothing pending there anymore.
 
 ## Read in this order if you're new to this
 
