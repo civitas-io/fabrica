@@ -20,8 +20,10 @@ direct tool-calling (`SPIKE-code-mode-execution.md`).
 
 Repo: `civitas-io/fabrica` (public). Design/validate/critique/architecture/
 system-design/contracts is complete, and **all six object-model contracts
-are now real, tested code** (`src/fabrica/`) — see "Current state"
-immediately below for exactly what exists and what's left (MCP, mostly).
+PLUS both MCP directions are now real, tested code** (`src/fabrica/`) —
+see "Current state" immediately below for exactly what exists and what's
+still genuinely left (mostly HTTP/SSE MCP transport and the
+`civitas-contrib` migration/PR cleanup).
 
 ---
 
@@ -51,7 +53,7 @@ plus the general rule itself).
 ### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 120 tests total, clean
+mocked stubs standing in for untested logic), 149 tests total, clean
 `ruff`/`mypy --strict`, stable across repeated runs:
 
 - **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
@@ -126,37 +128,73 @@ against them: `ToolNamespace` had no enumeration method (added
 declared sync but need to await `Retriever.register()`'s `async def` (both
 corrected to async).
 
+- **`MCPClient`/`MCPToolNamespace`** (`src/fabrica/mcp/`) — migrated real
+  code from `civitas-contrib/packages/fabrica`, not a rewrite. Two real
+  corrections found reconciling against the actually-installed `mcp`
+  v2.0.0 SDK (not transcribed from the older-SDK-era migrated code
+  unchanged): attribute access is snake_case now (`tool.input_schema`,
+  `result.is_error`), not the migrated code's camelCase; and `srt`
+  (replacing `BubblewrapSandbox`) structurally REFUSES an
+  unrestricted-network config (`allowedDomains: ["*"]` is a hard config
+  error, confirmed by running `srt` directly) — `SandboxConfig.network=
+  "allow"` now raises `UnsupportedSandboxConfigurationError` at
+  `connect()` time rather than silently downgrading or passing through a
+  config `srt` itself would reject (fifth confirmed
+  fail-closed-by-default instance). `MCPToolNamespace`'s async-constructor
+  gap (contract's own flagged open item) resolved with an async factory,
+  `MCPToolNamespace.create(client)`. 21 tests, all against a REAL MCP
+  server subprocess (`tests/mcp/fixtures/echo_server.py`, the actual `mcp`
+  library's own server-side API, not a mock) — including real
+  `srt`-sandboxed connections.
+- **`FabricaMCPServer`** (`src/fabrica/mcp/server.py`) — built against
+  `mcp.server.lowlevel.Server`'s real, current constructor-callback API
+  (`on_list_tools`/`on_call_tool`/`on_list_prompts`/`on_get_prompt`), not
+  an older decorator-based `FastMCP` style some `mcp` SDK versions use.
+  Five fixed MCP tools + native Prompts mapping, exactly per the contract.
+  8 tests, all against a REAL `mcp.ClientSession` connected over a real
+  stdio subprocess to a real `CivitasBridge`-built `Fabrica`
+  (`tests/mcp/fixtures/fabrica_stdio_server.py`) — including one genuine
+  code-mode execution reached entirely through the MCP protocol.
+  **Deliberately NOT built in this pass, stated honestly rather than
+  stubbed**: HTTP/SSE transport (`start()` raises
+  `UnsupportedTransportError` for it) — real ASGI app assembly and bearer-
+  token wiring is a separately-scoped unit of engineering; and
+  `WeakIsolationError`'s real tier check (`SandboxPool` has no queryable
+  tier attribute yet to check against, a pre-existing contract gap, not
+  something this pass introduced).
+
 **Not built yet, deliberately**: the real `fabrica-contrib[mem0|zep|letta|
 cognee|langmem]` adapters (need real external services to test against,
-`memory.md`'s own "wrap, don't build" thesis); `MCPToolNamespace`/
-`FabricaMCPServer` (see item 1 below); a `StateStore`-backed
+`memory.md`'s own "wrap, don't build" thesis); a `StateStore`-backed
 `MemoryStore`/`PromptStore` adapter for `CivitasBridge`'s service mode
-(see `CivitasBridge`'s own entry above for why).
+(see `CivitasBridge`'s own entry above for why); `FabricaMCPServer`'s
+HTTP/SSE transport (see above).
 
 ### What's left, in priority order
 
-1. **`MCPToolNamespace`/`FabricaMCPServer`** — both contracted
-   (`contracts/mcp-integration.md`, `contracts/mcp-server.md`), neither
-   implemented, and now the only remaining object-model-adjacent surface
-   with no real code. `MCPToolNamespace`'s eager-connect-in-`__init__`
-   needs an async factory (Python constructors can't be coroutines —
-   flagged in the contract, not resolved).
-2. **`civitas-contrib/packages/fabrica`'s real code needs migrating**, not
-   archiving — `MCPClient` moves in close to its current shape;
-   `BubblewrapSandbox` gets replaced by `srt`, not carried over Linux-only.
-   **New, actionable finding from fixing that repo's long-broken CI**
-   ([civitas-contrib#2](https://github.com/civitas-io/civitas-contrib/pull/2)
-   — open, not yet merged;
-   [civitas-contrib#3](https://github.com/civitas-io/civitas-contrib/issues/3)
-   — filed): `civitas` core has grown its own parallel `civitas.mcp.types`/
-   `civitas.sandbox.config` since `packages/fabrica` was written, and that
-   package is now inconsistently split between civitas's versions and its own
-   duplicates. **When the migration happens, standardize on civitas core's
-   current types from the start** — don't carry the inconsistency into
-   `civitas-io/fabrica` unresolved.
-3. **`civitas-contrib` PR #2** itself needs checking on and likely merging
-   (same pattern as the earlier TruffleHog fix: check CI, merge if green) —
-   still open.
+1. **`FabricaMCPServer`'s HTTP/SSE transport** — `start()` raises
+   `UnsupportedTransportError` for `kind="http"` today, deliberately, not
+   silently. Real ASGI app assembly (`mcp.server.streamable_http`),
+   bearer-token extraction, and `TokenAuthenticator` wiring into a live
+   listener is a genuinely separate unit of engineering this pass didn't
+   reach — stdio transport (the common case: Claude Desktop/Claude Code-
+   style local connections) is real and tested.
+2. **`civitas-contrib/packages/fabrica`'s real code has now been migrated**
+   into `civitas-io/fabrica` (`src/fabrica/mcp/` — `MCPClient` close to its
+   original shape, `BubblewrapSandbox` replaced by `SrtIsolation`, per the
+   contract's resolution). The old package in `civitas-contrib` itself is
+   now fully superseded, not just documented as such — nothing left there
+   needs porting.
+   **Still open, unrelated to the migration itself**: the
+   civitas-core-vs-fabrica-own type-duplication finding
+   ([civitas-contrib#3](https://github.com/civitas-io/civitas-contrib/issues/3))
+   was about that OLD package's own internal inconsistency, not about this
+   migration -- moot now that the migration is done using fabrica's own,
+   self-consistent types throughout (`fabrica.mcp.types`, not a mix of
+   `civitas.mcp.types` and its own).
+3. **`civitas-contrib` PR #2** itself still needs checking on and likely
+   merging (same pattern as the earlier TruffleHog fix: check CI, merge if
+   green) — still open, unrelated to anything above.
 4. **`PresidiumClient`'s real REST+mTLS implementation** — deliberately
    deferred (option (b), chosen over building it against a self-written
    fake HTTP server), since no real Presidium deployment/endpoint exists
@@ -171,19 +209,25 @@ cognee|langmem]` adapters (need real external services to test against,
    design pass: a snapshot format and a read-modify-write strategy over
    `ComponentStateHandle`'s whole-blob `get`/`set` — not designed in
    `contracts/memory.md`/`contracts/prompts.md` at all.
-6. A batch of older, explicitly-fine-to-leave-deferred design-layer items
+6. **`WeakIsolationError`'s real tier check** — `SandboxPool` has no
+   queryable tier attribute yet (`contracts/sandbox.md` never specified
+   one), so `FabricaMCPServer`'s `allow_weak_isolation_for_external_callers`
+   is accepted and stored but currently has no effect. Needs a
+   `SandboxPool.tier` (or equivalent) surface added to `contracts/sandbox.md`
+   first.
+7. A batch of older, explicitly-fine-to-leave-deferred design-layer items
    (`tool-execution.md`, `retrieval.md`, `isolation.md`, `skills-gateway.md`
-   open questions) and smaller contract-level wrinkles (`WeakIsolationError`'s
-   construction-time-only check, `RecencyCompactor`'s `preserve_last_n=6`
-   still unvalidated, multi-tenant `FabricaMCPServer` untested) — see `git
-   log` and the contracts themselves for the full list; none of these block
-   anything above.
+   open questions) and smaller contract-level wrinkles (`RecencyCompactor`'s
+   `preserve_last_n=6` still unvalidated, multi-tenant `FabricaMCPServer`
+   untested) — see `git log` and the contracts themselves for the full
+   list; none of these block anything above.
 
-**Immediate next action**: implement `MCPToolNamespace`/`FabricaMCPServer`
-(item 1) — migrating `civitas-contrib/packages/fabrica`'s real `MCPClient`
-code in as the validated implementation, per `mcp-integration.md`.
-Separately, check and likely merge `civitas-contrib` PR #2 (item 3) — an
-unrelated, already-resolved task that just never got closed out.
+**Immediate next action**: none of the remaining items are blocking each
+other or anything already built -- pick whichever matters most next.
+Lowest-effort, highest-value pending item is probably checking and
+merging `civitas-contrib` PR #2 (item 3), since it's an unrelated,
+already-resolved task that just never got closed out.
+
 ## Read in this order if you're new to this
 
 1. `README.md` — entry point, links to everything.

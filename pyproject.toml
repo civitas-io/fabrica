@@ -31,6 +31,7 @@ dependencies = [
     # spawn mechanism is nominally coupled to that concrete class (see
     # src/fabrica/civitas_bridge/runtime.py's inline note).
     "civitas>=0.11.0",
+    "mcp>=2.0",
 ]
 
 # Distribution name is "fabrica-context" (fabrica itself is taken on PyPI by

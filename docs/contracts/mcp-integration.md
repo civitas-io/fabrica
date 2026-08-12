@@ -50,22 +50,15 @@ class MCPToolSchema:
     input_schema: dict[str, Any]
 
 
-@dataclass(frozen=True)
-class ToolSchema:
-    """tool-execution.md's sketched type, given a concrete shape here.
-    MCPToolSchema's fields map onto this directly -- no translation
-    logic beyond field renaming."""
-    name: str
-    description: str
-    input_schema: dict[str, Any]
-
-
-@dataclass(frozen=True)
-class ToolResult:
-    """tool-execution.md's sketched type, given a concrete shape here."""
-    success: bool
-    value: Any | None
-    error_message: str | None
+# ToolSchema/ToolResult are NOT redefined here. This contract originally
+# sketched them as their own dataclasses ("tool-execution.md's sketched
+# type, given a concrete shape here"); implementation found
+# fabrica.tools.types.ToolSchema/ToolResult (already built for
+# contracts/managers.md) are structurally identical, field-for-field.
+# fabrica.mcp.types re-exports them directly instead of defining a second,
+# identical pair -- MCPToolNamespace's return values are then directly
+# usable by ToolManager with zero translation at the boundary, which a
+# separate-but-identical type would have required anyway.
 ```
 
 ---
@@ -92,6 +85,17 @@ class IsolationUnavailableError(MCPConnectionError):
     default). Mirrors BubblewrapSandbox.check_or_raise()'s existing
     behavior in the migrated code -- not a new caution, an extension of
     caution that already existed, to a second platform."""
+
+
+class UnsupportedSandboxConfigurationError(MCPConnectionError):
+    """Raised by connect() when sandbox.enabled and
+    sandbox.network == "allow" are both true -- srt structurally refuses
+    an unsandboxed-network configuration (see the correction above), so
+    there is no honest way to honor this request. Not a silent downgrade
+    to network="deny" (that would change the server's real behavior
+    without telling anyone) or a passthrough of a config srt itself would
+    reject (that would surface as a confusing subprocess failure instead
+    of a clear, typed error at connect() time)."""
 
 
 class MCPServerUnavailableError(MCPError):
@@ -150,6 +154,44 @@ class MCPClient:
 Retained close to the migrated code's existing shape (`stdio_client`/`sse_client`
 transport selection, `ClientSession` lifecycle) — this contract specifies the
 boundary and error behavior, not a rewrite of internals that already work.
+
+**Correction found during implementation**: the migrated code
+(`civitas-contrib/packages/fabrica/src/fabrica/mcp/client.py`) reads
+`tool.inputSchema`/`result.isError` -- camelCase attribute access matching
+an older `mcp` Python SDK. The real, currently-installed `mcp` package
+(v2.0.0) exposes these as snake_case attributes on its pydantic models
+(`tool.input_schema`, `result.is_error`) -- camelCase survives only as a
+constructor kwarg alias, not as an attribute name. Confirmed directly by
+constructing real `mcp.types.Tool`/`CallToolResult` objects and reading
+their attributes, not assumed. `MCPClient.list_tools()`/`call_tool()` are
+implemented against the real, current snake_case attribute names, not
+transcribed unchanged from the migrated code -- the same "reconcile
+against real source, don't just transcribe" discipline applied to
+`CivitasRuntime` in `contracts/civitas-bridge.md`.
+
+**Second correction found during implementation, about `srt` specifically
+(not `bwrap`)**: `SandboxConfig.network: Literal["allow", "deny"]` assumes
+a coarse binary switch, matching `bwrap`'s `--unshare-net` toggle that the
+migrated `BubblewrapSandbox` used. `srt`'s real network model has no such
+switch -- it is always an explicit domain allowlist
+(`network.allowedDomains`), and `srt` deliberately, structurally REFUSES
+an overly-broad wildcard entry (`"*"`) with a hard configuration error,
+confirmed by running `srt` directly, not assumed from its docs:
+`network="deny"` maps cleanly to `allowedDomains: []` (tested, works
+exactly as expected), but `network="allow"` has no honest, safe
+translation into `srt`'s settings shape at all -- there is no "allow
+literally everything" configuration `srt` will accept.
+
+**Resolved**: `MCPClient.connect()` raises a new error,
+`UnsupportedSandboxConfigurationError`, when `sandbox.enabled` and
+`sandbox.network == "allow"` are both true -- `srt` cannot honor this
+request at all, so pretending otherwise (e.g. silently downgrading to
+`"deny"`, or passing through an invalid config that `srt` itself would
+reject at its own boundary) would be worse than refusing up front. An
+operator whose MCP server genuinely needs broad outbound network access
+must set `sandbox.enabled = False` with `allow_unsandboxed = True` for
+that specific server -- an explicit, greppable, fail-closed-by-default
+opt-in, the fifth confirmed instance of that platform-wide rule.
 
 ---
 
@@ -210,12 +252,16 @@ is not routed through `SandboxPool`'s ephemeral-execution lifecycle).
 
 ## Open items for implementation
 
-1. `__init__`'s eager connection is inherently async (`connect()` is a
-   coroutine), but Python constructors can't be — needs an async factory
-   (`await MCPToolNamespace.create(client)`) or `ToolManager.register()`
-   itself becoming async-aware of this specific namespace type. Not
-   resolved here; a real implementation-level wrinkle the design doc's
-   sketch glossed over.
+1. ~~`__init__`'s eager connection is inherently async~~ **Resolved**:
+   `MCPToolNamespace.create(client)` is an async classmethod factory --
+   `__init__` itself stays synchronous, takes an already-fetched schema
+   list, and is not the public construction path. `ToolManager.register()`
+   itself did not need to become async-aware of this specific namespace
+   type -- it already awaits `namespace.list_schemas()`'s caller-side
+   construction happening before `register()` is ever invoked, same as
+   any other `ToolNamespace` implementation; only the CALLER assembling a
+   `MCPToolNamespace` needs `await ... .create(...)`, which is no
+   different in shape from `await SkillManager.load(...)`.
 2. `open()`'s `KeyError`-on-unknown-path behavior isn't cross-checked against
    how other `ToolNamespace` implementations are expected to handle the same
    case — `tool-execution.md` doesn't specify this generically either.
