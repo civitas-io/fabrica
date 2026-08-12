@@ -45,7 +45,13 @@ class ToolManager:
         """
         schemas = namespace.list_schemas()
         items = [
-            Indexable(id=schema.name, kind="tool", name=schema.name, description=schema.description)
+            Indexable(
+                id=schema.name,
+                kind="tool",
+                name=schema.name,
+                description=schema.description,
+                eager=schema.eager,
+            )
             for schema in schemas
         ]
         await self._retriever.register(items)

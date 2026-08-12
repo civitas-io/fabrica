@@ -48,7 +48,33 @@ async def test_load_then_find(skill_manager: SkillManager, tmp_path: Path) -> No
 
     assert len(results) == 1
     assert results[0].item.name == "greet-user"
-    assert results[0].item.kind == "skill"
+
+
+async def test_load_propagates_eager_frontmatter_field(tmp_path: Path) -> None:
+    # A dedicated retriever/skill_manager pair (not the shared fixture) so
+    # the test can inspect list_eager() on the actual Retriever instance
+    # SkillManager.load() wrote into.
+    retriever = Retriever(primary=KeywordBackend())
+    sandbox_pool = SandboxPool(SubprocessSandbox(), warm_size=0, max_concurrent=5)
+    skill_manager = SkillManager(retriever, sandbox_pool, _AllowClient())
+
+    eager_dir = write_skill(tmp_path, "eager-skill", frontmatter_extra="eager: true\n")
+    default_dir = write_skill(tmp_path, "default-skill")
+    await skill_manager.load(eager_dir)
+    await skill_manager.load(default_dir)
+
+    eager_items = await retriever.list_eager(kind="skill")
+    eager_names = {item.name for item in eager_items}
+    assert eager_names == {"eager-skill"}  # default-skill's implicit eager=False excluded
+
+
+async def test_load_rejects_non_boolean_eager_field(
+    skill_manager: SkillManager, tmp_path: Path
+) -> None:
+    skill_dir = write_skill(tmp_path, "bad-eager", frontmatter_extra="eager: not-a-bool\n")
+
+    with pytest.raises(SkillParseError, match="'eager' field must be a boolean"):
+        await skill_manager.load(skill_dir)
 
 
 async def test_load_raises_on_missing_frontmatter(

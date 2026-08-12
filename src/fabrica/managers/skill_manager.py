@@ -103,11 +103,15 @@ class SkillManager:
         if script is not None and not isinstance(script, str):
             raise SkillParseError(f"{skill_md}: 'script' field must be a string path")
 
+        eager = frontmatter.get("eager", False)
+        if not isinstance(eager, bool):
+            raise SkillParseError(f"{skill_md}: 'eager' field must be a boolean")
+
         self._skills[name] = _RegisteredSkill(
             name=name, description=description, script=script, skill_dir=skill_dir
         )
         await self._retriever.register(
-            [Indexable(id=name, kind="skill", name=name, description=description)]
+            [Indexable(id=name, kind="skill", name=name, description=description, eager=eager)]
         )
 
     async def find(self, query: str, *, limit: int = 5) -> list[RankedMatch]:

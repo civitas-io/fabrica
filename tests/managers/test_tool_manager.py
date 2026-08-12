@@ -64,6 +64,38 @@ async def test_register_then_find(tool_manager: ToolManager) -> None:
     assert results[0].item.kind == "tool"
 
 
+async def test_register_propagates_eager_flag_from_tool_schema() -> None:
+    # A dedicated retriever/tool_manager pair (not the shared fixture) so
+    # the test can inspect list_eager() on the actual Retriever instance
+    # ToolManager.register() wrote into.
+    retriever = Retriever(primary=KeywordBackend())
+    sandbox_pool = SandboxPool(SubprocessSandbox(), warm_size=0, max_concurrent=5)
+    tool_manager = ToolManager(retriever, sandbox_pool, _AllowClient())
+
+    def always_on() -> str:
+        return "on"
+
+    namespace = DictToolNamespace(
+        {
+            "always_on": (
+                ToolSchema(
+                    name="always_on", description="always visible", input_schema={}, eager=True
+                ),
+                always_on,
+            ),
+            "get_weather": (
+                ToolSchema(name="get_weather", description="not eager", input_schema={}),
+                always_on,
+            ),
+        }
+    )
+    await tool_manager.register(namespace)
+
+    eager_items = await retriever.list_eager(kind="tool")
+    eager_names = {item.name for item in eager_items}
+    assert eager_names == {"always_on"}  # get_weather's default eager=False excluded
+
+
 async def test_run_code_executes_real_tool_call_end_to_end(tool_manager: ToolManager) -> None:
     """The real proof: generated code calls namespace.call(), which
     crosses ToolManager's on_tool_call bridge, into the ACTUAL registered

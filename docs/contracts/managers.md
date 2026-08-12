@@ -198,6 +198,12 @@ class SkillManager:
         the identical reason: it needs to await Retriever.register() to
         index the loaded skill.
 
+        Frontmatter fields: `name`/`description` required, `script`
+        optional (find()-discoverable-only skill if absent), `eager`
+        optional bool, default false — resolves retrieval.md's open item 2
+        (author-declared, per-item, matching `ToolSchema.eager`'s
+        identical resolution).
+
         Raises:
             SkillParseError: malformed frontmatter.
         """

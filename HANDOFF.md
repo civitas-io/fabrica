@@ -53,7 +53,7 @@ plus the general rule itself).
 ### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 177 tests total, clean
+mocked stubs standing in for untested logic), 180 tests total, clean
 `ruff`/`mypy --strict`, stable across repeated runs:
 
 - **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
@@ -274,6 +274,18 @@ cognee|langmem]` adapters (need real external services to test against,
    construction-time-only check with no live re-check if a deployment's
    tier changes) — see `git log` and the contracts themselves for the full
    list; none of these block anything above.
+
+   **First one resolved, walking through this batch one by one**:
+   `retrieval.md` open item 2 (`eager` per-deployment vs. per-item) was
+   actually a live dead-feature gap, not just an open design question --
+   `Indexable.eager` had existed as a field the whole time, but nothing
+   anywhere ever set it to `True`. Resolved as author-declared/per-item:
+   `ToolSchema.eager: bool = False` and an optional `SKILL.md`
+   `eager: true` frontmatter field, both flowing through into
+   `Indexable(eager=...)` unchanged; `MCPToolNamespace`-sourced tools stay
+   `eager=False` always (external servers shouldn't unilaterally claim
+   always-visible status). A per-deployment override remains a real,
+   deferred idea, not built. 3 new tests (180 total).
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without

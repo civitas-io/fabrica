@@ -125,8 +125,26 @@ irrelevant — that's the whole point of wrapping.
 1. Exact Rust/PyO3 packaging shape for `KeywordBackend` — a workspace crate inside
    `fabrica`, or a separate `fabrica-retrieval-core` crate versioned independently?
    Implementation-phase decision, not resolved here.
-2. Does `eager` get set per-deployment (config) or per-item (author-declared in the
-   tool/skill's own metadata)? Both are defensible; not decided.
+2. ~~Does `eager` get set per-deployment (config) or per-item (author-declared)?~~
+   **Resolved, and closed a real dead-feature gap in the same pass**:
+   per-item, author-declared. `Indexable.eager` had existed as a field
+   since `contracts/retriever.md` was written, but nothing anywhere in
+   the codebase ever set it to `True` — `ToolManager.register()`/
+   `SkillManager.load()` always constructed `Indexable(eager=False)`
+   implicitly, a genuinely unusable feature, not just an open design
+   question. Fixed: `ToolSchema.eager: bool = False` (a tool's own author
+   declares it directly, since `DictToolNamespace` is already constructed
+   with caller-supplied `ToolSchema` instances — no new API needed) and
+   an optional `eager: true` `SKILL.md` frontmatter field, both flowing
+   through into `Indexable(eager=...)` unchanged. Same author-declares,
+   harness-carries-it-through-without-validating shape as
+   `PromptTemplate.cacheable` (`contracts/prompts.md`).
+   `MCPToolNamespace`-sourced tools stay `eager=False` always, deliberately
+   — the MCP protocol has no such concept, and an external server
+   shouldn't be able to unilaterally claim always-visible status in
+   someone else's deployment. A per-deployment override remains a real,
+   deferred idea (not built) — same "ship the default, revisit if
+   forced" logic used throughout this project.
 3. Scale ceiling — this doc resolves the O(1)-vs-linear architecture question, but
    the *quality* of matching at hundreds of tools/skills combined in one index
    (rather than tested separately, as the spikes did) remains unmeasured.
