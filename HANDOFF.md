@@ -242,14 +242,30 @@ cognee|langmem]` adapters (need real external services to test against,
 
 ### What's left, in priority order
 
-1. **`PresidiumClient`'s real REST+mTLS implementation** — deliberately
-   deferred (option (b), chosen over building it against a self-written
-   fake HTTP server), since no real Presidium deployment/endpoint exists
-   anywhere to validate it against. `NullPresidiumClient` and the
-   `PresidiumClient` Protocol are real and sufficient for everything built
-   so far; revisit only once a real Presidium endpoint exists, or the fake-
-   server-tested option is deliberately chosen instead. **The only item
-   left from the original priority list** — everything else on it is done.
+1. **BLOCKED, not just deferred: `PresidiumClient`'s real REST+mTLS
+   implementation.** Explicitly re-confirmed and re-scoped in a direct
+   discussion (not re-derived from scratch): Presidium has no HTTP server
+   anywhere in its codebase today (`PolicyEngine.evaluate()` is an
+   in-process library call, nothing else) -- there is no real API
+   contract to build a client against. Building one now would mean
+   *inventing* a REST request/response shape ourselves and testing the
+   client only against that same invention (a self-written fake mTLS
+   server) -- real client engineering (mTLS handshake, timeout,
+   fail-closed-on-any-failure, possibly a circuit breaker) would be
+   validated, but the wire format would NOT be, since nothing exists yet
+   to validate it against. If real Presidium ever ships an actual REST
+   server, there's a real chance this client would need rebuilding to
+   match its actual shape anyway.
+
+   **Blocked on**: a real Presidium REST/HTTP server existing (in the
+   `presidium` repo, or wherever Presidium's own team decides to build
+   it) -- not on any decision or work item inside `civitas-io/fabrica`
+   itself. `NullPresidiumClient` and the `PresidiumClient` Protocol are
+   real and fully sufficient for everything built here; nothing is
+   waiting on this to proceed. Revisit only when a real Presidium
+   endpoint exists to validate against -- at that point, building the
+   real client stops being "invent-then-test-against-our-own-invention"
+   and becomes normal, real integration work.
 2. A batch of older, explicitly-fine-to-leave-deferred design-layer items
    (`tool-execution.md`, `retrieval.md`, `isolation.md`, `skills-gateway.md`
    open questions) and smaller contract-level wrinkles (`RecencyCompactor`'s
@@ -265,11 +281,10 @@ cognee|langmem]` adapters (need real external services to test against,
    this isn't blocking), but worth noting as the natural next isolation
    milestone if `FabricaMCPServer(kind="http")` sees real external use.
 
-**Immediate next action**: `PresidiumClient`'s REST client is the only
-remaining item from the original priority list — everything else (both
-MCP directions, the persistence adapter, the tier check) is done. Pick it
-up, or spend time on the deferred design-layer batch (item 2) instead --
-neither blocks the other.
+**Immediate next action**: item 1 is genuinely blocked on something
+external to this repo, not actionable right now -- pick up item 2 (the
+deferred design-layer batch) or item 3 (a Tier 1 backend) instead;
+neither blocks the other, and neither is gated on Presidium.
 
 ## Read in this order if you're new to this
 
