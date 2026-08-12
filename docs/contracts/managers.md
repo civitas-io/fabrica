@@ -124,11 +124,16 @@ class ToolManager:
         presidium_client: PresidiumClient,
     ) -> None: ...
 
-    def register(self, namespace: ToolNamespace) -> None:
+    async def register(self, namespace: ToolNamespace) -> None:
         """Registers every tool in namespace as Indexable(kind="tool")
         with the shared Retriever. Delegates idempotency to
         Retriever.register — re-registering an identical namespace is a
-        no-op, not an error."""
+        no-op, not an error.
+
+        Corrected from an earlier sync signature: `Retriever.register()`
+        is `async def` (contracts/retriever.md) — a sync method cannot
+        properly await it. Found by trying to implement this for real,
+        not caught by review beforehand."""
 
     async def find(self, query: str, *, limit: int = 5) -> list[RankedMatch]:
         """The find() fallback (tool-execution.md) for hosts that can't
@@ -169,12 +174,20 @@ class SkillManager:
         presidium_client: PresidiumClient,
     ) -> None: ...
 
-    def load(self, skill_dir: Path) -> None:
+    async def load(self, skill_dir: Path) -> None:
         """Parses a SKILL.md package (frontmatter + body + optional
         scripts/assets/references — skills-gateway.md's real-spec
         check found zero bigpowers skills exercising the bundled-file
         path, so this is genuinely less-tested ground than frontmatter
         parsing). Registers as Indexable(kind="skill").
+
+        Corrected from an earlier sync signature, resolving open item 3
+        below: it was kept sync specifically "for parity with
+        ToolManager.register()" — but ToolManager.register() itself was
+        just corrected to async (it has to await Retriever.register()).
+        The same parity argument now means load() must be async too, for
+        the identical reason: it needs to await Retriever.register() to
+        index the loaded skill.
 
         Raises:
             SkillParseError: malformed frontmatter.
@@ -222,7 +235,15 @@ class SkillManager:
    contract** — `system-design.md §7` was missing a `SkillManager` row entirely,
    not just an inconsistent name. Added `fabrica.skill.find` and
    `fabrica.skill.run`, mirroring `ToolManager`'s pair.
-3. Whether `SkillManager.load()` should be async (file I/O, possibly reading
-   large bundled assets) — specified as sync above for parity with
-   `ToolManager.register()`, but worth reconsidering given skills can bundle
-   arbitrarily large `references/` content.
+3. ~~Whether `SkillManager.load()` should be async~~ **Resolved: yes, async.**
+   Not for the file-I/O reason originally considered here (large bundled
+   assets) — for a more basic one found while implementing: `load()` must
+   await `Retriever.register()`, which is itself `async def`
+   (`contracts/retriever.md`). `ToolManager.register()` was corrected to
+   `async` for the identical reason. Both signatures above are now async.
+4. `ToolNamespace.list_schemas()` — added to `tool-execution.md` while
+   implementing `register()`, since `stubs()`'s formatted-string output
+   gave `ToolManager` no way to enumerate a namespace's tools to build
+   `Indexable`s. Not stress-tested against a namespace with a very large
+   tool count, where building the full list eagerly on every `register()`
+   call could matter.

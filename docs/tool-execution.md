@@ -100,6 +100,13 @@ class ToolNamespace(Protocol):
     def stubs(self) -> str: ...                     # progressive-disclosure listing
     def open(self, path: str) -> ToolSchema: ...    # load one tool's definition
     async def call(self, name: str, params: dict) -> ToolResult: ...
+    def list_schemas(self) -> list[ToolSchema]: ...  # added: a real gap found
+    # while implementing ToolManager.register() (contracts/managers.md) --
+    # stubs() returns a formatted STRING for progressive disclosure, not
+    # structured data, so there was no way for ToolManager to enumerate a
+    # namespace's tools to build Indexables for the shared Retriever.
+    # list_schemas() is that missing enumeration surface, used only for
+    # indexing -- stubs() keeps its own separate, human/model-facing job.
 
 class ToolSource(Protocol):                         # from RFC 0001, retained
     name: str
