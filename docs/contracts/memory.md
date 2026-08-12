@@ -347,6 +347,18 @@ over the same underlying store sees everything the first one wrote.
    number.** [SPIKE-recency-compactor-validation.md](../../specs/archive/spikes/SPIKE-recency-compactor-validation.md)
    validated the summarize-vs-truncate mechanism directly (5/5 grounded-correct
    vs. 0/5), the same rigor `SPIKE-code-mode-execution.md` applied elsewhere.
-   `preserve_last_n=6` itself is still an unvalidated guess — the spike held N
-   constant to isolate the mechanism question, and doesn't say whether 6 is
-   right for real conversation shapes.
+   ~~`preserve_last_n=6` itself is still an unvalidated guess~~ **Narrowed,
+   not fully closed.**
+   [SPIKE-recency-compactor-n-value.md](../../specs/archive/spikes/SPIKE-recency-compactor-n-value.md)
+   varied `preserve_last_n` (2, 6, 10) against a REAL, deliberately tight
+   `budget_tokens` boundary (unlike the first spike's "plenty of room"
+   scenario) — calling the actual `RecencyCompactor`/`_select_preserved`
+   code, not a reimplementation. The real budget-clipping mechanism
+   engaged exactly as coded (`preserve_last_n=10`'s request was correctly
+   honored down to 6, the most the budget allowed, in every run), and all
+   three N values scored 5/5 grounded-correct — `preserve_last_n`'s exact
+   value made no observable difference in this scenario. Still open,
+   precisely scoped now rather than broadly: multiple competing facts
+   needing simultaneous preservation, and precision-sensitive facts a
+   summary might paraphrase or round, remain untested — this pair of
+   spikes has only validated the single-clear-constraint case.

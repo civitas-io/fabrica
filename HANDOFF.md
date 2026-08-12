@@ -39,7 +39,7 @@ commit messages, not repeated here — this section states facts, not stories.
 ### Design phase: complete
 
 Full discovery→define→design→validate→critique→architecture→system-design→contracts
-arc. Ten spikes, all real hardware/API evidence. Eight contracts written
+arc. Eleven spikes, all real hardware/API evidence. Eight contracts written
 (`Retriever`, `Sandbox`, `managers.md`, `memory.md`, `prompts.md`,
 `civitas-bridge.md`, `mcp-integration.md`, `mcp-server.md`). Four platform-wide
 rules confirmed multiple times, safe to apply without re-deriving:
@@ -309,9 +309,28 @@ cognee|langmem]` adapters (need real external services to test against,
    skills use any optional field, and there's no consumer anywhere in
    the architecture for one yet (no `SkillManager.open(name)`-equivalent
    to `ToolNamespace.open()`). No code change; `docs/skills-gateway.md`
-   updated. All three quick decisions in this batch are now done --
-   remaining items need either a real spike or a bigger product call,
-   not a quick resolution.
+   updated. All three quick decisions in this batch are now done.
+
+   **Fourth item, a real spike, also now done**: `contracts/memory.md`
+   open item 3's remaining half -- whether `preserve_last_n=6`
+   specifically is a good value. [SPIKE-recency-compactor-n-value.md](specs/archive/spikes/SPIKE-recency-compactor-n-value.md)
+   varied `preserve_last_n` (2, 6, 10) against a REAL, deliberately tight
+   `budget_tokens` boundary this time (the first spike's scenario "had
+   plenty of room") -- calling the actual
+   `RecencyCompactor`/`_select_preserved` production code directly, not
+   a reimplementation. The real budget-clipping mechanism engaged
+   exactly as coded (`preserve_last_n=10`'s request correctly honored
+   down to 6, the most the tight budget allowed, in every run), and all
+   three N values scored 5/5 grounded-correct -- the value made no
+   observable difference in this scenario. Narrowed, not fully closed:
+   multiple competing facts and precision-sensitive facts a summary
+   might round remain untested -- both spikes together have only
+   validated the single-clear-constraint case.
+
+   Remaining batch items need either a bigger product call this agent
+   shouldn't make alone, or a stress test with more setup
+   (multi-tenant `FabricaMCPServer` under real concurrent load) --
+   nothing left is a quick resolution.
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without
