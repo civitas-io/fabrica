@@ -51,10 +51,16 @@ Related options considered (Linux-specific unless noted):
 
 **Recommendation:** default **Tier 0** for dev on any platform. **Tier 1** as the
 safe multi-tenant default — gVisor (Linux) or `srt` (macOS), auto-selected. **Tier
-2** as the production target for untrusted code on Linux (Firecracker, warm-pool
-restore validated fast); on macOS, Tier 2 is available but honestly weaker (no warm
-pool) — document the ceiling, don't hide it. Offer managed-sandbox adapters
-(E2B/Modal) as a zero-ops path on any platform.
+2** as the long-term production target for untrusted code on Linux (self-hosted
+Firecracker, warm-pool restore validated fast); on macOS, Tier 2 is available but
+honestly weaker (no warm pool) — document the ceiling, don't hide it.
+
+**Build sequencing, resolved (open question 1):** a managed-sandbox adapter
+(E2B/Modal) ships FIRST, as Tier 2's initial real implementation on any platform
+— not just a fallback path alongside a self-hosted Firecracker built in parallel.
+Self-hosted Firecracker remains the stated long-term production target and is not
+abandoned, just not the first thing built, given the effort asymmetry between the
+two (see open question 1's full reasoning).
 
 ## The protocol
 
@@ -119,7 +125,40 @@ expose all of it behind the `Sandbox` protocol as a supervised Civitas `GenServe
 
 ## Open questions
 
-1. Self-host Firecracker vs. default to a managed adapter (E2B/Modal) for v1?
+1. ~~Self-host Firecracker vs. default to a managed adapter (E2B/Modal)
+   for v1?~~ **Resolved -- both, sequenced.** This was never actually an
+   either/or at the positioning level: both `isolation.md` and
+   `landscape.md` already stated the same recommendation ("Tier 2 as the
+   production target... offer managed-sandbox adapters as a zero-ops
+   path"), and `problem-definition.md`'s Marcus non-goal ("no hosted
+   managed-sandbox SaaS") is about Fabrica never *operating* a
+   competing service, not about whether a Fabrica deployment may
+   *delegate to* E2B/Modal -- fully compatible with the "wrap, don't
+   build" thesis applied everywhere else in this project. The genuinely
+   open part was sequencing: neither exists in code at all yet (only
+   `SubprocessSandbox`/Tier 0 is real), and the two are wildly different
+   sizes of effort -- self-hosted Firecracker is a full orchestration
+   stack (`jailer`, a REST control plane, `vsock` bridging, a dedicated
+   minimal rootfs/kernel, snapshot/restore pool management); an
+   E2B/Modal adapter is comparatively small, closer in shape to
+   `MCPClient` than to anything built from scratch.
+
+   **Decided: build the managed adapter first.** Matches this project's
+   own established discipline (ship the default, revisit if forced --
+   already applied to Rust/PyO3 packaging, sandbox language, `eager`'s
+   per-deployment override) applied to isolation infrastructure for the
+   first time: get real hardware-grade isolation shipped cheaply, let
+   real usage inform whether self-hosting Firecracker is worth the
+   substantial build before committing to it. This does trade against
+   "self-hostable, not vendor-locked" being part of Fabrica's stated
+   pitch over Cloudflare/Anthropic's own Code Mode -- a real, named
+   trade, not an oversight -- self-hosted Firecracker remains the stated
+   production target long-term, just not the first thing built.
+
+   Which managed provider (E2B vs. Modal) specifically, and whether
+   real API credentials are available to build/test it for real (the
+   same kind of gap `PresidiumClient`'s REST client hit), is tracked
+   separately -- see `HANDOFF.md`.
 2. GPU-in-sandbox (Modal-style) — needed for any Fabrica workloads, or out of scope?
 3. Snapshot image supply chain — how are base images signed/verified (ties to
    Presidium/tool-poisoning concerns)?

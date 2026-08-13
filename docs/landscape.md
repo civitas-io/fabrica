@@ -53,8 +53,14 @@ REST API over unix socket, `vsock` host↔guest, snapshot/restore + UFFD lazy lo
 for warm pools, ext4 rootfs + `vmlinux`. E2B orchestrates with Nomad/Consul; Fly.io
 with `flyd` + `containerd`. Requires KVM (bare-metal or nested virt).
 
-**Conclusion:** tier the `Sandbox` protocol; gVisor as safe default, Firecracker as
-prod target, managed adapters (E2B/Modal) as zero-ops path.
+**Conclusion:** tier the `Sandbox` protocol; gVisor as safe default, self-hosted
+Firecracker as the long-term prod target. **Build sequencing, resolved** (see
+[isolation.md](isolation.md) open question 1): a managed-sandbox adapter
+(E2B/Modal) ships FIRST as Tier 2's actual initial implementation, not just an
+alongside fallback -- self-hosted Firecracker is substantial orchestration
+infrastructure (`jailer`, a REST control plane, `vsock`, a dedicated rootfs/kernel,
+snapshot/restore pool management) with nothing built yet, while a managed adapter
+is comparatively small and ships real hardware-grade isolation sooner.
 
 ## 4. Memory — mature, wrap don't build
 

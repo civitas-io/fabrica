@@ -361,6 +361,35 @@ cognee|langmem]` adapters (need real external services to test against,
 
    Remaining batch items need a bigger product call this agent shouldn't
    make alone -- nothing left is a quick resolution or a boundable spike.
+
+   **First product call made, with the user, not alone**: `isolation.md`
+   open question 1 (self-host Firecracker vs. managed adapter for v1).
+   Turned out to not really be an either/or at the positioning level --
+   both `isolation.md` and `landscape.md` already recommended both,
+   eventually; the genuinely open part was build SEQUENCING, since
+   neither exists in code at all today (only `SubprocessSandbox`/Tier 0
+   is real) and the two are wildly different sizes of effort.
+   **Decided: build a managed adapter (E2B/Modal) first**, treating
+   self-hosted Firecracker (a full orchestration stack -- `jailer`, a
+   REST control plane, `vsock`, a dedicated rootfs/kernel, snapshot/
+   restore pool management) as the long-term production target to build
+   once real demand forces it, not abandoned. `docs/isolation.md`/
+   `docs/landscape.md` updated with the full reasoning.
+
+   **New sub-blocker surfaced immediately, same shape as
+   `PresidiumClient`'s**: no local E2B or Modal API credentials exist to
+   build/test a real adapter against a live account. Both Python SDKs
+   (`e2b`, `modal`) are real, installable packages with real published
+   REST APIs (unlike Presidium, which has no API at all anywhere) --
+   genuinely different from the Presidium situation in one important way:
+   there IS a real, documented spec to build correctly against even
+   without live credentials. Awaiting a decision on how to proceed:
+   (a) if real E2B/Modal credentials become available, build and test
+   for real against a live account; (b) build the real client engineering
+   against the actual published API shape, tested with a self-written
+   fake server matching their documented contract (more legitimate here
+   than it would be for Presidium, since a real spec exists); (c) defer
+   until credentials exist, same as `PresidiumClient`.
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without
