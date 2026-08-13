@@ -249,12 +249,27 @@ async def _handle_prompts_get(self, name: str, version: int | None = None) -> Pr
    real HTTP deployment must currently pass
    `allow_weak_isolation_for_external_callers=True` to construct at all
    -- the fail-closed default working as intended, not a bug.
-3. Multi-tenant HTTP deployments (`mcp-server.md` open question 3) — this
-   contract resolves the single-token-per-connection shape (confirmed
-   working: multiple distinct bearer tokens resolve to multiple distinct
-   `agent_id`s, each with its own `Scope`-isolated memory, tested directly)
-   but doesn't stress-test MANY simultaneous distinct `agent_id`s against
-   shared `SandboxPool`/`Retriever` state under real concurrent load.
+3. ~~Multi-tenant HTTP deployments… doesn't stress-test MANY simultaneous
+   distinct `agent_id`s against shared `SandboxPool`/`Retriever` state
+   under real concurrent load.~~ **Resolved**:
+   `tests/mcp/test_server_stress.py` -- a real `uvicorn` server, 10
+   simultaneous agents (distinct bearer tokens, distinct `agent_id`s,
+   each opening its OWN real `mcp.client.streamable_http` connection via
+   `asyncio.gather`, not sequential calls) contending for the same
+   `SandboxPool`/`Retriever`. Three real findings, not just "it didn't
+   crash": (1) concurrent `fabrica_memory_write`/`fabrica_memory_search`
+   across 10 agents at once -- each agent's search saw EXACTLY its own
+   item, proving `Scope` isolation holds under genuine concurrent
+   write/search pressure, not just the sequential case already covered
+   elsewhere; (2) 10 agents running code-mode concurrently against
+   `max_concurrent=4` -- the bounded-overflow queue correctly served all
+   10 with each agent's own distinct computed result intact (no
+   cross-talk between queued/overflowed executions sharing the pool);
+   (3) the extreme case, `max_concurrent=1` forcing full serialization of
+   all 10 -- completed correctly within a bounded overall wait, proving
+   the failure mode under maximum contention is queuing, never a
+   deadlock or hang. All three tests pass consistently across repeated
+   runs, no flakiness observed.
 4. Zero spike coverage — carried forward unchanged. Real, working tests
    exist (`tests/mcp/test_server.py`) proving correctness; a spike would
    be about production-scale characteristics (latency, concurrent

@@ -53,7 +53,7 @@ plus the general rule itself).
 ### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 180 tests total, clean
+mocked stubs standing in for untested logic), 183 tests total, clean
 `ruff`/`mypy --strict`, stable across repeated runs:
 
 - **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
@@ -327,10 +327,40 @@ cognee|langmem]` adapters (need real external services to test against,
    might round remain untested -- both spikes together have only
    validated the single-clear-constraint case.
 
-   Remaining batch items need either a bigger product call this agent
-   shouldn't make alone, or a stress test with more setup
-   (multi-tenant `FabricaMCPServer` under real concurrent load) --
-   nothing left is a quick resolution.
+   **Fifth item, the stress test, also now done**:
+   `contracts/mcp-server.md` open item 3 (multi-tenant `FabricaMCPServer`
+   untested under real concurrent load). `tests/mcp/test_server_stress.py`
+   -- a real `uvicorn` server, 10 simultaneous agents each opening their
+   OWN real `mcp.client.streamable_http` connection concurrently (via
+   `asyncio.gather`, not sequential), distinct bearer tokens resolving to
+   distinct `agent_id`s, contending for the same shared
+   `SandboxPool`/`Retriever`. Three real findings: concurrent memory
+   writes/searches across all 10 agents stayed correctly `Scope`-isolated
+   under genuine concurrent pressure (each agent's search saw EXACTLY its
+   own item); 10 concurrent code-mode executions against
+   `max_concurrent=4` all completed correctly through the bounded-overflow
+   queue with no cross-talk between agents; the extreme case
+   (`max_concurrent=1`, forcing full serialization) completed within a
+   bounded wait, proving the failure mode under maximum contention is
+   queuing, never a hang or deadlock. 3 new tests (183 total).
+
+   **A real flake was caught and fixed running the full suite
+   repeatedly, not just the new file in isolation** -- exactly the
+   discipline this catches things for: the heavy-serialization test
+   passed 10/10 in isolation but failed 2/5 times in the FULL suite
+   (`MCPError(-32000, 'SSE stream ended without a response')`).
+   Root cause: under full-suite CPU load, the deliberately extreme
+   10-agents-through-1-concurrent-slot scenario can legitimately take
+   longer than httpx2's short 5s default timeout to reach the back of
+   its queue, causing the CLIENT to give up mid-request -- a test-
+   construction problem, not a `FabricaMCPServer`/`SandboxPool` bug.
+   Fixed by giving that specific test's HTTP clients a longer timeout
+   (25s) matching the scenario's own realistic worst-case duration.
+   Re-verified clean across 6 consecutive full-suite runs afterward, not
+   just re-run once and assumed fixed.
+
+   Remaining batch items need a bigger product call this agent shouldn't
+   make alone -- nothing left is a quick resolution or a boundable spike.
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without
