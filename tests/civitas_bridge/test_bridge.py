@@ -115,6 +115,21 @@ class TestBuild:
         assert isinstance(fabrica.memory, MemoryManager)
         assert isinstance(fabrica.prompts, PromptManager)
 
+    async def test_close_terminates_the_sandbox_pools_warm_instances(self) -> None:
+        """A real gap found by testing SandboxPool wrapped around
+        FirecrackerSandbox rather than only the fast in-memory test
+        double: nothing terminated warm-pool instances at shutdown, and
+        there was no discoverable way to do so from a built Fabrica at
+        all. sandbox_pool is now a public field specifically so this is
+        possible and easy to find.
+        """
+        fabrica = await CivitasBridge(allow_ungoverned=True, warm_size=2).build()
+        await fabrica.sandbox_pool.prewarm()
+
+        await fabrica.close()  # must not raise
+
+        assert fabrica.sandbox_pool.warm_count == 0
+
     async def test_no_summarizer_wires_null_compactor(self) -> None:
         fabrica = await CivitasBridge(allow_ungoverned=True).build()
         # NullCompactor raises on the first real compact() call --

@@ -238,6 +238,27 @@ async def release(self, handle: SandboxHandle) -> None:
     snapshot and refill the warm slot. This is the corrected version of
     system-design.md §6's "regrow the pool" language — it is a fresh
     restore, not a reuse of the just-released instance."""
+
+async def close(self) -> None:
+    """Real gap found by testing SandboxPool wrapped around a REAL
+    backend (FirecrackerSandbox) rather than only the fast in-memory
+    _FakeBackend used to test the pool's own bookkeeping in isolation:
+    nothing terminates the warm pool's resident instances at shutdown.
+    With SubprocessSandbox this was a real but easy-to-miss leak (an
+    orphaned OS process); with FirecrackerSandbox it is a full,
+    impossible-to-miss orphaned rootfs copy per warm slot, found by
+    inspecting /tmp after real test runs.
+
+    Must be called once, at deployment shutdown, by whichever owner
+    constructed this pool (CivitasBridge.build()'s caller, or a test's
+    own teardown). Waits for any in-flight background refill task
+    (release()'s fire-and-forget boot_clean(), see above) to finish
+    FIRST — otherwise a refill that completes after draining would add
+    one more never-terminated instance to an already-emptied warm
+    list — then terminates every handle still resident in the warm
+    pool and clears it. Safe to call on an already-closed pool (a
+    second call terminates nothing, since the warm pool is already
+    empty and there are no pending refill tasks left to wait for)."""
 ```
 
 ---

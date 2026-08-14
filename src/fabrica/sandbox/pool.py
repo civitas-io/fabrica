@@ -38,6 +38,7 @@ class SandboxPool:
         self._warm: list[SandboxHandle] = []
         self._concurrent_count = 0
         self._condition = asyncio.Condition()
+        self._refill_tasks: set[asyncio.Task[None]] = set()
 
     @property
     def tier(self) -> int:
@@ -46,6 +47,14 @@ class SandboxPool:
         does (isolation.md), once, at construction.
         """
         return self._backend.tier
+
+    @property
+    def warm_count(self) -> int:
+        """How many instances are currently sitting in the warm pool --
+        exposed publicly so callers (and tests) can observe close()'s
+        effect without reaching into private state.
+        """
+        return len(self._warm)
 
     async def prewarm(self) -> None:
         """Not part of the contract's method list, but needed to actually
@@ -108,9 +117,7 @@ class SandboxPool:
         SandboxCrashedError unchanged -- the handle is not usable after
         either, per the contract.
         """
-        return await self._backend.execute(
-            handle, code, on_tool_call=on_tool_call, timeout=timeout
-        )
+        return await self._backend.execute(handle, code, on_tool_call=on_tool_call, timeout=timeout)
 
     async def release(self, handle: SandboxHandle) -> None:
         """The underlying instance is ALWAYS terminated -- never reused
@@ -132,8 +139,15 @@ class SandboxPool:
             # this is a concrete choice for that open item, not a silent
             # default: refill happens asynchronously, not blocking
             # release() itself, so a caller isn't penalized by the next
-            # cold-start cost.
-            asyncio.ensure_future(self._refill_one())
+            # cold-start cost. Tracked in _refill_tasks (not truly
+            # fire-and-forget-forgotten) so close() can wait for it --
+            # a real gap found by testing this pool wrapped around a real
+            # backend (FirecrackerSandbox) instead of only the in-memory
+            # _FakeBackend: an in-flight refill that outlives shutdown
+            # used to leak one more never-terminated instance.
+            task = asyncio.ensure_future(self._refill_one())
+            self._refill_tasks.add(task)
+            task.add_done_callback(self._refill_tasks.discard)
 
     async def _refill_one(self) -> None:
         try:
@@ -149,3 +163,24 @@ class SandboxPool:
                 # Pool got refilled by another path already (or warm_size
                 # shrank) -- don't exceed warm_size, terminate the extra.
                 await self._backend.terminate(fresh)
+
+    async def close(self) -> None:
+        """Terminate every instance still resident in the warm pool.
+        Must be called once at deployment shutdown -- see
+        docs/contracts/sandbox.md for the real gap this closes (found by
+        inspecting the filesystem after real FirecrackerSandbox test
+        runs: warm-pool instances were never terminated at all).
+
+        Waits for any in-flight background refill task FIRST, so a
+        refill that completes mid-close doesn't add one more instance
+        to the warm list after it's already been drained.
+        """
+        pending = list(self._refill_tasks)
+        if pending:
+            await asyncio.gather(*pending, return_exceptions=True)
+
+        async with self._condition:
+            handles, self._warm = self._warm, []
+
+        for handle in handles:
+            await self._backend.terminate(handle)

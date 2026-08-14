@@ -53,11 +53,12 @@ plus the general rule itself).
 ### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 182 tests total locally (plus
-10 more, `tests/sandbox/test_firecracker_backend.py`, that only run on real
-Linux+KVM+Firecracker -- skipped everywhere else, verified passing 10/10
-for real on the homelab), clean `ruff`/`mypy --strict`, stable across
-repeated runs:
+mocked stubs standing in for untested logic), 187 tests total locally (plus
+14 more -- `tests/sandbox/test_firecracker_backend.py` (10) and
+`tests/sandbox/test_pool_with_firecracker.py` (4) -- that only run on real
+Linux+KVM+Firecracker, skipped everywhere else, verified 14/14 for real on
+the homelab, filesystem genuinely clean afterward), clean
+`ruff`/`mypy --strict`, stable across repeated runs:
 
 - **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
   BM25 via `rank-bm25`, deliberately not Rust/PyO3 yet — no performance
@@ -550,6 +551,30 @@ cognee|langmem]` adapters (need real external services to test against,
    hardening (explicitly out of scope in every Firecracker spike so
    far); real per-VM CPU-second accounting (`cpu_seconds` is honestly
    `0.0` for now, not a fabricated number).
+
+   **A real, pre-existing `SandboxPool` gap found immediately after,
+   by wrapping `SandboxPool` around the real `FirecrackerSandbox`
+   (not just the fast in-memory `_FakeBackend` used to test the pool's
+   own bookkeeping in isolation) and inspecting `/tmp` after real test
+   runs**: `SandboxPool` had no `close()`/shutdown mechanism at all --
+   warm-pool instances were simply abandoned forever. This existed for
+   `SubprocessSandbox` too, just invisibly (an orphaned OS process,
+   easy to miss); with `FirecrackerSandbox` it's a full, impossible-to-
+   miss orphaned 1GB rootfs copy per warm slot. Fixed properly, contract
+   first (`contracts/sandbox.md`), then code: `SandboxPool.close()`
+   drains and terminates every warm instance, correctly waiting for any
+   in-flight background refill task first so a refill that completes
+   mid-close can't leak one more instance; `Fabrica` gained a public
+   `sandbox_pool` field and its own `close()` delegating to it (there
+   was previously no discoverable way to reach the pool from a built
+   `Fabrica` at all -- `tools`/`skills` each held it privately). 6 new
+   tests (3 unit-level against `_FakeBackend`, including one that
+   deterministically proves the in-flight-refill race is handled
+   correctly; 1 `CivitasBridge`-level integration test; a new
+   `SandboxPool.warm_count` public property added specifically so tests
+   don't need to reach into private state). Re-verified for real on the
+   homelab after the fix: 3/3 clean runs, filesystem genuinely clean
+   afterward, not just passing.
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without

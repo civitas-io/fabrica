@@ -143,3 +143,57 @@ async def test_release_does_not_exceed_warm_size_on_refill() -> None:
 
     # Exactly one refill happened, not more -- warm_size=1 respected.
     assert backend.boot_count == 2  # 1 prewarm + 1 refill
+
+
+async def test_close_terminates_every_warm_instance() -> None:
+    backend = _FakeBackend()
+    pool = SandboxPool(backend, warm_size=3, max_concurrent=5)
+    await pool.prewarm()
+
+    await pool.close()
+
+    assert sorted(backend.terminated) == ["h1", "h2", "h3"]
+
+
+async def test_close_is_a_no_op_on_an_already_closed_pool() -> None:
+    backend = _FakeBackend()
+    pool = SandboxPool(backend, warm_size=2, max_concurrent=5)
+    await pool.prewarm()
+
+    await pool.close()
+    terminated_after_first_close = list(backend.terminated)
+    await pool.close()  # must not raise, must not double-terminate anything
+
+    assert backend.terminated == terminated_after_first_close
+
+
+async def test_close_waits_for_an_in_flight_refill_before_draining() -> None:
+    """The real gap this closes: a release()-triggered background refill
+    that completes AFTER close() has already drained the warm list used
+    to leak one more never-terminated instance (found by inspecting the
+    real filesystem after real FirecrackerSandbox test runs -- this test
+    proves the fix against the fast fake backend, deterministically).
+    """
+    backend = _FakeBackend()
+    pool = SandboxPool(backend, warm_size=1, max_concurrent=5)
+    handle = await pool.acquire()  # warm pool empty, 1 concurrent slot used
+
+    await pool.release(handle)  # triggers a background refill -- not yet awaited
+    await pool.close()  # must wait for that refill, then terminate its result
+
+    # The released handle AND the instance the refill produced are both
+    # terminated -- nothing left dangling because close() raced ahead of
+    # the in-flight boot_clean().
+    assert sorted(backend.terminated) == ["h1", "h2"]
+
+
+async def test_warm_count_reflects_prewarm_and_close() -> None:
+    backend = _FakeBackend()
+    pool = SandboxPool(backend, warm_size=2, max_concurrent=5)
+    assert pool.warm_count == 0
+
+    await pool.prewarm()
+    assert pool.warm_count == 2
+
+    await pool.close()
+    assert pool.warm_count == 0

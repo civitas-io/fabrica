@@ -81,12 +81,31 @@ class Fabrica:
     never hidden exclusively behind CivitasBridge, per the contract's own
     scope note: this is what makes a later, narrow, opt-in CivitasBridge
     convenience method additive rather than a rework.
+
+    sandbox_pool is exposed directly (not just reachable indirectly
+    through tools/skills, which each hold their own private reference to
+    the SAME pool) specifically so close() below has something explicit
+    to call -- a real gap found by testing SandboxPool wrapped around a
+    real backend (FirecrackerSandbox): nothing terminated the warm
+    pool's resident instances at shutdown, and there was no discoverable
+    way to do so from a constructed Fabrica at all.
     """
 
     tools: ToolManager
     skills: SkillManager
     memory: MemoryManager
     prompts: PromptManager
+    sandbox_pool: SandboxPool
+
+    async def close(self) -> None:
+        """Terminate every sandbox instance still resident in the warm
+        pool. Must be called once at real deployment shutdown -- without
+        it, warm-pool instances are simply abandoned (an easy-to-miss
+        orphaned OS process for SubprocessSandbox; a full, impossible-
+        to-miss orphaned rootfs copy per warm slot for FirecrackerSandbox,
+        which is how this gap was actually found).
+        """
+        await self.sandbox_pool.close()
 
 
 class CivitasBridge:
@@ -192,7 +211,9 @@ class CivitasBridge:
         memory = MemoryManager(InMemoryWorkingMemoryStore(), long_term_store, compactor)
         prompts = PromptManager(prompt_store)
 
-        return Fabrica(tools=tools, skills=skills, memory=memory, prompts=prompts)
+        return Fabrica(
+            tools=tools, skills=skills, memory=memory, prompts=prompts, sandbox_pool=sandbox_pool
+        )
 
     async def request_supervision(
         self,
