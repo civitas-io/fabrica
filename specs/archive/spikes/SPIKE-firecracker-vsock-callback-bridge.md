@@ -117,19 +117,89 @@ needs a proper build step, not a quick patch); performance (this spike
 proved correctness, not latency, of the vsock round trip); concurrent
 guests each with their own vsock CID (only one guest was ever running here).
 
+## Update: the full production protocol, validated end to end (not just a raw byte exchange)
+
+After the initial round trip above, the user granted a small, precisely
+scoped `sudo` capability on the homelab (`NOPASSWD` rules for `mount -o
+loop`/`umount` against exactly `/mnt/fcrootfs`, plus `losetup`, plus a
+follow-up `cp *.py` rule scoped to the same mount point — not blanket
+root access), closing the `debugfs -w` gap named above. This unlocked a
+full, real validation using the ACTUAL production shim, not a one-off
+interactive command:
+
+- Wrote the real `src/fabrica/sandbox/_firecracker_guest_shim.py` —
+  connects out over `vsock` to the host, sends `{"type": "ready"}`,
+  receives real code, `exec()`s it with a `namespace` object whose
+  `call()` does a real length-prefixed-JSON `tool_call`/`tool_result`
+  round trip over the SAME persistent connection, then sends a final
+  `{"type": "result", ...}` message — the vsock-native equivalent of
+  `_guest_shim.py`'s ZMQ-based protocol (ZMQ has no `vsock` transport
+  binding, so a small hand-rolled length-prefixed protocol replaces it;
+  everything else about the shape is deliberately identical).
+- Properly mounted a FRESH rootfs copy via the new `sudo` access, copied
+  the real shim in (to `/tmp` inside the guest image — a real, second
+  finding: that path is plain `root:root 755` in a never-booted image,
+  NOT world-writable 1777 the way a live-booted system's `/tmp` would be,
+  since `systemd-tmpfiles` normally fixes that at boot), unmounted, then
+  booted with `init=/usr/bin/python3 -- /tmp/guest_shim.py` — no
+  systemd at all, a purpose-built single-shot sandbox image doesn't need
+  general-purpose OS services.
+- A real, own-test-harness bug caught and fixed along the way, worth
+  naming since it wasted a real debug cycle: the host-side listener's
+  hardcoded UDS path didn't match the `uds_path` value configured via
+  Firecracker's own `/vsock` API call in the boot script — two
+  independently-named variables that needed to agree exactly, and
+  didn't, on the first real run. Caused a totally real, correctly-
+  reported connection failure (nothing listening at the path Firecracker
+  actually proxies to), not a vsock or Firecracker problem at all —
+  confirmed by fixing the naming mismatch and rerunning successfully
+  immediately after.
+
+**Full result, real production shim, real tool call, real everything:**
+
+```
+HOST: listening on /tmp/fc-vsock-full.sock_5555
+HOST: guest is ready, sending code
+HOST: real on_tool_call invoked: add({'a': 2, 'b': 3})
+HOST: FINAL RESULT: {
+  "type": "result",
+  "success": true,
+  "stdout": "2 + 3 = 5\n",
+  "error_message": null,
+  "tool_call_count": 1
+}
+```
+
+The guest ran real Python code (`namespace.call('add', {'a': 2, 'b': 3})`),
+the call crossed the real VM boundary over `vsock`, the host's real
+`on_tool_call` handler computed the result, the response crossed back, and
+the guest's own `print()` output (`2 + 3 = 5`) came back correctly in
+`stdout` — the exact same contract `contracts/sandbox.md`'s `RunResult`
+already specifies for `SubprocessSandbox`, now proven for a real
+Firecracker microVM too.
+
 ## Recommendation
 
-**Proceed with `vsock` as `FirecrackerSandbox`'s host↔guest transport** — the
-core viability claim is real, measured, and credible, the same verdict the
-boot/restore spike reached for Firecracker's timing claims. Before writing
+**Proceed with `vsock` as `FirecrackerSandbox`'s host↔guest transport, using
+the real shim and protocol validated above** — not just the mechanism in
+the abstract, the actual production code. Before/while writing
 `FirecrackerSandbox` for real:
 
-1. A real guest-shim process (mirroring `_guest_shim.py`'s actual protocol,
-   not a one-off `python3 -c`) needs to be built and get a real way into the
-   rootfs image — the `debugfs -w` approach is confirmed unreliable; a
-   proper root-based build step is real, separate work.
+1. ~~A real guest-shim process... needs to be built~~ **Done**:
+   `src/fabrica/sandbox/_firecracker_guest_shim.py`, validated end to end
+   above.
 2. The host-side listener (`{uds_path}_{port}`, pre-created before boot) is
    the correct pattern `FirecrackerSandbox.boot_clean()`/`execute()` should
-   follow — this is now a proven, not a guessed, integration point.
-3. `jailer` remains unexplored (explicitly out of scope in both this spike
+   follow — proven, not guessed, including the exact naming discipline
+   needed (the mismatch bug above is a real, worth-remembering trap for
+   whoever wires this into the real class).
+3. **Baking the shim into a real, maintained rootfs image** now has a
+   proven, working procedure (mount via scoped `sudo`, copy, unmount) —
+   but this spike used a fresh copy of the EXISTING general-purpose Ubuntu
+   24.04 image each time, not a purpose-built minimal image. Building and
+   maintaining a real minimal rootfs (named as its own scope item since
+   the very first Firecracker spike) is still real, separate work —
+   this spike proves the INJECTION mechanism works, not that the current
+   base image is the right one to ship.
+4. `jailer` remains unexplored (explicitly out of scope in both this spike
    and the earlier one) — a real, separate item for later, not resolved here.
