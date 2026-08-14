@@ -88,18 +88,22 @@ design. This is a genuine contract change, found by trying to plan the
 managed-adapter work concretely, not a minor implementation detail.
 
 **Conclusion:** tier the `Sandbox` protocol; gVisor as safe default, self-hosted
-Firecracker as the long-term prod target. **Build sequencing, resolved** (see
-[isolation.md](isolation.md) open question 1): a managed-sandbox adapter
-ships FIRST as Tier 2's actual initial implementation, not just an
-alongside fallback -- self-hosted Firecracker is substantial orchestration
-infrastructure (`jailer`, a REST control plane, `vsock`, a dedicated rootfs/kernel,
-snapshot/restore pool management) with nothing built yet, while a managed adapter
-is comparatively small and ships real hardware-grade isolation sooner. **Which
-provider ships first is now a genuinely open, real decision** (not yet made) --
-see `HANDOFF.md` and `contracts/managed-sandbox.md`'s own open items: E2B is
-the most narrowly-focused, agent-native option and the cheapest to integrate;
-AWS/Azure/GCP matter for enterprise IAM-native procurement, a real and
-distinct axis from technical fit.
+Firecracker as the long-term prod target. **Build sequencing, resolved, then
+RE-resolved** (see [isolation.md](isolation.md) open question 1 for the full
+reasoning trail): a managed-sandbox adapter was first decided to ship FIRST
+(smaller build, real isolation sooner) -- **then reversed, after direct
+discussion, in favor of self-hosted Firecracker shipping first instead**.
+Deciding factor: self-hosted Firecracker is genuinely FREE per-execution;
+every one of the five managed providers researched bills per API call
+(`contracts/managed-sandbox.md`'s cost section). Combined with a real, live
+homelab already available for the self-hosted build
+(`kodiak@darkenergy` -- confirmed still live, with the entire prior
+Firecracker spike environment intact), the original effort-asymmetry
+argument no longer dominates. **Managed provider interfaces are still
+designed now** (`ManagedSandboxAdapter`, `contracts/managed-sandbox.md`) --
+only their implementation moves to second priority, after self-hosted
+Firecracker is real. Which specific managed provider ships once that phase
+starts remains open -- see `HANDOFF.md`.
 
 ## 4. Memory — mature, wrap don't build
 

@@ -1,7 +1,10 @@
 # Contract: `ManagedSandboxAdapter` (E2B / Modal / AWS / Azure / GCP)
 
-**Status:** Contract — implementation-ready, no code written yet (blocked on API
-credentials, see `HANDOFF.md`) · **Last updated:** 2026-08
+**Status:** Contract — interfaces designed, implementation deliberately
+SECOND PRIORITY behind self-hosted Firecracker (`isolation.md` open question
+1, re-decided: self-hosted is genuinely free per-execution, every managed
+provider bills per call) · also blocked on API credentials, see `HANDOFF.md`
+· **Last updated:** 2026-08
 **Depends on:** [contracts/sandbox.md](sandbox.md) (`Sandbox` Protocol this
 implements), [isolation.md](../isolation.md) open question 1 (build-sequencing
 decision this contract exists to execute), [landscape.md §3a](../landscape.md)
@@ -96,6 +99,73 @@ class CallbackBridge:
         """
 ```
 
+## `TunnelProvider` — resolved, a clean interface, three backends, in priority order
+
+`CallbackBridge.__init__`'s `host`/`port` need to be reachable FROM the
+managed provider's cloud. For a Fabrica deployment with a real public or
+VPC-peered address, this is direct — no tunnel needed. For local dev or a
+private/NAT'd deployment (a laptop, a homelab), it is not — resolved with a
+small, swappable `TunnelProvider` Protocol, same shape as every other
+pluggable backend in this codebase (`Sandbox`, `RetrieverBackend`,
+`PromptStore`'s `BlobStore`):
+
+```python
+class TunnelProvider(Protocol):
+    """Establishes a real, externally-reachable URL for a local
+    CallbackBridge port -- swappable, never hardcoded to one tool.
+    CallbackBridge composes one of these when host/port aren't already
+    publicly reachable; when they are (a real deployment with a public or
+    VPC-peered address), no TunnelProvider is needed at all.
+    """
+
+    async def start(self, *, local_port: int) -> str:
+        """Establishes the tunnel. Returns the externally-reachable URL
+        that resolves to local_port -- this becomes CallbackBridge's
+        externally-advertised callback_url, not local_port's own bare
+        address."""
+        ...
+
+    async def stop(self) -> None:
+        """Tears down the tunnel. Called whenever CallbackBridge itself
+        shuts down -- not per-execution; a tunnel is a longer-lived
+        resource than one run's callback route (`start_for_run`/
+        `stop_for_run` operate underneath it, on the same underlying
+        tunnel)."""
+        ...
+```
+
+**Three backends, in the decided priority order: Tailscale, then Cloudflare,
+then ngrok.** Real, provider-specific detail worth stating precisely, not
+glossed over:
+
+1. **`TailscaleTunnelProvider`** — needs **Tailscale Funnel** specifically
+   (`tailscale funnel <port>`), not plain tailnet membership. Plain
+   Tailscale only makes a service reachable to OTHER devices on the same
+   tailnet — a managed provider's sandbox (E2B/Modal/AWS/Azure/GCP's own
+   cloud) is never a member of anyone's tailnet, so it could never reach a
+   plain Tailscale address at all. Funnel specifically exposes a tailnet
+   service to the public internet over HTTPS — the actual capability this
+   contract needs. First priority since it's already part of this
+   project's own infrastructure story (the homelab used for the
+   Firecracker spikes is reachable this way) and needs no separate
+   third-party account.
+2. **`CloudflareTunnelProvider`** — `cloudflared tunnel run` (or the
+   quick-tunnel mode, no named tunnel/account setup required for local
+   dev). Second priority: free, no account strictly required for a
+   throwaway quick tunnel, widely used for exactly this local-dev-callback
+   shape already (this is the same category of tool GKE Agent Sandbox's
+   own docs use `kubectl port-forward` for, just for a non-Kubernetes
+   deployment).
+3. **`NgrokTunnelProvider`** — `ngrok http <port>`. Third priority: the
+   most widely known option, but requires a free-tier account/authtoken
+   for anything beyond a very short-lived session in current ngrok
+   versions, a real adoption-friction difference from the other two worth
+   naming, not the reason it's ranked third by default preference alone.
+
+None of these three are implemented yet — the `TunnelProvider` Protocol
+itself is the resolved, durable part; which concrete backend a given
+deployment uses is a runtime choice, not a build-time one.
+
 ## `ManagedSandboxAdapter`
 
 ```python
@@ -181,35 +251,46 @@ sharper reason the existing one is load-bearing here.
 
 ## Open items for implementation
 
-1. **Which provider ships first is not yet decided.** E2B is the most
-   narrowly agent-focused option and cheapest to integrate (a small,
-   dedicated Python SDK, Firecracker underneath — the same isolation tech
-   `isolation.md` already targets for self-hosting, making its behavior the
-   most directly comparable). AWS/Azure/GCP matter for enterprise
-   IAM-native procurement — a real, distinct axis (see `landscape.md §3a`),
-   not a technical preference. Not decided here; tracked in `HANDOFF.md`.
-2. **The local-dev tunnel requirement is real, not hidden, and not yet
-   chosen.** `CallbackBridge` needs a network-reachable host:port; a
-   developer machine behind NAT needs `ngrok`/Cloudflare Tunnel/equivalent
-   to test this at all. Which tool, and whether Fabrica bundles/documents
-   one specifically, is not decided.
-3. **Per-provider network-egress-allowlist configuration is provider-specific
-   and not designed here.** Each provider's mechanism for allowing the
-   sandbox to reach `CallbackBridge`'s URL differs (Modal:
-   `outbound_domain_allowlist`; others use different shapes) — this
-   contract specifies that it must be configured, not the exact
-   per-provider config surface.
+1. ~~Which provider ships first is not yet decided.~~ **Re-scoped, not
+   fully resolved**: managed-provider implementation is now second
+   priority overall, after self-hosted Firecracker (`isolation.md` open
+   question 1). When that phase starts, E2B remains the most narrowly
+   agent-focused, cheapest-to-integrate option (Firecracker underneath --
+   the same isolation tech `isolation.md` targets for self-hosting,
+   making its behavior the most directly comparable); AWS/Azure/GCP
+   matter for enterprise IAM-native procurement, a real, distinct axis
+   (see `landscape.md §3a`). Still not decided which ships first within
+   that later phase; tracked in `HANDOFF.md`.
+2. ~~The local-dev tunnel requirement is real, not hidden, and not yet
+   chosen.~~ **Resolved**: a `TunnelProvider` Protocol (this doc's own
+   section above), three concrete backends in a decided priority order --
+   Tailscale (specifically Funnel, not plain tailnet membership --
+   real distinction, see above), then Cloudflare Tunnel, then ngrok.
+   None implemented yet; the Protocol and priority order are the
+   resolved, durable part.
+3. ~~Per-provider network-egress-allowlist configuration is
+   provider-specific and not designed here.~~ **Resolved: explicitly
+   deferred, per-provider, not designed generically.** Each provider's
+   config shape differs enough (Modal's `outbound_domain_allowlist` has
+   no obvious generic equivalent across all five) that designing one
+   now, before any single provider is actually being implemented, would
+   be speculative generality with nothing real to validate it against --
+   same "ship the default, revisit if forced" logic used throughout this
+   project. Decide the exact config surface when whichever provider
+   ships first is actually being built, not before.
 4. **No credentials exist to build/test any of this for real yet** (same
    shape as `PresidiumClient`'s blocker, see `HANDOFF.md`) — this contract
    was written from real, current, sourced provider documentation, not
    assumed from memory, but has zero implementation or live-API validation
    behind it.
-5. **`RunResult.stdout`-only return shape may be a worse fit here than for
-   `SubprocessSandbox`.** Several providers (E2B, Azure) have first-class
-   support for returning richer results (files, images, structured data)
-   that Fabrica's current stdout-only contract would discard. Whether to
-   extend `RunResult` to capture more of this, and if so how, is not
-   decided — flagged, not resolved, since `contracts/sandbox.md`'s
-   stdout-only shape was itself a deliberate, validated decision
-   (`SPIKE-code-mode-execution.md`) that any extension needs to not
-   quietly undermine.
+5. ~~`RunResult.stdout`-only return shape may be a worse fit here than for
+   `SubprocessSandbox`.~~ **Resolved: stays stdout-only for now,
+   explicitly.** Several providers (E2B, Azure) have first-class
+   support for returning richer results (files, images, binary/structured
+   data) that today's contract discards -- flagged as a real, NAMED
+   future extension (binary/file return support), not designed or built
+   now. `RunResult`'s stdout-only shape was itself a deliberate,
+   spike-validated decision (`SPIKE-code-mode-execution.md`); extending
+   it to carry binary/file results is real future work that needs its
+   own design pass when it's actually prioritized, not assumed to be a
+   drop-in addition that can't undermine what the spike already validated.

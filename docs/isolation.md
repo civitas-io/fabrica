@@ -126,45 +126,44 @@ expose all of it behind the `Sandbox` protocol as a supervised Civitas `GenServe
 ## Open questions
 
 1. ~~Self-host Firecracker vs. default to a managed adapter (E2B/Modal)
-   for v1?~~ **Resolved -- both, sequenced.** This was never actually an
-   either/or at the positioning level: both `isolation.md` and
-   `landscape.md` already stated the same recommendation ("Tier 2 as the
-   production target... offer managed-sandbox adapters as a zero-ops
-   path"), and `problem-definition.md`'s Marcus non-goal ("no hosted
-   managed-sandbox SaaS") is about Fabrica never *operating* a
-   competing service, not about whether a Fabrica deployment may
-   *delegate to* E2B/Modal -- fully compatible with the "wrap, don't
-   build" thesis applied everywhere else in this project. The genuinely
-   open part was sequencing: neither exists in code at all yet (only
-   `SubprocessSandbox`/Tier 0 is real), and the two are wildly different
-   sizes of effort -- self-hosted Firecracker is a full orchestration
-   stack (`jailer`, a REST control plane, `vsock` bridging, a dedicated
-   minimal rootfs/kernel, snapshot/restore pool management); an
-   E2B/Modal adapter is comparatively small, closer in shape to
-   `MCPClient` than to anything built from scratch.
+   for v1?~~ **Resolved -- both, sequenced -- and RE-SEQUENCED again after
+   direct discussion, reversing the sequencing decision below.** This was
+   never actually an either/or at the positioning level: both
+   `isolation.md` and `landscape.md` already stated the same
+   recommendation ("Tier 2 as the production target... offer
+   managed-sandbox adapters as a zero-ops path"), and
+   `problem-definition.md`'s Marcus non-goal ("no hosted managed-sandbox
+   SaaS") is about Fabrica never *operating* a competing service, not
+   about whether a Fabrica deployment may *delegate to* a managed
+   provider -- fully compatible with the "wrap, don't build" thesis
+   applied everywhere else in this project.
 
-   **Decided: build the managed adapter first.** Matches this project's
-   own established discipline (ship the default, revisit if forced --
-   already applied to Rust/PyO3 packaging, sandbox language, `eager`'s
-   per-deployment override) applied to isolation infrastructure for the
-   first time: get real hardware-grade isolation shipped cheaply, let
-   real usage inform whether self-hosting Firecracker is worth the
-   substantial build before committing to it. This does trade against
-   "self-hostable, not vendor-locked" being part of Fabrica's stated
-   pitch over Cloudflare/Anthropic's own Code Mode -- a real, named
-   trade, not an oversight -- self-hosted Firecracker remains the stated
-   production target long-term, just not the first thing built.
+   ~~**Decided: build the managed adapter first.**~~ **RE-DECIDED: build
+   self-hosted Firecracker first instead**, after a direct decision that
+   the cost dimension is the deciding factor, not the effort asymmetry
+   this doc originally weighed: **self-hosted Firecracker is genuinely
+   free per-execution** (real hardware, or amortized infrastructure cost)
+   — every one of the five researched managed providers bills per API
+   call (`contracts/managed-sandbox.md`'s own "cost dimension" section).
+   Given a real, live homelab already available for this
+   (`kodiak@darkenergy` — Firecracker/`jailer` binaries, kernel, rootfs,
+   and even a prior snapshot already sitting there from
+   `SPIKE-firecracker-boot-restore-latency.md`, confirmed still live),
+   the effort-asymmetry argument that justified building the cheaper
+   managed adapter first no longer dominates — a real, free environment
+   to build the harder thing in changes the calculus. **Managed
+   providers get their interfaces designed now** (`ManagedSandboxAdapter`,
+   `contracts/managed-sandbox.md`, already done) **but implementation
+   is explicitly second priority**, picked up once self-hosted
+   Firecracker is real.
 
-   Which managed provider specifically -- now a real, researched field of
-   five (E2B, Modal, AWS Bedrock AgentCore, Azure Container Apps Dynamic
-   Sessions, GCP Agent Sandbox; see [landscape.md §3a](landscape.md)),
-   not just E2B/Modal -- and whether real API credentials are available to
-   build/test it for real (the same kind of gap `PresidiumClient`'s REST
-   client hit), is tracked separately in `HANDOFF.md`. The provider-
-   agnostic adapter contract itself, and a real architectural finding
-   (the local ZMQ/`vsock` callback mechanism every other `Sandbox` backend
-   uses cannot work for any remote managed provider), is now designed in
-   [contracts/managed-sandbox.md](contracts/managed-sandbox.md).
+   Which managed provider ships once that phase starts — a real,
+   researched field of five (E2B, Modal, AWS Bedrock AgentCore, Azure
+   Container Apps Dynamic Sessions, GCP Agent Sandbox; see
+   [landscape.md §3a](landscape.md)) — and whether real API credentials
+   are available to build/test one for real (the same kind of gap
+   `PresidiumClient`'s REST client hit), is tracked separately in
+   `HANDOFF.md`, deliberately not blocking the self-hosted work.
 2. GPU-in-sandbox (Modal-style) — needed for any Fabrica workloads, or out of scope?
 3. Snapshot image supply chain — how are base images signed/verified (ties to
    Presidium/tool-poisoning concerns)?

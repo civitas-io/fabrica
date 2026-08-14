@@ -432,20 +432,49 @@ cognee|langmem]` adapters (need real external services to test against,
    the budget" success metric, sharpening why `SandboxPool`'s existing
    bounded-overflow bounds matter here specifically.
 
-   Still not decided: which provider ships first (E2B is cheapest/most
-   agent-native; AWS/Azure/GCP matter for enterprise IAM-native
-   procurement, a real and distinct axis); the local-dev tunnel tooling
-   choice; per-provider network-egress-allowlist specifics. All tracked
-   as open items in `contracts/managed-sandbox.md` itself, not decided
-   unilaterally.
+   **Five follow-up decisions made in direct discussion, walking through
+   the doc together, after presenting it back for review**:
 
-   **Self-hosted Firecracker, in parallel**: confirmed the homelab used
-   for `SPIKE-firecracker-boot-restore-latency.md` (`kodiak@darkenergy`)
+   1. **RE-SEQUENCED: self-hosted Firecracker now ships FIRST**, reversing
+      the earlier "managed adapter first" call. Deciding factor: self-
+      hosted Firecracker is genuinely FREE per-execution; every one of
+      the five managed providers bills per API call. Combined with a
+      real, live homelab already available (see below), the original
+      effort-asymmetry argument no longer dominates. Managed-provider
+      *interfaces* stay designed now (`ManagedSandboxAdapter`,
+      `contracts/managed-sandbox.md`) -- only their implementation moves
+      to second priority. `docs/isolation.md`/`docs/landscape.md` updated
+      with the full reversal, not silently overwritten.
+   2. **Tunnel choice resolved**: a `TunnelProvider` Protocol, three
+      backends in a decided priority order -- Tailscale (specifically
+      **Funnel**, not plain tailnet membership -- a real technical
+      distinction worth getting right: a managed provider's sandbox is
+      never a member of anyone's tailnet, so only Funnel's public-HTTPS-
+      exposure mode actually works here), then Cloudflare Tunnel, then
+      ngrok. None implemented yet; the Protocol + priority order are the
+      resolved, durable part.
+   3. **Per-provider network-egress-allowlist config: explicitly deferred**,
+      decided per-provider only once that specific provider is actually
+      being implemented, not designed generically now -- same "ship the
+      default, revisit if forced" logic used throughout this project.
+   4. Confirmed as-is: still blocked on real credentials, same shape as
+      `PresidiumClient`.
+   5. **`RunResult` stays stdout-only for now, explicitly** -- binary/file/
+      image return support (E2B/Azure both have first-class support for
+      this) flagged as a real, NAMED future extension, not built or
+      designed now; `RunResult`'s stdout-only shape was itself a
+      deliberate, spike-validated decision that any extension needs its
+      own design pass to not quietly undermine.
+
+   **Self-hosted Firecracker, now the actual next priority, not just
+   "in parallel"**: confirmed the homelab used for
+   `SPIKE-firecracker-boot-restore-latency.md` (`kodiak@darkenergy`)
    is still live over SSH, with KVM present and the entire prior spike
    environment intact (Firecracker/`jailer` binaries, kernel, rootfs,
    even a prior snapshot) -- a real head start for actually building the
    self-hosted Tier 2 backend for real, not from scratch. Not yet
-   started building against it; tracked as the next concrete step.
+   started building against it; tracked as the next concrete step,
+   ahead of managed-provider implementation now.
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without
