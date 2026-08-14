@@ -39,7 +39,7 @@ commit messages, not repeated here — this section states facts, not stories.
 ### Design phase: complete
 
 Full discovery→define→design→validate→critique→architecture→system-design→contracts
-arc. Eleven spikes, all real hardware/API evidence. Eight contracts written
+arc. Twelve spikes, all real hardware/API evidence. Eight contracts written
 (`Retriever`, `Sandbox`, `managers.md`, `memory.md`, `prompts.md`,
 `civitas-bridge.md`, `mcp-integration.md`, `mcp-server.md`). Four platform-wide
 rules confirmed multiple times, safe to apply without re-deriving:
@@ -472,9 +472,39 @@ cognee|langmem]` adapters (need real external services to test against,
    is still live over SSH, with KVM present and the entire prior spike
    environment intact (Firecracker/`jailer` binaries, kernel, rootfs,
    even a prior snapshot) -- a real head start for actually building the
-   self-hosted Tier 2 backend for real, not from scratch. Not yet
-   started building against it; tracked as the next concrete step,
-   ahead of managed-provider implementation now.
+   self-hosted Tier 2 backend for real, not from scratch.
+
+   **Before writing `FirecrackerSandbox`, spiked the one genuinely
+   unvalidated piece first, per this project's own established
+   discipline**: `on_tool_call`'s host↔guest bridge over `vsock` had
+   never been built or tested at all -- the boot/restore spike
+   explicitly booted with no networking whatsoever.
+   [SPIKE-firecracker-vsock-callback-bridge.md](specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)
+   proved a real, bidirectional `AF_VSOCK` round trip on the same real
+   hardware -- a real Python socket inside the guest connecting to
+   `CID=2` (host), a real Python listener on the host receiving it and
+   replying, both directions confirmed with actual data, not just the
+   vsock device configuring without error. Twelfth spike.
+
+   **A real negative finding along the way**: `debugfs -w` (the only
+   available way to inject files into the rootfs image without an
+   interactive `sudo` password) created a genuinely inconsistent
+   directory entry on this modern (`metadata_csum`-enabled) ext4 image
+   -- a file that appeared in `ls` but failed `cat`/`stat` lookup
+   immediately after. Worked around for this spike (booted straight
+   into `/bin/sh` over the console, driven via a FIFO, no rootfs
+   modification needed at all) but means **a real guest-shim process
+   baked into the rootfs -- the actual production need -- requires a
+   proper, root-based image-build step**, not ad-hoc runtime patching.
+   This is now a named, real blocker for the next phase of
+   `FirecrackerSandbox` work: either the user provides `sudo` access on
+   the homelab (interactively, or via a documented non-interactive
+   method), or a different image-build path (a purpose-built minimal
+   rootfs, cloud-init, or similar) gets chosen instead.
+
+   Not yet started building `FirecrackerSandbox` itself; tracked as the
+   next concrete step, ahead of managed-provider implementation, blocked
+   specifically on resolving the rootfs-build-access question above.
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without
