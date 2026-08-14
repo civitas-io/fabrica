@@ -10,12 +10,14 @@ from fabrica.sandbox.errors import (
     SandboxPoolExhaustedError,
     SandboxTimeoutError,
 )
+from fabrica.sandbox.firecracker_backend import FirecrackerSandbox
 from fabrica.sandbox.pool import SandboxPool
 from fabrica.sandbox.subprocess_backend import SubprocessSandbox
 from fabrica.sandbox.types import MAX_STDOUT_BYTES, RunResult, SandboxHandle, ToolCallCallback
 
 __all__ = [
     "MAX_STDOUT_BYTES",
+    "FirecrackerSandbox",
     "RunResult",
     "Sandbox",
     "SandboxCrashedError",

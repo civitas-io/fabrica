@@ -36,7 +36,7 @@ it depends on the host OS, auto-detected and swapped in transparently.
 |---|---|---|---|
 | 0 | subprocess / OS user — none → OS-level, ~0ms | *(same)* | *(same)* |
 | 1 | **gVisor** — user-space kernel, ~100ms | **`srt`** (Anthropic's Sandbox Runtime, built on `sandbox-exec`/Seatbelt) — real enforcement confirmed (write/network denial), **p50 152ms** ([SPIKE-macos-isolation-srt-libkrun.md](../specs/archive/spikes/SPIKE-macos-isolation-srt-libkrun.md)) | `srt` claims Windows support (`windows-install`: dedicated `srt-sandbox` user + WFP filters) — **untested, deferred**. Windows is a small segment; if `srt` works there, no further action needed. If a real gap surfaces, spike then. |
-| 2 | **Firecracker** — microVM, own kernel (KVM). Boot: **VMM-ready ~10.5ms**, **full-userspace-ready ~1,055ms with an unoptimized image** — these are different signals, not one number ([SPIKE-firecracker-boot-restore-latency.md](../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)). **Restore from snapshot: 8.1–10.7ms**, validated on real bare-metal hardware. | **libkrun** (`Virtualization.framework`-based) — **cold-boot-only, permanently: no snapshot/restore support exists.** This is a structural ceiling, not a bug to fix. Accepted and shippable — snapshot/restore is valuable, not mandatory. | Hyper-V isolation / Windows Sandbox — real, hypervisor-backed, but seconds-to-minutes boot, not milliseconds. Not a near-term priority. |
+| 2 | **Firecracker** — microVM, own kernel (KVM). **Implemented** (`FirecrackerSandbox`, `contracts/sandbox.md`) -- real, cold-boot-only v1, validated end to end on real hardware including a real `vsock` tool-call round trip ([SPIKE-firecracker-vsock-callback-bridge.md](../specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)). Boot: **VMM-ready ~10.5ms**, **full-userspace-ready ~1,055ms with an unoptimized image** — these are different signals, not one number ([SPIKE-firecracker-boot-restore-latency.md](../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)). **Restore from snapshot: 8.1–10.7ms**, validated separately, not yet combined with the vsock bridge -- v1 always cold-boots. | **libkrun** (`Virtualization.framework`-based) — **cold-boot-only, permanently: no snapshot/restore support exists.** This is a structural ceiling, not a bug to fix. Accepted and shippable — snapshot/restore is valuable, not mandatory. | Hyper-V isolation / Windows Sandbox — real, hypervisor-backed, but seconds-to-minutes boot, not milliseconds. Not a near-term priority. |
 | 3 | **Kata Containers** — microVM in k8s, ~60–150ms | no direct equivalent (k8s-node-specific) | no direct equivalent |
 
 Related options considered (Linux-specific unless noted):
@@ -156,6 +156,20 @@ expose all of it behind the `Sandbox` protocol as a supervised Civitas `GenServe
    `contracts/managed-sandbox.md`, already done) **but implementation
    is explicitly second priority**, picked up once self-hosted
    Firecracker is real.
+
+   ~~Self-hosted Firecracker is now the actual next priority~~ **Done --
+   `FirecrackerSandbox` is real** (`contracts/sandbox.md`), validated end
+   to end on real hardware: real cold boot, a real `vsock` callback
+   bridge with a real tool call crossing the VM boundary, real cleanup
+   with no leftover resources (two real leaks found and fixed by
+   inspecting the filesystem after real test runs -- see the contract's
+   own implementation notes). v1 is cold-boot-only (no snapshot/restore
+   yet -- a real, deliberately deferred combination, not yet validated
+   together with the vsock bridge) and uses the existing general-purpose
+   Ubuntu rootfs (a real, purpose-built minimal image remains separate,
+   named work). Now that self-hosted Tier 2 is real, managed-provider
+   implementation becomes the next thing to pick up, per the sequencing
+   decided above.
 
    Which managed provider ships once that phase starts — a real,
    researched field of five (E2B, Modal, AWS Bedrock AgentCore, Azure

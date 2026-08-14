@@ -53,8 +53,11 @@ plus the general rule itself).
 ### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 182 tests total, clean
-`ruff`/`mypy --strict`, stable across repeated runs:
+mocked stubs standing in for untested logic), 182 tests total locally (plus
+10 more, `tests/sandbox/test_firecracker_backend.py`, that only run on real
+Linux+KVM+Firecracker -- skipped everywhere else, verified passing 10/10
+for real on the homelab), clean `ruff`/`mypy --strict`, stable across
+repeated runs:
 
 - **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
   BM25 via `rank-bm25`, deliberately not Rust/PyO3 yet — no performance
@@ -502,9 +505,51 @@ cognee|langmem]` adapters (need real external services to test against,
    method), or a different image-build path (a purpose-built minimal
    rootfs, cloud-init, or similar) gets chosen instead.
 
-   Not yet started building `FirecrackerSandbox` itself; tracked as the
-   next concrete step, ahead of managed-provider implementation, blocked
-   specifically on resolving the rootfs-build-access question above.
+   **Resolved -- the user granted small, precisely scoped `sudo` access**
+   (`NOPASSWD` rules for `mount -o loop`/`umount` against exactly
+   `/mnt/fcrootfs`, `losetup`, and a follow-up `cp *.py`-scoped rule --
+   verified: general `sudo` still requires a password, nothing broader
+   was granted). This unlocked a full, real validation of the ACTUAL
+   production shim (not a one-off interactive command) -- see the
+   twelfth spike's own "Update" section (extended, not a new spike --
+   same underlying question, now validated with the real production
+   code instead of a one-off command).
+
+   **`FirecrackerSandbox` is now REAL, implemented, and validated end to
+   end on real hardware** (`src/fabrica/sandbox/firecracker_backend.py`,
+   `contracts/sandbox.md`). Real cold boot (v1 scope, deliberately --
+   snapshot/restore combined with the vsock bridge is a genuinely
+   separate, unvalidated combination, deferred as real follow-on work,
+   not the mechanism itself), a real `vsock` callback bridge using the
+   real `_firecracker_guest_shim.py` (mirrors `_guest_shim.py`'s exact
+   shape -- namespace injection, stdout capture, a result trailer -- over
+   a small hand-rolled length-prefixed JSON protocol instead of ZMQ,
+   since ZMQ has no `vsock` transport binding), real cleanup (kills the
+   real firecracker process, removes every file it created).
+
+   **Two real resource leaks found and fixed by inspecting the
+   filesystem after real test runs, not assumed clean**: `terminate()`
+   wasn't cleaning up `vsock_uds` itself (only the `{vsock_uds}_{port}`
+   proxy socket); `boot_clean()`'s own failure paths weren't cleaning up
+   anything at all, only the success path was. Fixed with one shared
+   `_cleanup_files()` helper, plus a dedicated regression test
+   (`test_terminate_removes_every_file_it_created`) that checks the real
+   filesystem, not just that `terminate()` runs without raising.
+
+   10 new tests (`tests/sandbox/test_firecracker_backend.py`), skipped
+   everywhere except a real Linux+KVM+Firecracker environment (same
+   discipline as the `srt`-sandboxed MCP tests) -- run for real via SSH
+   on the homelab (a synced checkout + a real venv there, not just
+   type-checked locally), **10/10 passing, 3/3 consecutive clean runs**,
+   confirmed zero leftover files afterward.
+
+   Genuinely still open, named honestly, not hidden: snapshot/restore
+   (deferred, see above); a real, purpose-built minimal rootfs image
+   (still uses the existing general-purpose Ubuntu 24.04 image, named as
+   its own scope item since the very first Firecracker spike); `jailer`
+   hardening (explicitly out of scope in every Firecracker spike so
+   far); real per-VM CPU-second accounting (`cpu_seconds` is honestly
+   `0.0` for now, not a fabricated number).
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without

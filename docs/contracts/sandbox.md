@@ -1,6 +1,11 @@
 # Contract: `Sandbox` / `SandboxPool`
 
-**Status:** Contract — implementation-ready · **Last updated:** 2026-08
+**Status:** Implemented -- `SubprocessSandbox` (Tier 0) and, as of this
+update, `FirecrackerSandbox` (Tier 2, self-hosted) both real, tested
+against real hardware (`SubprocessSandbox` continuously; `FirecrackerSandbox`
+against a real homelab with KVM -- see
+[SPIKE-firecracker-vsock-callback-bridge.md](../../specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)).
+Tier 1 (gVisor/`srt`) not yet implemented. · **Last updated:** 2026-08
 **Supersedes:** the `Sandbox` sketch in [isolation.md](../isolation.md)
 **Depends on:** [system-design.md](../system-design.md) §1 (object model), §3
 (internal code-mode flow, the callback this contract implements), §6 (resilience
@@ -287,6 +292,53 @@ codebase today. This means, as of this writing, every real
 that is the fail-closed default working exactly as intended (see
 `contracts/mcp-server.md`'s own note on this), not a bug to work around.
 
+## `FirecrackerSandbox` -- real Tier 2 implementation notes
+
+Implements this exact `Sandbox` Protocol (`src/fabrica/sandbox/firecracker_backend.py`),
+validated end to end on real hardware (real `vsock`, a real tool call
+crossing the VM boundary, a real result returning --
+[SPIKE-firecracker-vsock-callback-bridge.md](../../specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)).
+
+**v1 scope, decided deliberately**: `boot_clean()` always cold-boots --
+it does not restore from a snapshot yet. `boot_clean()`'s own docstring
+already allows this ("boot, OR restore-from-snapshot"), so this isn't a
+contract violation, but it's a real, named limitation: cold boot to real
+userspace readiness measured ~1,055ms in
+[SPIKE-firecracker-boot-restore-latency.md](../../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md),
+far slower than restore's ~8-10ms. Snapshot/restore combined WITH the
+vsock callback bridge is a genuinely separate, unvalidated combination --
+neither spike tested restoring a snapshot of a guest with an already-live
+vsock connection. Deferred as real, focused follow-on work, not built
+speculatively before a correct cold-boot v1 exists.
+
+**Requires a pre-built rootfs with the guest shim already baked in** --
+`FirecrackerSandbox` does not build this itself; `kernel_image_path`/
+`base_rootfs_path` are real, deployment-specific artifacts it receives
+fully-constructed, the same DI shape used for every other injected
+dependency in this project (`Summarizer`, `PresidiumClient`). The actual
+baking procedure (mount the rootfs, copy `_firecracker_guest_shim.py` in)
+is documented step by step in the spike above, using a small, precisely
+scoped `sudo` capability (`mount`/`umount`/`losetup` against one fixed
+mount point, plus a `cp *.py`-scoped rule) -- not blanket root access.
+
+**Two real resource leaks found and fixed by inspecting the filesystem
+after real test runs, not assumed clean**: `terminate()` was cleaning up
+the `{vsock_uds}_{port}` guest-connection proxy socket but not
+`vsock_uds` itself (Firecracker's own separate vsock control path); and
+`boot_clean()`'s own failure paths (a guest that never sends "ready",
+timeout, unexpected first message) weren't cleaning up ANY of the files
+they'd created before raising -- only the success path was. Both fixed
+with one shared `_cleanup_files()` helper used everywhere an instance is
+torn down, successfully or not. A dedicated regression test
+(`test_terminate_removes_every_file_it_created`) asserts this directly by
+checking `/tmp` for leftovers after `terminate()`, not just that
+`terminate()` runs without raising.
+
+**`cpu_seconds` is `0.0`, honestly, not silently wrong** -- real
+per-VM CPU accounting needs Firecracker's own metrics API, not wired up
+in this v1 pass. Stated as a real, known gap rather than a plausible-
+looking but fabricated number.
+
 ## Open items for implementation
 
 1. `boot_clean()`'s background-replenishment trigger (on `release()`, per
@@ -299,6 +351,20 @@ that is the fail-closed default working exactly as intended (see
 3. Whether `run()`'s `on_tool_call` callback itself needs its own timeout
    distinct from `run()`'s overall `timeout` — a single slow tool call
    could otherwise consume the whole budget silently.
+4. **New**: `FirecrackerSandbox`'s snapshot/restore support -- v1 always
+   cold-boots; validating restore combined with an already-live vsock
+   connection, then implementing it, is real, separate follow-on work.
+5. **New**: `FirecrackerSandbox` uses the existing, general-purpose Ubuntu
+   24.04 rootfs image (with the guest shim copied in) -- a real, minimal,
+   purpose-built rootfs/init (named as its own scope item since the very
+   first Firecracker spike) is still not built.
+6. **New**: `jailer` (cgroups/namespaces/seccomp/chroot hardening) remains
+   completely unexplored -- explicitly out of scope in both Firecracker
+   spikes, a real gap for production-grade defense-in-depth, not resolved
+   here.
+7. **New**: `FirecrackerSandbox`'s real CPU-second accounting
+   (`cpu_seconds` is currently always `0.0`) needs Firecracker's own
+   metrics API wired up -- not done in this v1 pass.
 
 ## Correction applied to `system-design.md`
 
