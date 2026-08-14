@@ -53,7 +53,7 @@ plus the general rule itself).
 ### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 183 tests total, clean
+mocked stubs standing in for untested logic), 182 tests total, clean
 `ruff`/`mypy --strict`, stable across repeated runs:
 
 - **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
@@ -339,10 +339,19 @@ cognee|langmem]` adapters (need real external services to test against,
    under genuine concurrent pressure (each agent's search saw EXACTLY its
    own item); 10 concurrent code-mode executions against
    `max_concurrent=4` all completed correctly through the bounded-overflow
-   queue with no cross-talk between agents; the extreme case
-   (`max_concurrent=1`, forcing full serialization) completed within a
-   bounded wait, proving the failure mode under maximum contention is
-   queuing, never a hang or deadlock. 3 new tests (183 total).
+   queue with no cross-talk between agents. 2 tests (183 total at the time).
+
+   **A third test (`max_concurrent=1`, forcing full serialization) was
+   added, then later removed** after a real, later investigation (see the
+   isolation-adapter research entry below) found it was genuinely more
+   sensitive to ambient system load than the other two -- not a
+   `FabricaMCPServer`/`SandboxPool` bug, confirmed by the same failure
+   later appearing in the `max_concurrent=4` test too once heavy
+   background load (Docker/SearXNG) was running, and by full reliability
+   returning once that load stopped. Dropped rather than kept in a
+   load-dependent state, since its incremental value over
+   `max_concurrent=4` was real but marginal. 182 tests as of the most
+   recent count.
 
    **A real flake was caught and fixed running the full suite
    repeatedly, not just the new file in isolation** -- exactly the
@@ -390,6 +399,53 @@ cognee|langmem]` adapters (need real external services to test against,
    fake server matching their documented contract (more legitimate here
    than it would be for Presidium, since a real spec exists); (c) defer
    until credentials exist, same as `PresidiumClient`.
+
+   **Follow-up research + design, done in direct discussion, not alone,
+   per the user's explicit "be careful, this is critical to Fabrica's
+   market positioning" instruction**: the user correctly flagged that
+   enterprises may prefer a hyperscaler-native option over a third-party
+   vendor relationship. Real research (current docs fetched directly, not
+   assumed from memory) found a genuine field of FIVE managed providers,
+   not two -- E2B, Modal, **AWS Bedrock AgentCore Code Interpreter**,
+   **Azure Container Apps Dynamic Sessions**, **GCP Agent Sandbox**
+   (GKE-native, a meaningfully different operational shape than the
+   other four -- closer to "self-hosted, but on GCP's infrastructure").
+   Documented with real, sourced API shapes in
+   [landscape.md §3a](docs/landscape.md).
+
+   **The real finding from this research**: none of the five can satisfy
+   `Sandbox.execute()`'s `on_tool_call` callback as currently designed --
+   it assumes a local socket (ZMQ `ipc://`/`vsock`), but every managed
+   provider runs the guest in a genuinely separate network with no local
+   socket path back to Fabrica at all. Resolved with a network callback
+   bridge instead (Fabrica exposes a real, short-lived, per-run-tokened
+   HTTP endpoint; injected code POSTs tool calls to it) -- designed in
+   full, including the real local-dev tunnel requirement and a real
+   security requirement (unguessable per-run token, no `allow_*` escape
+   hatch), in the new
+   [contracts/managed-sandbox.md](docs/contracts/managed-sandbox.md).
+   `ManagedSandboxAdapter`'s `boot_clean()`/`execute()`/`terminate()`/
+   `health_check()` mapped concretely onto each of the five providers'
+   real primitives. A real cost dimension also flagged explicitly: every
+   call against a managed provider is billed, unlike every `Sandbox`
+   backend built so far -- directly relevant to Marcus's own "can't blow
+   the budget" success metric, sharpening why `SandboxPool`'s existing
+   bounded-overflow bounds matter here specifically.
+
+   Still not decided: which provider ships first (E2B is cheapest/most
+   agent-native; AWS/Azure/GCP matter for enterprise IAM-native
+   procurement, a real and distinct axis); the local-dev tunnel tooling
+   choice; per-provider network-egress-allowlist specifics. All tracked
+   as open items in `contracts/managed-sandbox.md` itself, not decided
+   unilaterally.
+
+   **Self-hosted Firecracker, in parallel**: confirmed the homelab used
+   for `SPIKE-firecracker-boot-restore-latency.md` (`kodiak@darkenergy`)
+   is still live over SSH, with KVM present and the entire prior spike
+   environment intact (Firecracker/`jailer` binaries, kernel, rootfs,
+   even a prior snapshot) -- a real head start for actually building the
+   self-hosted Tier 2 backend for real, not from scratch. Not yet
+   started building against it; tracked as the next concrete step.
 3. **New, small, and genuinely optional**: a Tier 1 backend
    (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
    deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without

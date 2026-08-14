@@ -155,10 +155,16 @@ expose all of it behind the `Sandbox` protocol as a supervised Civitas `GenServe
    trade, not an oversight -- self-hosted Firecracker remains the stated
    production target long-term, just not the first thing built.
 
-   Which managed provider (E2B vs. Modal) specifically, and whether
-   real API credentials are available to build/test it for real (the
-   same kind of gap `PresidiumClient`'s REST client hit), is tracked
-   separately -- see `HANDOFF.md`.
+   Which managed provider specifically -- now a real, researched field of
+   five (E2B, Modal, AWS Bedrock AgentCore, Azure Container Apps Dynamic
+   Sessions, GCP Agent Sandbox; see [landscape.md §3a](landscape.md)),
+   not just E2B/Modal -- and whether real API credentials are available to
+   build/test it for real (the same kind of gap `PresidiumClient`'s REST
+   client hit), is tracked separately in `HANDOFF.md`. The provider-
+   agnostic adapter contract itself, and a real architectural finding
+   (the local ZMQ/`vsock` callback mechanism every other `Sandbox` backend
+   uses cannot work for any remote managed provider), is now designed in
+   [contracts/managed-sandbox.md](contracts/managed-sandbox.md).
 2. GPU-in-sandbox (Modal-style) — needed for any Fabrica workloads, or out of scope?
 3. Snapshot image supply chain — how are base images signed/verified (ties to
    Presidium/tool-poisoning concerns)?

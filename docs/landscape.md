@@ -53,14 +53,53 @@ REST API over unix socket, `vsock` host↔guest, snapshot/restore + UFFD lazy lo
 for warm pools, ext4 rootfs + `vmlinux`. E2B orchestrates with Nomad/Consul; Fly.io
 with `flyd` + `containerd`. Requires KVM (bare-metal or nested virt).
 
+### 3a. The hyperscalers ship this too, now -- not just startups
+
+Researched directly (real docs fetched, not assumed from memory -- this space
+moves fast), since the user's own instinct was right: **enterprises may
+genuinely prefer a hyperscaler-native option over a third-party vendor
+relationship**, for a reason distinct from isolation quality: AWS/Azure/GCP's
+offerings authenticate through the exact same IAM/Entra/Workload-Identity
+systems an enterprise already uses for everything else, where E2B/Modal
+require a separate API-key vendor relationship. That's a procurement/security-
+review axis, not a technical one, and it matters independently of latency or
+isolation strength.
+
+| Provider | Product | Shape | Isolation | Auth |
+|---|---|---|---|---|
+| **AWS** | Bedrock AgentCore Code Interpreter | Managed sessions, `code_session` context manager, pre-built per-language runtimes, results as streams. Default 15 min execution, extendable to 8 hours. | AWS-managed containers | IAM |
+| **Azure** | Container Apps Dynamic Sessions | REST API over `https://<region>.dynamicsessions.io/...`, session-pool based (`identifier` reused across calls to continue a session), `POST .../executions` with inline code, prewarmed session pools | **Hyper-V** per session | Microsoft Entra (OAuth) tokens, `aud` claim `https://dynamicsessions.io` |
+| **GCP** | Agent Sandbox (GKE) | **Not a simple SaaS call** -- Kubernetes-native: `SandboxTemplate`/`SandboxWarmPool` CRDs you deploy into your own GKE cluster, a Python client (`k8s-agent-sandbox`) that talks to an in-cluster Sandbox Router. Closer to "self-hosted, but on GCP's infrastructure" than to E2B/Modal/Azure's shape. | gVisor (`runtimeClassName: gvisor`, enforced by GKE Validating Admission Policies) | Kubernetes RBAC / Workload Identity Federation |
+| **GCP** (alternative) | Vertex AI Agent Engine Code Execution | Fully managed sandbox-as-a-service, closer in shape to AWS/Azure's offerings than GKE Agent Sandbox -- in preview as of late 2025, not yet evaluated in depth here | Google-managed | IAM |
+
+**A real architectural finding, not just a landscape note**: none of these five
+providers (E2B, Modal, AWS, Azure, GCP) can satisfy Fabrica's *current*
+`Sandbox` Protocol as written -- `execute(handle, code, on_tool_call, timeout)`
+assumes `on_tool_call` is an in-process Python callback reachable over a local
+socket (real ZMQ `ipc://` for `SubprocessSandbox`; `vsock` for a hypothetical
+self-hosted Firecracker backend). A remote managed sandbox runs in someone
+else's cloud with no such local socket path back to Fabrica's own process at
+all. Every one of these providers DOES support outbound network access from
+the sandbox (several with explicit domain/CIDR allowlisting built for exactly
+this kind of callback -- e.g. Modal's `outbound_domain_allowlist`), so the real
+fix is a network-reachable callback path, not a local one -- see
+[contracts/managed-sandbox.md](contracts/managed-sandbox.md) for the actual
+design. This is a genuine contract change, found by trying to plan the
+managed-adapter work concretely, not a minor implementation detail.
+
 **Conclusion:** tier the `Sandbox` protocol; gVisor as safe default, self-hosted
 Firecracker as the long-term prod target. **Build sequencing, resolved** (see
 [isolation.md](isolation.md) open question 1): a managed-sandbox adapter
-(E2B/Modal) ships FIRST as Tier 2's actual initial implementation, not just an
+ships FIRST as Tier 2's actual initial implementation, not just an
 alongside fallback -- self-hosted Firecracker is substantial orchestration
 infrastructure (`jailer`, a REST control plane, `vsock`, a dedicated rootfs/kernel,
 snapshot/restore pool management) with nothing built yet, while a managed adapter
-is comparatively small and ships real hardware-grade isolation sooner.
+is comparatively small and ships real hardware-grade isolation sooner. **Which
+provider ships first is now a genuinely open, real decision** (not yet made) --
+see `HANDOFF.md` and `contracts/managed-sandbox.md`'s own open items: E2B is
+the most narrowly-focused, agent-native option and the cheapest to integrate;
+AWS/Azure/GCP matter for enterprise IAM-native procurement, a real and
+distinct axis from technical fit.
 
 ## 4. Memory — mature, wrap don't build
 
