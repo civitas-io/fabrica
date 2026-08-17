@@ -338,9 +338,15 @@ speculatively before a correct cold-boot v1 exists.
 fully-constructed, the same DI shape used for every other injected
 dependency in this project (`Summarizer`, `PresidiumClient`). The actual
 baking procedure (mount the rootfs, copy `_firecracker_guest_shim.py` in)
-is documented step by step in the spike above, using a small, precisely
-scoped `sudo` capability (`mount`/`umount`/`losetup` against one fixed
-mount point, plus a `cp *.py`-scoped rule) -- not blanket root access.
+was first validated by hand, step by step, in the spike above -- now a
+real, reusable, documented deliverable instead:
+[`scripts/build_firecracker_rootfs.sh`](../../scripts/build_firecracker_rootfs.sh),
+documented end to end (including the exact, precisely scoped `sudo`
+rules needed -- `mount`/`umount`/`losetup` against one fixed mount
+point, plus a `cp *.py`-scoped rule, not blanket root access) in
+[deployment/firecracker-rootfs.md](../deployment/firecracker-rootfs.md).
+This is what makes a SECOND deployer able to actually produce a working
+image, not just re-read a spike's transcript of one machine's history.
 
 **Two real resource leaks found and fixed by inspecting the filesystem
 after real test runs, not assumed clean**: `terminate()` was cleaning up

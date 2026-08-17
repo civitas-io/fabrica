@@ -641,12 +641,40 @@ cognee|langmem]` adapters (need real external services to test against,
    working correctly today; they are performance, hardening-in-depth, or
    a second isolation path, not correctness gaps in the one that exists.
 
+5. **Resolved -- the one remaining real reproducibility gap toward an
+   MDP**: after platform dispatch (item 4), the only way to produce a
+   working `FirecrackerSandbox` rootfs image was still a one-off set of
+   manual commands run by hand on one specific machine -- not something
+   a second deployer could actually follow. Fixed with
+   [`scripts/build_firecracker_rootfs.sh`](scripts/build_firecracker_rootfs.sh)
+   (a real, reusable, idempotent script: copies the base image fresh
+   each run rather than mutating it in place, mounts/bakes in the guest
+   shim/unmounts always via a trap, guards against a stale mount from a
+   failed prior run) and
+   [`docs/deployment/firecracker-rootfs.md`](docs/deployment/firecracker-rootfs.md)
+   (the exact `sudoers` lines needed, spelled out precisely -- not
+   "figure out the right scoping yourself").
+
+   Verified for real on the homelab, not just written and assumed
+   correct: ran the script fresh (a genuinely new artifact, not my
+   earlier hand-built one), then ran the full 14-test Firecracker suite
+   against ITS output -- 3/3 clean, filesystem genuinely clean
+   afterward. Also exercised all three of the script's error-handling
+   paths for real (missing base rootfs, nonexistent mount point, a
+   stale mount left by a simulated failed prior run) -- all three exit
+   non-zero with a clear, actionable message rather than a confusing
+   failure deep inside `mount`/`cp`.
+
 **Immediate next action**: item 1 is genuinely blocked on something
-external to this repo, not actionable right now. Items 3 and 4 are both
-resolved as of this update. Pick up item 2 (the deferred design-layer
-batch) next, or begin the explicitly-deferred batch above (snapshot/
-restore is the most natural next real milestone, since it's the actual
-performance win Tier 2 is capable of but doesn't yet realize).
+external to this repo, not actionable right now. Items 3, 4, and 5 are
+all resolved as of this update -- together, these were the full "tackle
+what's relevant toward an MDP" scope from the open-items list.
+**Deliberately still deferred, as agreed**: snapshot/restore, a real
+minimal purpose-built rootfs, `jailer` hardening, real per-VM CPU
+accounting, managed-provider adapters, `TunnelProvider` backends -- none
+of these block a real Tier-2-capable deployment from working correctly
+today. Pick up item 2 (the deferred design-layer batch) next, or begin
+working through the explicitly-deferred batch above.
 
 ## Read in this order if you're new to this
 
