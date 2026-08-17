@@ -35,10 +35,12 @@ keep the "Fabrica" name, only the package name differs.
 > real drift between the original design and what shipped — the planned
 > `fabrica`/`fabrica-contrib` package split was never built (this package
 > currently ships everything, including `mcp`/`uvicorn`, as required
-> dependencies), and real observability (OTEL spans, credential injection,
-> usage metering) is almost entirely unbuilt despite being fully designed.
-> Both are tracked, in order, in [`docs/PLAN.md`](docs/PLAN.md), the active
-> work queue — not silently deferred.
+> dependencies; **now a decided, deliberate deferral until closer to a real
+> release**, not an open question), and real observability (OTEL spans,
+> credential injection, usage metering) is almost entirely unbuilt despite
+> being fully designed. Both are tracked, in order, in
+> [`docs/PLAN.md`](docs/PLAN.md), the active work queue — not silently
+> deferred.
 
 ---
 
@@ -133,11 +135,15 @@ So Fabrica delivers the whole context loop:
 All four are designed **interface-first**: protocols + defaults in `fabrica`,
 adapters meant to live in an opt-in `fabrica-contrib` — the same pattern as
 `civitas`/`civitas-contrib` and `presidium`/`presidium-contrib`. **Honest
-current state, not the design intent**: that split hasn't actually been built
-yet — today everything, including the MCP client/server (which pull in `mcp`
-and `uvicorn` as required dependencies) and `FirecrackerSandbox`, ships in one
-package. Tracked as the next real decision in
-[`docs/PLAN.md`](docs/PLAN.md).
+current state**: that split hasn't been built — today everything, including
+the MCP client/server (which pull in `mcp` and `uvicorn` as required
+dependencies) and `FirecrackerSandbox`, ships in one package,
+`fabrica-context`. **Decided, not left unresolved**: deliberately deferred
+until closer to a real release (no external user yet for the zero-infra-
+install property to matter to in practice, and building the split before
+Tier 1/managed-sandbox/real-memory-backend adapters exist means guessing its
+shape too early) — see [`docs/context-layer.md`](docs/context-layer.md#interface-first-mirroring-the-platform)
+for the full reasoning.
 
 ---
 

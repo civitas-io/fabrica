@@ -43,23 +43,27 @@ not invented fresh.
    rejected "generic MCP proxy" row in the "does NOT own" table, and an
    honesty caveat next to the pre-existing "emits spans and audit events"
    claim (design intent, largely unbuilt — same finding as §3.3).
-4. [ ] **Decide and act on the `fabrica`/`fabrica-contrib` package split** —
-   real work, not just a doc fix: either (a) actually split the package
-   (move `mcp`, `uvicorn`, `FirecrackerSandbox` behind opt-in extras,
-   restructure imports to be conditional, update `pyproject.toml`,
-   re-verify the test suite still passes with extras uninstalled), or
-   (b) consciously revise `context-layer.md` to say the split was
-   abandoned and why. **This is a real product/architecture decision, not
-   a unilateral call — walk through it together before starting**, per
-   this project's own established norm for market-positioning-relevant
-   decisions. *(§3.1)*
+4. [x] **Decide on the `fabrica`/`fabrica-contrib` package split** —
+   discussed directly rather than resolved unilaterally. **Decision:
+   deliberately deferred until closer to a real release, not built now
+   and not abandoned.** Reasoning: no external user yet for the
+   zero-infra-install property to matter to in practice, and building the
+   split before Tier 1 isolation, managed-sandbox adapters, and real
+   memory-backend adapters exist would mean guessing its final shape
+   before there's anything real to validate it against — each of those
+   would otherwise need to retroactively fit a split decided too early.
+   Documented in `context-layer.md` and `README.md` as a decided
+   deferral, not left in limbo. Revisit before/at a real release, or the
+   moment a real user's install footprint becomes a genuine complaint,
+   whichever comes first. *(§3.1)*
 5. [ ] **Build real OTEL span emission across the nine spans named in
    `system-design.md §7`** — currently one call site emits anything (a
    `logger.info` stand-in, not a real exporter), covering 2 of 9. The span
    *table* is already fully designed; this is implementation, not a new
    design pass. Includes wiring a real `opentelemetry-sdk` exporter (a new
-   dependency — decide where it lives given the outcome of item 4).
-   *(§3.3, first half)*
+   dependency — given item 4's deferred-split decision, this lands as a
+   normal core dependency for now, same as `mcp`/`uvicorn` today, not
+   gated behind an extra that doesn't exist yet). *(§3.3, first half)*
 6. [ ] **Design and build credential injection into `Sandbox`, plus the
    usage/budget-metering half of `civitas-presidium-integration.md`** — the
    most complex item in this phase: no existing mechanism to extend, real

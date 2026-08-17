@@ -96,6 +96,22 @@ fabrica-contrib/    # adapters, opt-in extras
 same interface, no agent-code changes. This is the exact contract Civitas and
 Presidium already ship.
 
+**Decided, not just found stale**: this split was never actually built.
+Today everything — including `mcp`/`uvicorn` (the MCP client/server's real
+dependencies) and `FirecrackerSandbox` — ships as required code and
+dependencies in one package, `fabrica-context`. Discussed directly rather
+than resolved unilaterally: **deliberately deferred until closer to a real
+release**, not abandoned and not done by accident. Reasoning: there is no
+external user yet for the zero-infra-install property to matter to in
+practice, and building the split now would mean guessing its final shape
+before Tier 1 isolation, managed-sandbox adapters, and real memory-backend
+adapters (`fabrica-contrib[mem0]` etc.) exist to actually validate it
+against — each of those would otherwise need to retroactively fit into a
+split decided too early. Revisit before or at the point a real release is
+planned, or the moment a real user's install footprint becomes a genuine
+complaint, whichever comes first. Tracked as a decided (not open) item in
+[`docs/PLAN.md`](PLAN.md).
+
 ## Deployment modes
 
 Like the rest of the platform, every component runs in two modes:
