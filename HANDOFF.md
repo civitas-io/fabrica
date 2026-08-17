@@ -4,6 +4,18 @@
 re-deriving anything already decided. Read this first, then follow the links —
 don't re-read the whole repo linearly.
 
+**A self-reflection audit exists** at
+[`docs/self-reflection-report.md`](docs/self-reflection-report.md) — a
+point-in-time check of the real code/docs against the founding vision
+(`personas.md`, `problem-definition.md`, `context-layer.md`). Real findings:
+the `fabrica`/`fabrica-contrib` package split was never built (`mcp`/`uvicorn`
+are unconditional core dependencies today), `KeywordBackend`'s docs still
+claim Rust/PyO3 while the real code is pure-Python `rank-bm25`, and Elena's
+whole observability/audit persona is ~90% unimplemented (1 of 9 designed
+spans emits anything, as a log stand-in, not a real OTEL exporter) —
+read that doc before assuming any of those three are further along than
+they are.
+
 ---
 
 ## What Fabrica is, in one paragraph
