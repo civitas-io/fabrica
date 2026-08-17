@@ -169,6 +169,49 @@ async def test_list_eager_filters_by_kind(retriever: Retriever) -> None:
     assert [item.id for item in tools_only] == ["t1"]
 
 
+async def test_list_eager_reflects_deregister_immediately_even_if_backend_removal_fails(
+    retriever: Retriever,
+) -> None:
+    # contracts/retriever.md open item 1: list_eager()'s cache must not
+    # show a deregistered eager item during the (or after a failed)
+    # backend-removal window -- deregister()'s intent takes effect
+    # immediately, not once best-effort backend cleanup happens to finish.
+    retriever = Retriever(primary=_AlwaysFailsBackend())
+    await retriever.register([make_tool("t1", "eager_tool", "always visible", eager=True)])
+    assert [item.id for item in await retriever.list_eager()] == ["t1"]
+
+    await retriever.deregister(["t1"])  # both backends' remove() raise, best-effort swallows it
+
+    assert await retriever.list_eager() == []
+
+
+async def test_register_batch_is_all_or_nothing_on_duplicate_conflict(
+    retriever: Retriever,
+) -> None:
+    # contracts/retriever.md open item 2: one bad item in a batch must not
+    # let the rest of that same batch land -- a real all-or-nothing
+    # guarantee for the duplicate-id check specifically, decided in favor
+    # of best-effort only past that point (see register()'s own docstring).
+    await retriever.register([make_tool("t1", "send_email", "send an email")])
+
+    with pytest.raises(DuplicateIndexableError):
+        await retriever.register(
+            [
+                make_tool("t2", "brand_new_tool", "a genuinely new tool", eager=True),
+                make_tool("t1", "send_email", "a conflicting redefinition"),
+            ]
+        )
+
+    # t2 must NOT have landed even though it was a valid, non-conflicting
+    # item in the same batch -- the duplicate check runs over the whole
+    # list before either backend is touched. Checked via list_eager(),
+    # not search() -- BM25 over a tiny corpus can return non-zero scores
+    # for unrelated documents, making "absent from search results" an
+    # unreliable assertion here; list_eager() is a deterministic
+    # membership check against Retriever's own bookkeeping.
+    assert await retriever.list_eager() == []
+
+
 class _AlwaysFailsBackend:
     """A RetrieverBackend that fails every call -- for testing fallback."""
 

@@ -54,12 +54,26 @@ class Retriever:
         DuplicateIndexableError if an id already exists with different
         content.
 
-        Dual-write semantics (contracts/retriever.md's open item 2 leaves
-        atomicity undecided -- this is a concrete, documented choice, not
-        a silent default): primary is attempted first; if it fails,
+        Dual-write semantics: primary is attempted first; if it fails,
         fallback becomes the effective store for these items until primary
         recovers, matching search()'s own automatic-fallback behavior. Only
         raises RetrieverUnavailableError if BOTH writes fail.
+
+        Batch atomicity (contracts/retriever.md open item 2): the
+        duplicate-id check below runs over the WHOLE list before either
+        backend is touched -- one bad item in a large batch means NOTHING
+        in that batch gets written, a real all-or-nothing guarantee at
+        this stage. Past that check, each backend's own add() call gets
+        the whole list in one call; RetrieverBackend.add()'s '-> None'
+        signature has no way to report which items in a large batch
+        succeeded if a backend can only fail partway through one --
+        decided in favor of best-effort per-item application, matching
+        what the only backend that exists today (KeywordBackend) actually
+        does (an unconditional loop, incapable of partial failure).
+        Revisit only if a future backend can genuinely fail partway
+        through a batch AND the Protocol grows a way to report that --
+        both would need to change together; there is no way to honor an
+        all-or-nothing promise with today's signature.
         """
         for item in items:
             existing = self._registered.get(item.id)
@@ -103,10 +117,23 @@ class Retriever:
     async def deregister(self, ids: list[str]) -> None:
         """Remove items by id. Deregistering an id that doesn't exist is a
         no-op, not an error.
+
+        `list_eager()`'s cache (this class's own `_registered` bookkeeping)
+        is invalidated IMMEDIATELY, before either backend removal is
+        attempted -- closes contracts/retriever.md's open item 1 (a
+        deregistered eager item staying visible to `list_eager()` during
+        the await window while backend removal is still in flight).
+        `deregister()`'s intent takes effect the instant it's called, not
+        once best-effort backend cleanup happens to finish.
         """
+        for id_ in ids:
+            self._registered.pop(id_, None)
+
         # Best-effort on both backends -- deregister has no "unavailable"
         # failure mode in the contract; a backend that can't remove an item
-        # it may not even have is not a caller-visible error.
+        # it may not even have is not a caller-visible error. This can only
+        # affect search()'s eventual consistency, never list_eager()'s --
+        # that cache is already correct by the time we get here.
         try:
             await self._primary.remove(ids)
         except Exception:
@@ -115,9 +142,6 @@ class Retriever:
             await self._fallback.remove(ids)
         except Exception:
             logger.warning("Retriever: fallback backend remove() failed", exc_info=True)
-
-        for id_ in ids:
-            self._registered.pop(id_, None)
 
     async def search(
         self,

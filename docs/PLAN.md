@@ -219,10 +219,25 @@ doc it's already named in — not repeated here.
 
 ### Medium
 
-13. [ ] `retriever.md` open item 1: eager-cache invalidation strategy when
-    an eager item is deregistered mid-flight.
-14. [ ] `retriever.md` open item 2: decide batch atomicity
-    (all-or-nothing vs. best-effort) for large `register`/`deregister` calls.
+13. [x] `retriever.md` open item 1: eager-cache invalidation strategy when
+    an eager item is deregistered mid-flight -- **decided: invalidate
+    immediately.** `deregister()` now pops from `Retriever`'s own
+    bookkeeping (`list_eager()`'s real data source) BEFORE attempting
+    either backend's best-effort removal, not after -- closes the
+    mid-flight staleness window the contract named, without touching
+    `search()`'s separate (and unchanged) eventual-consistency behavior.
+    2 new tests.
+14. [x] `retriever.md` open item 2: decide batch atomicity
+    (all-or-nothing vs. best-effort) for large `register`/`deregister`
+    calls -- **decided: two different guarantees at two different
+    stages**, not one blanket answer. Duplicate-id checking across the
+    WHOLE batch happens before either backend is touched (real
+    all-or-nothing there); each backend's own `add()` call for the whole
+    list is best-effort per item past that point, since
+    `RetrieverBackend.add() -> None` has no way to report which items in
+    a batch succeeded -- matches what the only real backend
+    (`KeywordBackend`) already does. 1 new test proving the duplicate
+    check's own all-or-nothing guarantee specifically.
 15. [ ] `memory.md` open item 1: the single-message-exceeds-budget edge case
     in `RecencyCompactor` — needs a product decision, not a contract default.
 16. [ ] `prompts.md` open item 1: `PromptManager`'s cache eviction policy

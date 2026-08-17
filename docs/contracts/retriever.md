@@ -234,11 +234,27 @@ disconnected span. Full design:
 
 ## Open items for implementation
 
-1. `list_eager`'s in-memory cache needs an invalidation strategy when an
-   eager item is deregistered mid-flight — not specified here, an
-   implementation detail below this contract's level.
-2. Whether `register`/`deregister` should batch-fail-atomically (all-or-nothing)
-   or best-effort (partial success, per-item errors returned) when the input
-   list is large — not decided; the signatures above assume atomic for
-   simplicity, worth revisiting if real registries are large enough for
-   partial failure to matter.
+1. ~~`list_eager`'s in-memory cache needs an invalidation strategy...~~
+   **Resolved: invalidate immediately, before either backend removal is
+   attempted.** `deregister()` pops from `Retriever`'s own bookkeeping
+   dict (`list_eager()`'s real data source) FIRST, then attempts
+   best-effort backend removal -- closes the "mid-flight" window
+   entirely: a caller can never observe a deregistered eager item via
+   `list_eager()`, even if both backends' removal subsequently fails.
+   `search()`'s own eventual consistency during backend removal is
+   unaffected and unchanged -- this only closes the gap for
+   `list_eager()`'s specific cache.
+2. ~~Whether `register`/`deregister` should batch-fail-atomically...~~
+   **Resolved: two different guarantees at two different stages, not one
+   blanket answer.** The duplicate-id check runs over the WHOLE input
+   list before either backend is touched -- a real all-or-nothing
+   guarantee: one conflicting item in a large batch means NOTHING in
+   that batch gets written. Past that check, each backend's own `add()`
+   call receives the whole list in one call and is best-effort per item
+   -- `RetrieverBackend.add() -> None` has no way to report which items
+   in a batch succeeded if a backend can only fail partway through one,
+   so promising all-or-nothing there would be a promise this Protocol
+   cannot keep. Matches what the only backend that exists today
+   (`KeywordBackend`) actually does. Revisit only if a future backend can
+   genuinely fail partway through a batch AND the Protocol grows a way
+   to report that -- both would need to change together.
