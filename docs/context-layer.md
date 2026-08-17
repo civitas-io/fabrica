@@ -57,7 +57,9 @@ permission (Presidium). It **emits** the spans and audit events those layers con
 ```
 fabrica/            # protocols + lightweight defaults, depends only on civitas
   ToolNamespace, Sandbox, SkillStore, MemoryStore, PromptStore, Retriever  (protocols)
-  find fallback (KeywordBackend: Rust+PyO3), subprocess sandbox,
+  find fallback (KeywordBackend: pure-Python `rank-bm25`, NOT Rust+PyO3 as
+  originally sketched here -- a deliberate v1 reversal of the engineering
+  principle below, see its own note for why), subprocess sandbox,
   filesystem skill loader  (defaults)
 
 fabrica-contrib/    # adapters, opt-in extras
@@ -94,11 +96,25 @@ wheel. `pip install fabrica` stays exactly as simple — there is no separate Ru
 toolchain a user ever sees or installs. The principle is about where the *compute*
 lives, not what the *user* has to do.
 
-Likely candidates as implementation proceeds (not resolved here, flagged for
-`plan-work`): the default keyword-retrieval backend in
-[retrieval.md](retrieval.md), any local embedding computation Fabrica ever
-implements itself (as opposed to wrapping), and sandbox-pool bookkeeping/scheduling
-if it turns out to be compute-bound rather than I/O-bound. Wrapped third-party
+**Correction found during implementation, not resolved here originally**:
+the default keyword-retrieval backend named below as the first likely
+candidate shipped v1 as pure-Python `rank-bm25` instead, deliberately --
+no real performance evidence existed to justify the Rust/PyO3 tooling cost
+(a new build toolchain, a compiled-extension release pipeline) before a
+single real user had exercised the pure-Python version at all. "Ship the
+default, revisit if forced" -- the same pattern applied elsewhere in this
+project (sandbox language, `eager`'s per-deployment override). The
+principle itself is not abandoned; this is a stated, reasoned exception
+for the *first* real instance of it, not a quiet reversal of the rule.
+See [retrieval.md](retrieval.md#backends--rust-for-the-built-parts-wrap-everything-else)
+for the current, accurate state, and `HANDOFF.md`/`docs/PLAN.md` for the
+reasoning trail.
+
+Other likely candidates as implementation proceeds (not resolved here,
+still flagged for later): any local embedding computation Fabrica ever
+implements itself (as opposed to wrapping), and sandbox-pool
+bookkeeping/scheduling if it turns out to be compute-bound rather than
+I/O-bound. Wrapped third-party
 libraries (Mem0, Zep, LlamaIndex, prx itself) are unaffected — this principle only
 applies to what Fabrica builds, consistent with "wrap, don't build" everywhere else
 in this doc set.

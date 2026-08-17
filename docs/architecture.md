@@ -124,12 +124,17 @@ Evidence: [SPIKE-memory-mem0-wrap.md](../specs/archive/spikes/SPIKE-memory-mem0-
 
 ## 7. Package structure
 
-![Package structure: fabrica core (protocols + Rust-backed defaults) vs fabrica-contrib (opt-in adapters)](assets/package-structure.svg)
+![Package structure: fabrica core (protocols + defaults, KeywordBackend shipped pure-Python v1) vs fabrica-contrib (opt-in adapters)](assets/package-structure.svg)
 
-**Engineering principle applied throughout:** where Fabrica *builds* compute
-internals (like the default `KeywordBackend`), it's Rust with a Python binding —
-matching prx's own shape — not pure Python. Wrapped libraries (Mem0, LlamaIndex,
-prx itself) are unaffected. Detail: [context-layer.md](context-layer.md#engineering-principle-rust-for-compute-python-for-interface).
+**Engineering principle, with one real, named v1 exception:** where Fabrica
+*builds* compute internals, the principle is Rust with a Python binding —
+matching prx's own shape — not pure Python. **`KeywordBackend`, the
+diagram's own example, is the exception**: it shipped v1 as pure-Python
+`rank_bm25` instead, a deliberate call made once there was no performance
+evidence yet to justify the tooling cost ("ship the default, revisit if
+forced"). Wrapped libraries (Mem0, LlamaIndex, prx itself) are unaffected
+either way. Detail: [context-layer.md](context-layer.md#engineering-principle-rust-for-compute-python-for-interface),
+[retrieval.md](retrieval.md#backends--rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception).
 
 ---
 

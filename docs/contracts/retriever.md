@@ -29,8 +29,11 @@ logic, duplicate detection, and the eager/deferred split in exactly one place.
 ```python
 class RetrieverBackend(Protocol):
     """A single search strategy. Implementations: KeywordBackend (default,
-    Rust+PyO3), PrxBackend, LlamaIndexBackend, LangChainBackend. Never used
-    directly outside Fabrica — always wrapped by Retriever."""
+    shipped as pure-Python `rank_bm25` in v1 -- see retrieval.md's own
+    correction note for why this isn't the Rust+PyO3 binding originally
+    planned), PrxBackend, LlamaIndexBackend, LangChainBackend (the latter
+    three not yet built). Never used directly outside Fabrica -- always
+    wrapped by Retriever."""
 
     async def add(self, items: list[Indexable]) -> None: ...
     async def remove(self, ids: list[str]) -> None: ...
@@ -211,9 +214,12 @@ async def list_eager(
 - **Which concrete `RetrieverBackend` to use is a `SandboxPool`/`CivitasBridge`
   wiring decision** (`system-design.md §1`, §2), not something this contract
   specifies.
-- **The exact `KeywordBackend` (Rust+PyO3) implementation** is out of scope
-  for this contract — this document specifies what any `RetrieverBackend`
-  must do, not how the default one does it.
+- **The exact `KeywordBackend` implementation** is out of scope for this
+  contract — this document specifies what any `RetrieverBackend` must do,
+  not how the default one does it. (It shipped v1 as pure-Python
+  `rank_bm25`, not the Rust+PyO3 binding originally sketched -- see
+  [retrieval.md](../retrieval.md#backends--rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception)'s
+  correction note; irrelevant to this contract's own scope either way.)
 
 ## Open items for implementation
 

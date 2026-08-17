@@ -25,12 +25,16 @@ not invented fresh.
    twelve spikes. Pure rewrite, no decisions required. *(§3.6)* — also fixed
    the "interface-first, `fabrica`/`fabrica-contrib`" claim and the "spans and
    audit events" claim to state honestly that both are designed, not built.
-2. [ ] **Correct `context-layer.md` and `docs/retrieval.md`'s `KeywordBackend`
+2. [x] **Correct `context-layer.md` and `docs/retrieval.md`'s `KeywordBackend`
    claim** — both currently assert Rust+PyO3 in the present tense; the real
    code is pure-Python `rank-bm25`. Restate as the real, deliberate v1
    decision ("ship the default, revisit if forced," no performance evidence
    yet justifies the tooling cost) instead of leaving the false claim
-   standing. Pure doc correction, no code change. *(§3.2)*
+   standing. Pure doc correction, no code change. *(§3.2)* — also fixed the
+   same stale claim in `contracts/retriever.md`, `architecture.md` (prose
+   and image alt-text), and the baked-in `<text>` labels inside
+   `assets/package-structure.svg` itself, found while checking for other
+   stragglers rather than stopping at the two files named.
 3. [ ] **Add MCP client/server to `context-layer.md`'s "Scope: what Fabrica
    owns" table** — `mcp-server.md` already correctly re-checked and passed
    the "not a generic MCP proxy" boundary test; this is just making the

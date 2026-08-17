@@ -96,18 +96,33 @@ placed directly in context alongside the `find` schema itself, matching Anthropi
 registry — but its implementation plugs into the same `Retriever` underneath.
 Shared code, honest interface per surface.
 
-## Backends — Rust for the built parts, wrap everything else
+## Backends — Rust for the built parts, wrap everything else (with one real, named v1 exception)
 
 Per the engineering principle in [context-layer.md](context-layer.md#engineering-principle-rust-for-compute-python-for-interface):
 where Fabrica *builds* a backend, it's Rust with a Python binding, not pure Python.
 Where Fabrica *wraps* an existing engine, the wrapped engine's own language is
 irrelevant — that's the whole point of wrapping.
 
+**Correction found during implementation**: this doc originally asserted
+`KeywordBackend` ships as a Rust crate + PyO3 binding, in the present tense.
+It does not. The real, shipped v1 implementation is pure-Python
+`rank_bm25` — exactly the RFC 0001 sketch this doc originally said was
+rejected. This was a deliberate, reasoned exception decided during
+implementation, not an oversight: no performance evidence existed to
+justify the Rust/PyO3 tooling cost (a new build toolchain, a compiled-
+extension release pipeline) before a single real user had exercised the
+pure-Python version. "Ship the default, revisit if forced." The
+engineering principle itself stands; `KeywordBackend` is its first,
+named exception, not a quiet reversal of the rule — see
+`context-layer.md`'s own correction note and `HANDOFF.md`/`docs/PLAN.md`
+for the reasoning trail. Revisit with real profiling data if retrieval
+latency/throughput ever actually becomes the bottleneck.
+
 | Backend | Package | Shape |
 |---|---|---|
-| `KeywordBackend` (default) | `fabrica` core | **Rust crate + PyO3 binding**, not `rank_bm25`-in-Python as originally sketched in RFC 0001 — this is Fabrica-built, so it follows the Rust-for-compute principle. Still `pip install fabrica` for the user; the compute lives in a compiled extension, not a Rust toolchain the user sees. |
-| `PrxBackend` | `fabrica-contrib[prx]` | Wraps prx directly — already Rust-native, already validated. Persistent-process integration per Spike 5, not subprocess-per-call. |
-| `LlamaIndexBackend` / `LangChainBackend` | `fabrica-contrib[llamaindex\|langchain]` | Wraps `ObjectIndex`/`EnsembleRetriever` — Python libraries, wrapped as-is, no reimplementation. |
+| `KeywordBackend` (default) | `fabrica` core | **Pure-Python, `rank_bm25`** — shipped v1 reality, not the Rust+PyO3 binding originally planned here (see correction above). Still `pip install fabrica` for the user either way. |
+| `PrxBackend` | `fabrica-contrib[prx]` | Wraps prx directly — already Rust-native, already validated. Persistent-process integration per Spike 5, not subprocess-per-call. Not yet built. |
+| `LlamaIndexBackend` / `LangChainBackend` | `fabrica-contrib[llamaindex\|langchain]` | Wraps `ObjectIndex`/`EnsembleRetriever` — Python libraries, wrapped as-is, no reimplementation. Not yet built. |
 
 ## Integration with the platform
 
@@ -122,9 +137,10 @@ irrelevant — that's the whole point of wrapping.
 
 ## Open questions
 
-1. Exact Rust/PyO3 packaging shape for `KeywordBackend` — a workspace crate inside
-   `fabrica`, or a separate `fabrica-retrieval-core` crate versioned independently?
-   Implementation-phase decision, not resolved here.
+1. ~~Exact Rust/PyO3 packaging shape for `KeywordBackend`~~ **Moot for v1**:
+   `KeywordBackend` shipped pure-Python instead (see the correction above) —
+   this question only becomes live again if a real performance case forces
+   a Rust rewrite later.
 2. ~~Does `eager` get set per-deployment (config) or per-item (author-declared)?~~
    **Resolved, and closed a real dead-feature gap in the same pass**:
    per-item, author-declared. `Indexable.eager` had existed as a field

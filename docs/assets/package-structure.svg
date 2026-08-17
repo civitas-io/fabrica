@@ -18,7 +18,7 @@
 
   <rect x="58" y="153" width="244" height="40" rx="5" fill="#92400E"/>
   <text x="180" y="169" text-anchor="middle" font-size="9" font-weight="700" fill="white">Defaults</text>
-  <text x="180" y="183" text-anchor="middle" font-size="7" fill="#FDE68A">KeywordBackend (Rust+PyO3), subprocess</text>
+  <text x="180" y="183" text-anchor="middle" font-size="7" fill="#FDE68A">KeywordBackend (pure-Python v1), subprocess</text>
 
   <!-- arrow -->
   <line x1="320" y1="125" x2="378" y2="125" stroke="#9CA3AF" stroke-width="1.8" marker-end="url(#arr)"/>
@@ -41,6 +41,6 @@
 
   <!-- footer -->
   <rect x="60" y="220" width="580" height="40" rx="6" fill="#111827"/>
-  <text x="350" y="236" text-anchor="middle" font-size="9" font-weight="700" fill="#FBBF24">Engineering principle: where Fabrica builds compute internals, Rust + Python binding —</text>
-  <text x="350" y="250" text-anchor="middle" font-size="8" fill="#D1D5DB">matching prx's own shape. Wrapped libraries (Mem0, LlamaIndex, prx) are unaffected.</text>
+  <text x="350" y="236" text-anchor="middle" font-size="9" font-weight="700" fill="#FBBF24">Engineering principle: Rust + Python binding for compute internals — KeywordBackend is v1's</text>
+  <text x="350" y="250" text-anchor="middle" font-size="8" fill="#D1D5DB">named exception (pure-Python, no perf case yet). Wrapped libraries (Mem0, LlamaIndex, prx) unaffected.</text>
 </svg>
