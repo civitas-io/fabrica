@@ -368,13 +368,19 @@ looking but fabricated number.
 
 ## Open items for implementation
 
-1. `boot_clean()`'s background-replenishment trigger (on `release()`, per
-   above) needs a concrete scheduling mechanism — fire-and-forget task, a
-   replenishment queue, or something else. Not decided here.
-2. What happens if `release()` is called with a handle that was never
-   `acquire()`'d, or already released? Should be a no-op or an error —
-   not specified; worth deciding consistently with `Retriever.deregister()`'s
-   no-op-on-unknown precedent, but not assumed automatically here.
+1. ~~`boot_clean()`'s background-replenishment trigger... not decided
+   here.~~ **Resolved during implementation**: fire-and-forget, tracked
+   in a `set` of tasks specifically so `SandboxPool.close()` can wait
+   for any in-flight one before draining the warm pool (see `close()`
+   above and its own real-gap note).
+2. ~~What happens if `release()` is called with a handle that was never
+   `acquire()`'d, or already released?~~ **Resolved, consistent with
+   `Retriever.deregister()`'s precedent as guessed here**: both real
+   backends treat an unknown/already-terminated handle id as a no-op,
+   not an error -- `FirecrackerSandbox.terminate()` does
+   `self._instances.pop(handle.id, None)` and returns early;
+   `SubprocessSandbox.terminate()`'s `unlink(missing_ok=True)` is
+   harmless regardless. Found true by inspection, not newly added.
 3. Whether `run()`'s `on_tool_call` callback itself needs its own timeout
    distinct from `run()`'s overall `timeout` — a single slow tool call
    could otherwise consume the whole budget silently.

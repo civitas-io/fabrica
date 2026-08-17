@@ -844,15 +844,20 @@ edge case still has no defined behavior.
   memory backends beyond Mem0 (Zep/Letta/Cognee/LangMem) untested; `SKILL.md`'s
   optional fields and bundled-resource loading (`scripts/`/`assets/`/`references/`)
   untested — zero bigpowers skills exercise that path.
-- **Tier 2 sandbox relay** (`vsock`/`VZVirtioSocketDevice`/`AF_HYPERV` bridge
-  implementation) — architecture resolved, implementation feasibility only
-  sanity-checked for the *easier* Tier 0/1 half (`SPIKE-zmq-sandbox-channel-feasibility.md`).
-  The harder half (the actual cross-VM-boundary relay) has no spike yet.
+- **Tier 2 sandbox relay -- RESOLVED for Firecracker/Linux**: the harder
+  half (an actual cross-VM-boundary relay, not just architecture) is now
+  real and validated on real hardware
+  (`SPIKE-firecracker-vsock-callback-bridge.md`, `FirecrackerSandbox`).
+  The `VZVirtioSocketDevice` (macOS/libkrun) and `AF_HYPERV` (Windows)
+  equivalents remain completely unproven -- genuinely still open, just a
+  narrower gap than before (one platform done, two remain, not zero).
 - **Contract-level open items**, each named in its own doc rather than silently
   assumed: `Retriever`'s eager-cache invalidation and batch-atomicity;
-  `Sandbox`'s replenishment-scheduling mechanism, release-on-unknown-handle
-  behavior, and whether `on_tool_call` needs its own timeout; `managers.md`'s
-  `find()`-kind-override question and whether `SkillManager.load()` should be async.
+  whether `Sandbox.run()`'s `on_tool_call` needs its own timeout distinct
+  from the overall one; `managers.md`'s `find()`-kind-override question.
+  (`Sandbox`'s replenishment-scheduling mechanism and release-on-unknown-
+  handle behavior, listed here in earlier revisions, are now resolved --
+  see `contracts/sandbox.md`'s own open-items list.)
 - **Windows Tier 1** (`srt`'s Windows mode) — deliberately deferred, not
   blocking, per explicit direction ("small segment, spike only if a gap forces it").
 - **macOS Tier 2** (libkrun) ships despite having no snapshot/restore — explicit
