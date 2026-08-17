@@ -161,12 +161,20 @@ doc it's already named in — not repeated here.
 
 ### Easy
 
-7. [ ] `civitas-bridge.md` open item 2: decide `build()`'s idempotency on
-   repeated calls (fresh graph each time / cached / raise) — small decision,
-   small implementation either way.
-8. [ ] `civitas-bridge.md` open item 1: decide whether to validate
-   `dynamic_supervisor_name` upfront vs. let the first `spawn()` surface a
-   misconfiguration.
+7. [x] `civitas-bridge.md` open item 2: `build()`'s idempotency —
+   **decided: cached, a second call returns the same `Fabrica` instance**
+   (avoids a second live `SandboxPool`/warm pool, and, in service mode, a
+   second `request_state_persistence()` call per component with unclear
+   concurrent-handle semantics). Updated the one existing test that had
+   documented the opposite as "current behavior" back when this was
+   genuinely undecided.
+8. [x] `civitas-bridge.md` open item 1: validate `dynamic_supervisor_name`
+   upfront — **decided: yes**, via the real, public
+   `civitas.runtime.Runtime.get_agent()` lookup (added to the
+   `CivitasRuntime` Protocol), raising a new `SupervisorNotFoundError` at
+   construction. Found and fixed a real, pre-existing test gap while
+   adding this: one test used a service-mode `CivitasBridge` against a
+   topology that never actually defined the named supervisor.
 9. [ ] `managers.md` open item 1: decide whether `find()` should accept a
    `kind` override or always fix it per manager.
 10. [ ] `sandbox.md` open item 3: decide whether `on_tool_call` needs its

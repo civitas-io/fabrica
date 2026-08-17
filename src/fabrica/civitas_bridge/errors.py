@@ -23,3 +23,22 @@ class RuntimeRequiredError(CivitasBridgeError):
     and state persistence needs the real StateStore. All three required
     together, per CivitasBridge.__init__'s Raises section.
     """
+
+
+class SupervisorNotFoundError(CivitasBridgeError):
+    """Raised at construction time (not at the first request_supervision()
+    call) when dynamic_supervisor_name does not resolve to any live agent
+    on the given civitas_runtime -- contracts/civitas-bridge.md's open item
+    1, resolved: validate upfront via the real, public
+    civitas.runtime.Runtime.get_agent() lookup, since a real, clear error
+    now beats waiting for spawn()'s bus-routing failure to surface the
+    same misconfiguration less specifically, later, on first real use.
+
+    Deliberately does NOT check that the resolved agent is specifically a
+    DynamicSupervisor (as opposed to any other named agent) -- existence
+    is what makes the error message clearer and earlier; the exact-type
+    check would need importing civitas.supervisor.DynamicSupervisor as a
+    second nominal exception beyond GenServer, for marginal benefit over
+    what spawn()'s own SpawnError would surface if the name resolves to
+    the wrong kind of agent.
+    """

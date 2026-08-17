@@ -27,7 +27,11 @@ from typing import Any, Literal
 
 from civitas.genserver import GenServer
 
-from fabrica.civitas_bridge.errors import RuntimeRequiredError, UngovernedConfigurationError
+from fabrica.civitas_bridge.errors import (
+    RuntimeRequiredError,
+    SupervisorNotFoundError,
+    UngovernedConfigurationError,
+)
 from fabrica.civitas_bridge.runtime import CivitasRuntime
 from fabrica.civitas_bridge.state import ComponentStateHandle, StateStore, _BoundStateHandle
 from fabrica.managers import SkillManager, ToolManager
@@ -184,6 +188,23 @@ class CivitasBridge:
                 "and dynamic_supervisor_name together -- all three are needed "
                 "given civitas.runtime.Runtime's real API."
             )
+        # Real addition, closing contracts/civitas-bridge.md's open item 1:
+        # validate dynamic_supervisor_name upfront via the real, public
+        # civitas.runtime.Runtime.get_agent() lookup -- a real, clear error
+        # now, not a bus-routing failure surfacing the same misconfiguration
+        # less specifically on the first real request_supervision() call.
+        if (
+            mode == "service"
+            and civitas_runtime is not None
+            and dynamic_supervisor_name is not None
+            and civitas_runtime.get_agent(dynamic_supervisor_name) is None
+        ):
+            raise SupervisorNotFoundError(
+                f"dynamic_supervisor_name={dynamic_supervisor_name!r} does not "
+                "resolve to any live agent on the given civitas_runtime -- "
+                "check the deployment topology names a DynamicSupervisor with "
+                "exactly this name."
+            )
 
         self._mode = mode
         self._summarizer = summarizer
@@ -197,13 +218,29 @@ class CivitasBridge:
         self._max_concurrent = max_concurrent
         self._sandbox_backend = sandbox_backend
         self._tracer: Tracer = tracer if tracer is not None else NullTracer()
+        self._built: Fabrica | None = None
 
     async def build(self) -> Fabrica:
-        """Assembles the full object graph exactly once. See the module
+        """Assembles the full object graph -- idempotently. See the module
         docstring and contracts/civitas-bridge.md for what this
         deliberately does NOT do yet (request_supervision for managers --
         structurally incompatible with this codebase's DI-constructed
         managers, see the module docstring).
+
+        contracts/civitas-bridge.md open item 2, resolved: a second call
+        returns the SAME `Fabrica` instance, not a second, independent
+        object graph. Chosen over "construct a fresh graph each time" or
+        "raise on a repeated call" because every other option has a real
+        footgun a caller could easily hit by accident -- a second live
+        `SandboxPool` (a second warm pool, double the resource footprint,
+        neither aware of the other) and, in service mode, a second
+        `request_state_persistence()` call per component (unclear whether
+        two `ComponentStateHandle`s bound to the same name are safe to use
+        concurrently -- untested, not worth risking when "just return what
+        was already built" has no such ambiguity). Raising would also be
+        a real behavior change for any caller who genuinely calls `build()`
+        more than once expecting the same graph back, e.g. from two
+        different code paths that both assume they're the first.
 
         In service mode, MemoryManager/PromptManager get a
         PersistedMemoryStore/PersistedPromptStore backed by a real
@@ -211,7 +248,18 @@ class CivitasBridge:
         service-mode CivitasBridge against the same civitas_state_store
         restores prior state, not just a fresh empty store. Library mode
         keeps the original in-memory-only defaults, unchanged.
+
+        Not safe to call concurrently (no internal lock) -- the intended
+        usage is one `await build()` at deployment startup, before any
+        request-serving concurrency begins, matching every real caller in
+        this codebase's own tests. Two truly concurrent first calls could
+        each construct an independent graph before either sets the cache;
+        deliberately not guarded against, since guarding it would add a
+        lock for a scenario this codebase's own usage pattern doesn't hit.
         """
+        if self._built is not None:
+            return self._built
+
         presidium_client: PresidiumClient = self._presidium_client or NullPresidiumClient()
         compactor: Compactor = (
             RecencyCompactor(self._summarizer) if self._summarizer is not None else NullCompactor()
@@ -244,9 +292,10 @@ class CivitasBridge:
         )
         prompts = PromptManager(prompt_store)
 
-        return Fabrica(
+        self._built = Fabrica(
             tools=tools, skills=skills, memory=memory, prompts=prompts, sandbox_pool=sandbox_pool
         )
+        return self._built
 
     async def request_supervision(
         self,

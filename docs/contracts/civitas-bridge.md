@@ -408,14 +408,29 @@ shaped this:
 
 ## Open items for implementation
 
-1. Whether `CivitasBridge` should validate that `dynamic_supervisor_name`
-   actually resolves to a real `DynamicSupervisor` before attempting any
-   `spawn` calls (a clearer, earlier error), or let the first `spawn` call's
-   `SpawnError` surface a misconfiguration — not decided; the real API gives
-   no dedicated "does this supervisor exist" check to call first.
-2. `build()`'s idempotency on repeated calls — construct a second, independent
-   `Fabrica` graph each time, return the same cached instance, or raise?
-   Not decided.
+1. ~~Whether `CivitasBridge` should validate that `dynamic_supervisor_name`
+   actually resolves to a real `DynamicSupervisor`...~~ **Resolved**:
+   validate upfront, via the real, public `civitas.runtime.Runtime
+   .get_agent()` lookup (added to the `CivitasRuntime` Protocol
+   specifically for this) -- raises the new `SupervisorNotFoundError` at
+   construction time. Deliberately checks existence only, not that the
+   resolved agent is specifically a `DynamicSupervisor` -- the exact-type
+   check would need a second nominal `civitas` import beyond `GenServer`,
+   for marginal benefit over what `spawn()`'s own `SpawnError` would
+   surface if the name resolves to the wrong kind of agent. A real,
+   pre-existing test gap found while adding this: one test constructed a
+   service-mode `CivitasBridge` against an empty `Supervisor` topology
+   that never actually defined "dyn" -- fixed to match its sibling test's
+   correct, real setup, not loosened to accommodate the gap.
+2. ~~`build()`'s idempotency on repeated calls...~~ **Resolved**: a second
+   call returns the SAME `Fabrica` instance, not a second, independent
+   graph -- avoids a second live `SandboxPool`/warm pool nobody asked for,
+   and, in service mode, a second `request_state_persistence()` call per
+   component with unclear concurrent-handle semantics. Not safe to call
+   `build()` concurrently (no internal lock) -- documented as a
+   deliberate scope limit, matching this codebase's own one-call-at-
+   startup usage pattern, not guarded against for a scenario nothing here
+   hits.
 3. ~~Partial-failure behavior during `build()` if `request_supervision`
    succeeds for one manager but fails for another~~ **Moot for v1**: no
    manager calls `request_supervision` at all now (see the first

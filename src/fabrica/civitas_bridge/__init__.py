@@ -9,6 +9,7 @@ from fabrica.civitas_bridge.bridge import CivitasBridge, Fabrica, NullPresidiumC
 from fabrica.civitas_bridge.errors import (
     CivitasBridgeError,
     RuntimeRequiredError,
+    SupervisorNotFoundError,
     UngovernedConfigurationError,
 )
 from fabrica.civitas_bridge.runtime import CivitasRuntime
@@ -23,5 +24,6 @@ __all__ = [
     "NullPresidiumClient",
     "RuntimeRequiredError",
     "StateStore",
+    "SupervisorNotFoundError",
     "UngovernedConfigurationError",
 ]

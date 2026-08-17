@@ -18,6 +18,7 @@ from fabrica.civitas_bridge import (
     Fabrica,
     NullPresidiumClient,
     RuntimeRequiredError,
+    SupervisorNotFoundError,
     UngovernedConfigurationError,
 )
 from fabrica.managers import SkillManager, ToolManager
@@ -218,16 +219,20 @@ class TestBuild:
                 "result = 1", agent_id="agent-1", scope=Scope(agent_id="agent-1")
             )
 
-    async def test_repeated_build_calls_return_independent_fabrica_instances(self) -> None:
-        # Open item 2 (contracts/civitas-bridge.md): idempotency is not
-        # contract-specified. This documents the actual current behavior
-        # (a fresh, independent graph each call) as a real test, not a
-        # silent assumption.
+    async def test_repeated_build_calls_return_the_same_cached_fabrica_instance(self) -> None:
+        # Open item 2 (contracts/civitas-bridge.md), resolved: build() is
+        # idempotent -- a second call returns the SAME Fabrica instance,
+        # not a second, independent object graph (avoids a second live
+        # SandboxPool/warm pool nobody asked for). This replaces an
+        # earlier version of this test that documented the opposite as
+        # "the actual current behavior" back when this was genuinely
+        # undecided.
         bridge = CivitasBridge(allow_ungoverned=True)
         first = await bridge.build()
         second = await bridge.build()
-        assert first is not second
-        assert first.tools is not second.tools
+        assert first is second
+        assert first.tools is second.tools
+        assert first.sandbox_pool is second.sandbox_pool
 
 
 # ---------------------------------------------------------------------------
@@ -344,6 +349,32 @@ class TestRequestSupervision:
         with pytest.raises(RuntimeRequiredError):
             await bridge.request_supervision(_EchoWorker, "echo-1")
 
+    async def test_construction_raises_supervisor_not_found_for_a_real_but_unnamed_topology(
+        self,
+    ) -> None:
+        """contracts/civitas-bridge.md open item 1, resolved: validate
+        dynamic_supervisor_name upfront via the real, public
+        civitas.runtime.Runtime.get_agent() lookup, rather than let the
+        first request_supervision() call surface a bus-routing failure
+        less specifically, later. A real, started Runtime with NO
+        DynamicSupervisor named 'dyn' -- the exact gap the earlier
+        (fixed) version of TestRequestStatePersistence's delete test
+        accidentally exercised without ever checking for it.
+        """
+        runtime = Runtime(supervisor=Supervisor("root", children=[]))
+        await runtime.start()
+        try:
+            with pytest.raises(SupervisorNotFoundError, match="dyn"):
+                CivitasBridge(
+                    mode="service",
+                    allow_ungoverned=True,
+                    civitas_runtime=runtime,
+                    civitas_state_store=InMemoryStateStore(),
+                    dynamic_supervisor_name="dyn",
+                )
+        finally:
+            await runtime.stop()
+
 
 # ---------------------------------------------------------------------------
 # request_state_persistence -- real civitas.plugins.state.StateStore
@@ -379,21 +410,33 @@ class TestRequestStatePersistence:
             await runtime.stop()
 
     async def test_delete_only_affects_its_own_component(self) -> None:
-        store = InMemoryStateStore()
-        bridge = CivitasBridge(
-            mode="service",
-            allow_ungoverned=True,
-            civitas_runtime=Runtime(supervisor=Supervisor("root", children=[])),
-            civitas_state_store=store,
-            dynamic_supervisor_name="dyn",
-        )
-        a = await bridge.request_state_persistence("a")
-        b = await bridge.request_state_persistence("b")
-        await a.set({"v": 1})
-        await b.set({"v": 2})
-        await a.delete()
-        assert await a.get() is None
-        assert await b.get() == {"v": 2}
+        # Real, live DynamicSupervisor + started Runtime -- matching the
+        # sibling test above, not the earlier version of this test, which
+        # used an empty topology never validated to actually resolve
+        # "dyn" to anything. A real gap this test caught while adding
+        # SupervisorNotFoundError's upfront validation (item 8, PLAN.md):
+        # the previous version of this test was never a representative
+        # real deployment shape in the first place.
+        runtime = Runtime(supervisor=Supervisor("root", children=[DynamicSupervisor("dyn")]))
+        await runtime.start()
+        try:
+            store = InMemoryStateStore()
+            bridge = CivitasBridge(
+                mode="service",
+                allow_ungoverned=True,
+                civitas_runtime=runtime,
+                civitas_state_store=store,
+                dynamic_supervisor_name="dyn",
+            )
+            a = await bridge.request_state_persistence("a")
+            b = await bridge.request_state_persistence("b")
+            await a.set({"v": 1})
+            await b.set({"v": 2})
+            await a.delete()
+            assert await a.get() is None
+            assert await b.get() == {"v": 2}
+        finally:
+            await runtime.stop()
 
     async def test_library_mode_raises_runtime_required(self) -> None:
         bridge = CivitasBridge(allow_ungoverned=True)

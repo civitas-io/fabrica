@@ -57,6 +57,16 @@ class CivitasRuntime(Protocol):
 
     async def despawn(self, supervisor_name: str, name: str) -> None: ...
 
+    def get_agent(self, name: str) -> object | None: ...
+
+    # ^ Real addition, closing contracts/civitas-bridge.md's open item 1
+    # ("validate dynamic_supervisor_name upfront, or let the first spawn()
+    # surface it"): civitas.runtime.Runtime.get_agent() is real, public,
+    # O(1) API -- "return type object, not a specific class" is
+    # deliberate, matching this Protocol's own structural-typing stance;
+    # CivitasBridge only ever checks the result against None, never
+    # inspects it further.
+
 
 # No SpawnError class is defined here. Civitas's real spawn() raises
 # civitas.errors.SpawnError (an earlier draft of contracts/civitas-bridge.md
