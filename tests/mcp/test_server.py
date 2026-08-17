@@ -127,16 +127,47 @@ class TestConstruction:
             ServerTransportConfig(kind="http", authenticator=_Auth())
 
     async def test_weak_isolation_raises_by_default_against_a_real_tier_0_fabrica(self) -> None:
-        # CivitasBridge.build() only ever constructs a SubprocessSandbox
-        # (Tier 0) today -- this is the REAL current state, not a
-        # simulated one, proving the check actually fires against what
-        # this codebase genuinely produces.
+        # Forced to Tier 0 explicitly via the real SubprocessSandbox --
+        # CivitasBridge.build() now does REAL platform dispatch
+        # (select_sandbox_backend(), isolation.md), so what it produces
+        # depends on the host running this test; this asserts the check
+        # against a real, known Tier 0 backend deterministically, not
+        # against "whatever this machine happens to dispatch to."
         from fabrica.mcp.server import WeakIsolationError
+        from fabrica.sandbox import SubprocessSandbox
 
-        fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        fabrica = await CivitasBridge(
+            allow_ungoverned=True, sandbox_backend=SubprocessSandbox()
+        ).build()
         assert fabrica.tools.tier == 0
         with pytest.raises(WeakIsolationError, match="Tier 0"):
             FabricaMCPServer(fabrica, ServerTransportConfig(kind="stdio"))
+
+    async def test_weak_isolation_does_not_raise_against_a_real_tier_2_fabrica(self) -> None:
+        """The real proof this check was built for: now that
+        FirecrackerSandbox (Tier 2) is real, a genuinely Tier-2-backed
+        Fabrica cleanly constructs an external-facing FabricaMCPServer WITHOUT
+        needing allow_weak_isolation_for_external_callers=True at all.
+        Uses sandbox_backend's override to get a deterministic Tier 2
+        pool on any host (a real FirecrackerSandbox object, just never
+        booted here) -- the real end-to-end proof that dispatch itself
+        picks FirecrackerSandbox on real Linux+KVM+Firecracker lives on
+        the homelab (test_pool_with_firecracker.py, HANDOFF.md).
+        """
+        from fabrica.sandbox import FirecrackerSandbox
+
+        real_but_unbooted_backend = FirecrackerSandbox(
+            firecracker_binary="/usr/bin/firecracker",
+            kernel_image_path="/nonexistent/kernel",
+            base_rootfs_path="/nonexistent/rootfs.ext4",
+        )
+        fabrica = await CivitasBridge(
+            allow_ungoverned=True, sandbox_backend=real_but_unbooted_backend
+        ).build()
+        assert fabrica.tools.tier == 2
+
+        server = FabricaMCPServer(fabrica, ServerTransportConfig(kind="stdio"))
+        assert server is not None
 
     async def test_weak_isolation_allowed_with_explicit_opt_in(self) -> None:
         fabrica = await CivitasBridge(allow_ungoverned=True).build()

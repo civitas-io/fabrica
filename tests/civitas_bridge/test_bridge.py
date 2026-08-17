@@ -105,6 +105,56 @@ class TestConstruction:
 # ---------------------------------------------------------------------------
 
 
+class TestSandboxDispatch:
+    """CivitasBridge.build() is documented (contracts/civitas-bridge.md)
+    to construct Sandbox "platform-dispatched" -- these tests prove that
+    is actually true, not just claimed. On this test machine (no real
+    KVM/Firecracker artifacts), real dispatch always yields Tier 0 --
+    the real proof that dispatch can yield Tier 2 lives on the homelab
+    (test_pool_with_firecracker.py's tier assertion + HANDOFF.md).
+    """
+
+    async def test_default_dispatch_on_this_machine_yields_a_real_backend(self) -> None:
+        fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        # Whatever select_sandbox_backend() genuinely decides for THIS
+        # host -- not hardcoded to Tier 0, so this test would still be
+        # meaningful if run on a real Firecracker-capable machine.
+        from fabrica.sandbox import select_sandbox_backend
+
+        assert fabrica.tools.tier == select_sandbox_backend().tier
+
+    async def test_explicit_sandbox_backend_override_is_used_verbatim(self) -> None:
+        from fabrica.sandbox import RunResult, SandboxHandle, ToolCallCallback
+
+        class _FakeTier2Backend:
+            tier = 2
+
+            async def boot_clean(self) -> SandboxHandle:
+                raise NotImplementedError
+
+            async def execute(
+                self,
+                handle: SandboxHandle,
+                code: str,
+                *,
+                on_tool_call: ToolCallCallback,
+                timeout: float,
+            ) -> RunResult:
+                raise NotImplementedError
+
+            async def terminate(self, handle: SandboxHandle) -> None:
+                return None
+
+            async def health_check(self) -> bool:
+                return True
+
+        bridge = CivitasBridge(allow_ungoverned=True, sandbox_backend=_FakeTier2Backend())
+        fabrica = await bridge.build()
+
+        assert fabrica.tools.tier == 2
+        assert fabrica.skills.tier == 2
+
+
 class TestBuild:
     async def test_returns_fabrica_with_all_four_managers(self) -> None:
         bridge = CivitasBridge(allow_ungoverned=True)

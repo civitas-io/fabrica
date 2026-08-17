@@ -189,10 +189,15 @@ class FabricaMCPServer:
         all (SandboxPool exposed no queryable tier), and
         allow_weak_isolation_for_external_callers was accepted but inert.
 
-        Honest consequence, worth stating plainly: only Tier 0
-        (SubprocessSandbox) is actually implemented anywhere in this
-        codebase today (contracts/sandbox.md) -- so, as of this writing,
-        EVERY real FabricaMCPServer(kind="http") deployment must pass
+        Updated, no longer purely theoretical: FirecrackerSandbox (Tier 2)
+        is real now (contracts/sandbox.md), and CivitasBridge.build() does
+        real platform dispatch (select_sandbox_backend(), isolation.md) --
+        so a real Linux+KVM+Firecracker deployment genuinely satisfies
+        this check today without the opt-in. Tier 1 (gVisor/srt) remains
+        unimplemented, and dispatch has no macOS/Windows Tier 2 path
+        (libkrun/Hyper-V) either -- so EVERY real FabricaMCPServer(kind=
+        "http") deployment on those hosts, or on Linux without KVM/the
+        Firecracker artifacts configured, still must pass
         allow_weak_isolation_for_external_callers=True to construct at
         all. That is the fail-closed default working exactly as intended,
         not a bug -- it forces an explicit, greppable acknowledgment of a
@@ -484,7 +489,9 @@ class FabricaMCPServer:
 #   here) -- streamable HTTP is the currently-recommended transport in
 #   the real `mcp` SDK; the legacy SSE transport was never built, since
 #   building the deprecated one first would be backwards.
-# - WeakIsolationError's real tier check -- SandboxPool has no queryable
-#   tier attribute yet (contracts/sandbox.md never specified one); until
-#   it does, allow_weak_isolation_for_external_callers is accepted but
-#   inert. See Open items in contracts/mcp-server.md.
+# - (Resolved) WeakIsolationError's real tier check -- SandboxPool.tier
+#   is real (contracts/sandbox.md) and this constructor genuinely checks
+#   it; a real Tier 2 backend (FirecrackerSandbox) and real platform
+#   dispatch (select_sandbox_backend(), isolation.md) both exist now
+#   too, so the check has real, non-opt-in-requiring outcomes on capable
+#   hosts, not just a permanently-inert acceptance of the flag.

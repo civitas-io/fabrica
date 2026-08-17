@@ -197,16 +197,26 @@ class CivitasBridge:
         though nothing in this contract exercises anything beyond
         uniform mode selection yet. This is what makes v2 additive: the
         parameter already exists, only its effect grows later.
+
+        sandbox_backend is the "hidden override for testing/CI only"
+        isolation.md names -- real deployments leave it None and get
+        select_sandbox_backend()'s real platform dispatch instead (see
+        below). Now real code, not aspirational: this contract's own
+        earlier draft only ever constructed SubprocessSandbox regardless
+        of host, a gap found and fixed once FirecrackerSandbox (Tier 2)
+        became real -- see the correction below.
         """
 
     async def build(self) -> Fabrica:
         """Assembles the full object graph exactly once:
         1. Resolves each component's mode (uniform `mode`, unless
            `overrides` names it specifically).
-        2. Constructs each backend: Sandbox (platform-dispatched,
-           isolation.md), RetrieverBackend, PromptStore, MemoryStore,
-           WorkingMemoryStore, Compactor (RecencyCompactor(summarizer) or
-           NullCompactor if summarizer is None).
+        2. Constructs each backend: Sandbox (REAL platform dispatch --
+           `sandbox_backend or select_sandbox_backend()`, isolation.md;
+           see the correction below for the gap this closes),
+           RetrieverBackend, PromptStore, MemoryStore, WorkingMemoryStore,
+           Compactor (RecencyCompactor(summarizer) or NullCompactor if
+           summarizer is None).
         3. Constructs the shared Retriever and SandboxPool.
         4. Constructs each manager with its dependencies injected --
            ToolManager, SkillManager get the shared engines +
@@ -347,6 +357,35 @@ assumed to already work.
   `MemoryStore` adapter) — `CivitasBridge` constructs sensible defaults per
   the zero-infra philosophy; overriding *which* adapter, as opposed to
   *which mode*, is not exposed by anything in this contract's signature.
+
+## Correction found during implementation: `Sandbox` platform dispatch was claimed but not real, until now
+
+This contract always said `build()` constructs `Sandbox` "platform-
+dispatched" (isolation.md). Until `FirecrackerSandbox` (Tier 2) existed,
+the actual code took a shortcut that happened to look identical from the
+outside on every host anyone tested on: it always constructed
+`SubprocessSandbox()` directly, full stop. That was never flagged as a
+gap earlier because there was no second real backend to dispatch to yet
+-- a hardcoded choice and a dispatch function with only one real outcome
+are behaviorally indistinguishable until a second outcome exists.
+
+Once `FirecrackerSandbox` became real, this stopped being a defensible
+shortcut: `Tier 2` existed in the codebase but was completely unreachable
+through the one real assembly path (`CivitasBridge.build()`) that every
+real deployment goes through. Fixed with `fabrica.sandbox.dispatch
+.select_sandbox_backend()`: real host detection (Linux + `/dev/kvm` +
+`FABRICA_FC_BINARY`/`FABRICA_FC_KERNEL`/`FABRICA_FC_ROOTFS` all pointing
+at real, existing files) returns a real `FirecrackerSandbox`; anything
+else returns `SubprocessSandbox`, honestly reflecting that Tier 1
+(gVisor/`srt`) and macOS/Windows Tier 2 (libkrun/Hyper-V) remain
+unimplemented -- there are only two real outcomes today, not the full
+five-tier table isolation.md describes in the abstract.
+
+`CivitasBridge.__init__`'s new `sandbox_backend: Sandbox | None = None`
+parameter is isolation.md's own "hidden override... for testing/CI
+only" — not a new user-facing knob, and not a contradiction of
+"platform dispatch is auto-detected, not user-configured": real
+deployments never pass it, they get real dispatch.
 
 ## Open items for implementation
 

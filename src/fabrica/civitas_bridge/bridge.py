@@ -46,7 +46,7 @@ from fabrica.presidium import GrantResult, PresidiumClient
 from fabrica.prompts import InMemoryPromptStore, PersistedPromptStore, PromptManager
 from fabrica.prompts import PromptStore as PromptStoreProtocol
 from fabrica.retriever import KeywordBackend, Retriever
-from fabrica.sandbox import SandboxPool, SubprocessSandbox
+from fabrica.sandbox import Sandbox, SandboxPool, select_sandbox_backend
 from fabrica.scope import Scope
 
 # Not contract-specified (see Open items 6 in contracts/civitas-bridge.md) --
@@ -122,6 +122,7 @@ class CivitasBridge:
         overrides: dict[str, Literal["library", "service"]] | None = None,
         warm_size: int = _DEFAULT_WARM_SIZE,
         max_concurrent: int = _DEFAULT_MAX_CONCURRENT,
+        sandbox_backend: Sandbox | None = None,
     ) -> None:
         """
         Raises:
@@ -141,6 +142,16 @@ class CivitasBridge:
         warm_size/max_concurrent configure the default SandboxPool build()
         constructs -- not contract-specified (Open item 6), reasonable
         zero-infra placeholders.
+
+        sandbox_backend is the "hidden override for testing/CI only"
+        isolation.md names -- NOT a general per-deployment config knob.
+        Real deployments leave this None and get select_sandbox_backend()'s
+        real platform dispatch (isolation.md): FirecrackerSandbox (Tier 2)
+        when this host can actually prove it (Linux + real KVM + real
+        FABRICA_FC_BINARY/FABRICA_FC_KERNEL/FABRICA_FC_ROOTFS artifacts),
+        SubprocessSandbox (Tier 0) otherwise. Supplying a backend directly
+        here is for tests that need a specific, deterministic tier without
+        depending on the host's real capabilities.
         """
         if presidium_client is None and not allow_ungoverned:
             raise UngovernedConfigurationError(
@@ -169,6 +180,7 @@ class CivitasBridge:
         self._overrides = overrides or {}
         self._warm_size = warm_size
         self._max_concurrent = max_concurrent
+        self._sandbox_backend = sandbox_backend
 
     async def build(self) -> Fabrica:
         """Assembles the full object graph exactly once. See the module
@@ -191,7 +203,9 @@ class CivitasBridge:
 
         retriever = Retriever(KeywordBackend())
         sandbox_pool = SandboxPool(
-            SubprocessSandbox(), warm_size=self._warm_size, max_concurrent=self._max_concurrent
+            self._sandbox_backend or select_sandbox_backend(),
+            warm_size=self._warm_size,
+            max_concurrent=self._max_concurrent,
         )
 
         tools = ToolManager(retriever, sandbox_pool, presidium_client)

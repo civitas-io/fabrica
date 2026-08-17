@@ -53,7 +53,7 @@ plus the general rule itself).
 ### Implementation phase: all six object-model contracts are real code
 
 `src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 187 tests total locally (plus
+mocked stubs standing in for untested logic), 195 tests total locally (plus
 14 more -- `tests/sandbox/test_firecracker_backend.py` (10) and
 `tests/sandbox/test_pool_with_firecracker.py` (4) -- that only run on real
 Linux+KVM+Firecracker, skipped everywhere else, verified 14/14 for real on
@@ -582,10 +582,71 @@ cognee|langmem]` adapters (need real external services to test against,
    this isn't blocking), but worth noting as the natural next isolation
    milestone if `FabricaMCPServer(kind="http")` sees real external use.
 
+4. **Resolved -- real platform dispatch, closing the biggest actual
+   MDP gap left after `FirecrackerSandbox` shipped**: user asked to
+   "tackle all the relevant ones towards an MDP, and defer the rest."
+   The most consequential real gap wasn't on the original open-items
+   list at all -- it surfaced from reading `contracts/civitas-bridge.md`
+   closely: the contract always said `build()` constructs `Sandbox`
+   "platform-dispatched" (`isolation.md`), but the actual code always
+   hardcoded `SubprocessSandbox()`, unconditionally, regardless of host.
+   That was invisible before -- a hardcoded choice and a dispatch
+   function with only one real outcome look identical from the outside
+   until a second real outcome exists. Once `FirecrackerSandbox` (Tier
+   2) became real, `Tier 2` existed in the codebase but was completely
+   unreachable through the one real assembly path every deployment goes
+   through.
+
+   Fixed, contract first (`contracts/civitas-bridge.md`,
+   `docs/isolation.md`), then code:
+   `fabrica.sandbox.dispatch.select_sandbox_backend()` -- real detection
+   (Linux + real `/dev/kvm` + real `FABRICA_FC_BINARY`/
+   `FABRICA_FC_KERNEL`/`FABRICA_FC_ROOTFS` artifacts all present) returns
+   a real `FirecrackerSandbox`; anything else returns `SubprocessSandbox`,
+   honestly reflecting that Tier 1 and macOS/Windows Tier 2 remain
+   unimplemented -- exactly two real outcomes today, not the full
+   five-tier table. `CivitasBridge.build()` now calls
+   `self._sandbox_backend or select_sandbox_backend()` -- the new
+   `sandbox_backend` constructor parameter is `isolation.md`'s own named
+   "hidden override for testing/CI only," not a new user-facing knob.
+
+   Directly closes item 3 above too: `WeakIsolationError`'s tier check
+   needed no code change (it already genuinely queried `.tier`), but was
+   previously provably permanently-inert ("only Tier 0 is implemented
+   anywhere") -- now a real Linux+KVM+Firecracker deployment genuinely
+   satisfies it without the opt-in. Both the constructor docstring and a
+   stale module-level "what this deliberately does not cover" comment in
+   `mcp/server.py` were corrected to say so, rather than left stale next
+   to now-working code.
+
+   11 new tests: 5 deterministic `select_sandbox_backend()` unit tests
+   (`tests/sandbox/test_dispatch.py`, monkeypatching platform/env/
+   filesystem rather than depending on this dev machine's real
+   capabilities), 2 `CivitasBridge`-level dispatch-wiring tests (default
+   dispatch is real, not hardcoded; the override is honored verbatim),
+   1 `FabricaMCPServer` test proving a genuinely Tier-2-backed `Fabrica`
+   constructs cleanly without the opt-in (the real proof this whole
+   check was built for), plus the pre-existing Tier-0 test made
+   deterministic (forced via the override, since default dispatch is no
+   longer guaranteed to be Tier 0 on every host). All local (195 passed,
+   14 correctly skipped, stable across repeated runs, `ruff`/
+   `mypy --strict` clean) -- no homelab-only test needed here since
+   dispatch's real-hardware outcome was already proven directly by
+   `test_pool_with_firecracker.py`'s tier assertion.
+
+   **Deferred, explicitly, as agreed** (not part of this MDP pass):
+   snapshot/restore, a minimal purpose-built rootfs, `jailer` hardening,
+   real per-VM CPU accounting, managed-provider adapters, `TunnelProvider`
+   backends. None of these block a real Tier-2-capable deployment from
+   working correctly today; they are performance, hardening-in-depth, or
+   a second isolation path, not correctness gaps in the one that exists.
+
 **Immediate next action**: item 1 is genuinely blocked on something
-external to this repo, not actionable right now -- pick up item 2 (the
-deferred design-layer batch) or item 3 (a Tier 1 backend) instead;
-neither blocks the other, and neither is gated on Presidium.
+external to this repo, not actionable right now. Items 3 and 4 are both
+resolved as of this update. Pick up item 2 (the deferred design-layer
+batch) next, or begin the explicitly-deferred batch above (snapshot/
+restore is the most natural next real milestone, since it's the actual
+performance win Tier 2 is capable of but doesn't yet realize).
 
 ## Read in this order if you're new to this
 

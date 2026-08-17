@@ -4,6 +4,7 @@ See docs/contracts/sandbox.md for the full contract this implements.
 """
 
 from fabrica.sandbox.backend import Sandbox
+from fabrica.sandbox.dispatch import select_sandbox_backend
 from fabrica.sandbox.errors import (
     SandboxCrashedError,
     SandboxError,
@@ -28,4 +29,5 @@ __all__ = [
     "SandboxTimeoutError",
     "SubprocessSandbox",
     "ToolCallCallback",
+    "select_sandbox_backend",
 ]

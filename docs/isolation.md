@@ -27,6 +27,16 @@ implementation detail Fabrica manages on the user's behalf, not a deployment
 topology decision the way transport is. A hidden override exists for testing/CI
 only — it is not documented as a supported user option.
 
+**Implemented**: `fabrica.sandbox.select_sandbox_backend()` is the real
+auto-detection function `CivitasBridge.build()` calls by default. Real
+host detection today has exactly two outcomes, stated honestly rather
+than matching the full five-tier table below in the abstract:
+Firecracker (Tier 2) when Linux + real `/dev/kvm` + real
+`FABRICA_FC_BINARY`/`FABRICA_FC_KERNEL`/`FABRICA_FC_ROOTFS` artifacts are
+all present; `SubprocessSandbox` (Tier 0) otherwise. The hidden
+testing/CI override is `CivitasBridge`'s own `sandbox_backend`
+constructor parameter — real deployments never pass it.
+
 ## The tiers, per platform
 
 Each tier is a **capability level**, not a single technology — what actually backs
