@@ -206,12 +206,23 @@ class NullCompactor:
         )
 ```
 
-**Unresolved edge case, flagged rather than papered over:** if a *single*
-message's `tokens` already exceeds `budget_tokens` (a pathological but
-possible input), this algorithm has no defined behavior — truncating the
-message itself would change what it says, dropping it silently would lose
-information without signaling that happened. Not decided here; needs product
-judgment, not a contract-level default.
+**Resolved: fold it into the summary, like any other message that doesn't
+fit the recency window.** If a *single* message's `tokens` already exceeds
+`budget_tokens` (a pathological but possible input), `_select_preserved`
+preserves zero messages -- a literal, mechanical extension of the stated
+algorithm, not a special case bolted on to paper over the gap -- and that
+message joins everything else headed to the injected `Summarizer`.
+Deliberately NOT truncated (would need a tokenizer dependency
+`Message.tokens` was specifically designed to avoid, and could cut meaning
+arbitrarily mid-sentence) and NOT dropped silently (would lose information
+without signaling that happened). `CompactionResult.preserved == []` is
+itself the observable signal a caller needs -- no separate flag was added,
+since the existing shape already communicates "nothing survived verbatim
+this round" to anyone who checks it. Whether the Summarizer's own
+underlying model can actually compress a message that large is outside
+Fabrica's visibility or control -- `Summarizer` is an injected dependency
+with no model connection Fabrica constructs or credentials Fabrica holds,
+so this genuinely is not Fabrica's problem to solve here.
 
 ---
 
@@ -348,8 +359,13 @@ for them in this pass. Full design:
 
 ## Open items for implementation
 
-1. The single-message-exceeds-budget edge case in `RecencyCompactor` (above) —
-   needs a product decision, not a contract default.
+1. ~~The single-message-exceeds-budget edge case in `RecencyCompactor`...~~
+   **Resolved above, in `RecencyCompactor`'s own section** -- found
+   already implemented and tested
+   (`test_single_message_exceeding_budget_preserves_nothing_verbatim`),
+   just previously left marked "unresolved" here even though the code's
+   own docstring already stated the mechanical answer plainly. Pure
+   documentation fix -- no code change needed.
 2. ~~`WorkingMemoryQuotaExceeded`'s default ceiling...~~ **Resolved: 256KB,
    shipped as `DEFAULT_QUOTA_BYTES`** (`working_memory.py`), with its own
    docstring stating plainly it's a placeholder, not validated against

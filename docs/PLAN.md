@@ -238,8 +238,19 @@ doc it's already named in — not repeated here.
     a batch succeeded -- matches what the only real backend
     (`KeywordBackend`) already does. 1 new test proving the duplicate
     check's own all-or-nothing guarantee specifically.
-15. [ ] `memory.md` open item 1: the single-message-exceeds-budget edge case
-    in `RecencyCompactor` — needs a product decision, not a contract default.
+15. [x] `memory.md` open item 1: the single-message-exceeds-budget edge case
+    in `RecencyCompactor` -- **found already resolved in code**, same
+    shape as item 12: `_select_preserved` already folds an oversized
+    single message into the summarized set (zero preserved verbatim),
+    already tested
+    (`test_single_message_exceeding_budget_preserves_nothing_verbatim`).
+    Decided and documented explicitly rather than left "unresolved":
+    fold into the summary (relying on the injected `Summarizer` to
+    compress it, its actual designed job), not truncate (would need a
+    tokenizer dependency this project deliberately avoids) or drop
+    silently (loses information without signaling). `CompactionResult
+    .preserved == []` is itself the observable signal, no new field
+    needed. Pure documentation fix -- no code change needed.
 16. [ ] `prompts.md` open item 1: `PromptManager`'s cache eviction policy
     (size ceiling, TTL, or unbounded) — needs a decision before it matters
     at real scale.
