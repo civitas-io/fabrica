@@ -245,6 +245,20 @@ class SkillManager:
 - **`SKILL.md` parsing internals** — this contract specifies `load()`'s error
   behavior, not the YAML/Markdown parsing implementation itself.
 
+## Real addition: `tracer` DI, closing system-design.md §7's biggest gap
+
+`ToolManager`/`SkillManager` and `execute_in_sandbox` now accept an
+optional `tracer: fabrica.observability.Tracer | None = None`, defaulting
+to `NullTracer()` -- same DI shape as `PresidiumClient`/`Summarizer`
+everywhere else. Real spans: `fabrica.tool.find`/`fabrica.skill.find`
+(nesting `Retriever.search()`'s own span underneath), and
+`fabrica.tool.code_mode.run`/`fabrica.skill.run` as the real PARENT of
+`fabrica.presidium.check_grant`, `fabrica.sandbox.acquire`, and
+`fabrica.sandbox.run` -- one real nested tree via `trace_id`/
+`parent_span_id`, not four spans sharing a name prefix. Full design and
+the real Civitas-Tracer finding that shaped this:
+[system-design.md §7](../system-design.md#7-observability-spans-this-system-emits).
+
 ## Open items for implementation
 
 1. Should `find()` on both managers accept a `kind` override, or is fixing it

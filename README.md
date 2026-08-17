@@ -36,11 +36,12 @@ keep the "Fabrica" name, only the package name differs.
 > `fabrica`/`fabrica-contrib` package split was never built (this package
 > currently ships everything, including `mcp`/`uvicorn`, as required
 > dependencies; **now a decided, deliberate deferral until closer to a real
-> release**, not an open question), and real observability (OTEL spans,
-> credential injection, usage metering) is almost entirely unbuilt despite
-> being fully designed. Both are tracked, in order, in
-> [`docs/PLAN.md`](docs/PLAN.md), the active work queue — not silently
-> deferred.
+> release**, not an open question). **Real OTEL span emission is now
+> built** — all nine spans named in `system-design.md §7` are real, not a
+> log stand-in, closing what was the largest gap found. Credential
+> injection into `Sandbox` and real usage/budget metering remain unbuilt.
+> All tracked, in order, in [`docs/PLAN.md`](docs/PLAN.md), the active work
+> queue — not silently deferred.
 
 ---
 
@@ -190,13 +191,17 @@ A reusable script builds the deployable rootfs image — see
 - **Presidium** governs it: grants decide which tools/skills a sandbox may touch;
   policy decides whether a code-mode run is allowed; the credential path (and tools
   like **tessera**) inject secrets the sandbox can *use but never see*.
-- **Fabrica** is the neutral middle: it shapes and executes context, and is
-  *designed* to emit the spans and audit events the other two consume —
-  **honestly, mostly not built yet**: the grant-check gate before every
-  code-mode/skill run is real and enforced, but real span/audit emission
-  covers 2 of 9 designed spans today, as a log stand-in rather than a real
-  OTEL exporter. Tracked as the highest-priority real gap in
-  [`docs/PLAN.md`](docs/PLAN.md).
+- **Fabrica** is the neutral middle: it shapes and executes context, and
+  emits the spans and audit events the other two consume — **real now, all
+  nine spans**: `fabrica.observability.Tracer`/`Span` are structural
+  Protocols matching `civitas.observability.tracer.Tracer`'s real, public
+  shape exactly (a real finding: Civitas doesn't use OTEL's global
+  provider registry, so this had to match its actual mechanism, not just
+  call the generic OTEL API into a void). Every manager defaults to a
+  real no-op (`NullTracer()`); a real deployment passes a real
+  `civitas.observability.tracer.Tracer()` into `CivitasBridge` to get
+  real, nested spans end to end. See
+  [`docs/system-design.md §7`](docs/system-design.md#7-observability-spans-this-system-emits).
 
 Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-integration.md).
 

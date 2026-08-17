@@ -217,6 +217,13 @@ something breaks. Six real decisions, one flagged as a real availability tradeof
 
 ## 7. Observability: spans this system emits
 
+**Implemented** -- all nine spans below are real (`src/fabrica/observability.py`,
+`fabrica.observability.Tracer`/`Span`), not a design table waiting on
+implementation. Closes the largest gap found in
+[self-reflection-report.md §3.3](self-reflection-report.md): previously
+one call site emitted anything, as a `logger.info` stand-in, covering two
+of the nine.
+
 | Component | Span | Key attributes |
 |---|---|---|
 | `ToolManager` | `fabrica.tool.find` | query, kind, result_count |
@@ -229,6 +236,35 @@ something breaks. Six real decisions, one flagged as a real availability tradeof
 | `MemoryManager` | `fabrica.memory.write` / `fabrica.memory.search` | scope fields, backend |
 | `PresidiumClient` | `fabrica.presidium.check_grant` | decision, latency_ms |
 
+**A real, important finding while implementing this**: `civitas
+.observability.tracer.Tracer`/`Span` (real, public, exported from
+`civitas.observability.__all__`) do NOT use OpenTelemetry's global
+`TracerProvider` registry -- Civitas holds an instance-scoped provider and
+propagates `trace_id`/`parent_span_id` explicitly via its own message-
+envelope fields, not OTEL's context-propagation machinery. A plain
+`opentelemetry.trace.get_tracer()` call inside Fabrica would NOT actually
+route through Civitas's own span pipeline. `fabrica.observability` defines
+`Tracer`/`Span` as structural Protocols matching Civitas's real shape
+exactly (verified against the real class, not assumed --
+`tests/test_observability.py`) -- a real `civitas.observability.tracer
+.Tracer` satisfies them with zero adapter code, while every manager stays
+importable and testable with no `civitas` installed at all (library-first).
+**No new Fabrica dependency was needed** -- `fabrica.observability` imports
+neither `opentelemetry` nor `civitas`; real OTEL functionality flows
+transitively through `civitas` itself (already a hard Fabrica dependency,
+already depending on `opentelemetry-sdk`), only when a caller supplies a
+real `Tracer` instance.
+
+Every component below `CivitasBridge` defaults to `NullTracer()` (a real
+no-op, matching `NullPresidiumClient`/`NullCompactor`) unless a real
+`Tracer` is explicitly injected -- `CivitasBridge`'s own `tracer`
+constructor parameter, deliberately NOT auto-constructing a real
+`civitas.observability.tracer.Tracer()` by default, since that has real
+side effects (an OTEL `TracerProvider`, a console exporter printing every
+span when no OTLP endpoint is configured) that would silently change
+behavior for every existing caller, this codebase's own test suite
+included.
+
 All spans ride Civitas's existing OTEL plumbing (`civitas-presidium-integration.md`
 — "Fabrica emits, Civitas collects") — this table is what Fabrica emits, not a new
 tracing mechanism.
@@ -240,6 +276,18 @@ attribute (`fabrica.sandbox.run`'s `cpu_seconds`, `fabrica.tool.code_mode.run`'s
 `team_id`) as span attributes, so Presidium's span consumer can attribute
 consumption to the correct budget scope. This is a real, small addition these
 spans didn't need before — not an assumption already covered elsewhere.
+
+**Real implementation detail, worth stating precisely**: `Scope` fields are
+carried directly on the OUTER span (`fabrica.tool.code_mode.run`/
+`fabrica.skill.run`, and the standalone `fabrica.memory.write`/`search`) --
+not duplicated onto every nested child span underneath it
+(`fabrica.sandbox.acquire`/`fabrica.sandbox.run` carry `tier`/timing/
+result attributes only, no `Scope`). A real usage consumer correlates a
+resource-consumption attribute on a child span (`cpu_seconds`) with its
+parent's `Scope` via the real `trace_id`/`parent_span_id` linkage every
+span in this table now carries -- the standard tracing pattern, not a
+gap: duplicating `Scope` onto every nested span would be redundant, not
+more correct.
 
 ---
 

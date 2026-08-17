@@ -70,9 +70,11 @@ servers) are both the opposite shape. Checked explicitly, not assumed — see
 
 Fabrica shapes and runs context. It does not run the process (Civitas) or decide
 permission (Presidium). It **emits** the spans and audit events those layers consume
-(**design intent, largely unbuilt today** — see
-[`docs/self-reflection-report.md`](self-reflection-report.md) §3.3 and
-[`docs/PLAN.md`](PLAN.md)).
+— **real now, all nine spans named in
+[system-design.md §7](system-design.md#7-observability-spans-this-system-emits)**,
+closing what `self-reflection-report.md` §3.3 found was the largest gap
+between this doc's claim and the real code. Credential injection and real
+usage/budget metering remain unbuilt — see [`docs/PLAN.md`](PLAN.md).
 
 ## Interface-first, mirroring the platform
 

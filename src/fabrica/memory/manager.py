@@ -12,6 +12,7 @@ from fabrica.memory.compactor import Compactor
 from fabrica.memory.store import MemoryStore
 from fabrica.memory.types import CompactionResult, MemoryItem, Message
 from fabrica.memory.working_memory import WorkingMemoryStore
+from fabrica.observability import NullTracer, Tracer, traced
 from fabrica.scope import Scope
 
 
@@ -21,10 +22,16 @@ class MemoryManager:
         working: WorkingMemoryStore,
         long_term: MemoryStore,
         compactor: Compactor,
+        *,
+        tracer: Tracer | None = None,
     ) -> None:
         self._working = working
         self._long_term = long_term
         self._compactor = compactor
+        # `tracer` emits `fabrica.memory.write`/`fabrica.memory.search`
+        # (system-design.md §7) -- defaults to NullTracer(), a real no-op,
+        # matching the NullPresidiumClient/NullCompactor DI pattern.
+        self._tracer = tracer if tracer is not None else NullTracer()
 
     # working memory
     async def remember(self, scope: Scope, key: str, value: Any) -> None:
@@ -39,10 +46,34 @@ class MemoryManager:
 
     # long-term memory
     async def write(self, scope: Scope, item: MemoryItem) -> str:
-        return await self._long_term.write(scope, item)
+        with traced(
+            self._tracer,
+            "fabrica.memory.write",
+            backend=type(self._long_term).__name__,
+            user_id=scope.user_id,
+            session_id=scope.session_id,
+            agent_id=scope.agent_id,
+            team_id=scope.team_id,
+        ) as span:
+            memory_id = await self._long_term.write(scope, item)
+            span.set_attribute("memory_id", memory_id)
+            return memory_id
 
     async def search(self, scope: Scope, query: str, limit: int = 5) -> list[MemoryItem]:
-        return await self._long_term.search(scope, query, limit)
+        with traced(
+            self._tracer,
+            "fabrica.memory.search",
+            backend=type(self._long_term).__name__,
+            query=query,
+            limit=limit,
+            user_id=scope.user_id,
+            session_id=scope.session_id,
+            agent_id=scope.agent_id,
+            team_id=scope.team_id,
+        ) as span:
+            results = await self._long_term.search(scope, query, limit)
+            span.set_attribute("result_count", len(results))
+            return results
 
     async def get(self, scope: Scope, id: str) -> MemoryItem | None:
         return await self._long_term.get(scope, id)

@@ -366,6 +366,18 @@ per-VM CPU accounting needs Firecracker's own metrics API, not wired up
 in this v1 pass. Stated as a real, known gap rather than a plausible-
 looking but fabricated number.
 
+## Real addition: `tracer` DI and `trace_id`/`parent_span_id` on `acquire()`/`run()`
+
+`SandboxPool` now accepts an optional `tracer: fabrica.observability
+.Tracer | None = None` (defaults to `NullTracer()`, same DI shape as
+everywhere else). `acquire()`/`run()` both gained optional `trace_id`/
+`parent_span_id` keyword parameters -- default to "start a fresh root
+span", so a direct caller never has to think about tracing to use these
+correctly, but `execute_in_sandbox` passes its own outer span's identity
+down so `fabrica.sandbox.acquire`/`fabrica.sandbox.run` nest as real
+children, not disconnected spans. Full design:
+[system-design.md §7](../system-design.md#7-observability-spans-this-system-emits).
+
 ## Open items for implementation
 
 1. ~~`boot_clean()`'s background-replenishment trigger... not decided

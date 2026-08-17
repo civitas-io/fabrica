@@ -10,6 +10,7 @@ import asyncio
 import logging
 from typing import Literal
 
+from fabrica.observability import NullTracer, Tracer, traced
 from fabrica.retriever.backend import RetrieverBackend
 from fabrica.retriever.errors import DuplicateIndexableError, RetrieverUnavailableError
 from fabrica.retriever.keyword_backend import KeywordBackend
@@ -23,13 +24,21 @@ class Retriever:
         self,
         primary: RetrieverBackend,
         fallback: RetrieverBackend | None = None,
+        *,
+        tracer: Tracer | None = None,
     ) -> None:
         """`fallback` defaults to a fresh KeywordBackend if not supplied.
         There is no "no fallback" mode -- every Retriever has one, matching
         the resilience pattern in system-design.md §6.
+
+        `tracer` emits `fabrica.retriever.search` (system-design.md §7) --
+        defaults to `NullTracer()`, a real no-op, matching the
+        `NullPresidiumClient`/`NullCompactor` DI pattern. `CivitasBridge`
+        is the one place licensed to wire in a real one.
         """
         self._primary = primary
         self._fallback = fallback if fallback is not None else KeywordBackend()
+        self._tracer = tracer if tracer is not None else NullTracer()
         # Retriever's own bookkeeping -- NOT delegated to either backend.
         # Needed for duplicate detection (RetrieverBackend has no get(id))
         # and for list_eager()'s cache, per the contract's explicit note
@@ -117,6 +126,8 @@ class Retriever:
         kind: Literal["tool", "skill"] | None = None,
         limit: int = 5,
         timeout: float = 2.0,
+        trace_id: str = "",
+        parent_span_id: str | None = None,
     ) -> list[RankedMatch]:
         """Search the index. Returns at most `limit` matches, pre-sorted
         ascending by rank (rank=0 best).
@@ -124,32 +135,49 @@ class Retriever:
         On primary-backend failure or timeout, falls back to the configured
         fallback backend automatically -- transparent to the caller.
 
+        `trace_id`/`parent_span_id` let a caller (e.g. `ToolManager.find()`)
+        nest this span under its own -- both default to "start a fresh root
+        span", so a direct caller never has to think about tracing to use
+        this method correctly.
+
         Raises:
             RetrieverUnavailableError: both primary and fallback failed or
                 timed out.
         """
-        try:
-            return await asyncio.wait_for(
-                self._primary.query(query, kind, limit), timeout=timeout
-            )
-        except Exception:
-            logger.warning(
-                "Retriever: primary backend search failed or timed out, falling back",
-                exc_info=True,
-            )
+        with traced(
+            self._tracer,
+            "fabrica.retriever.search",
+            trace_id=trace_id,
+            parent_span_id=parent_span_id,
+            query=query,
+            kind=kind,
+            limit=limit,
+        ) as span:
+            try:
+                results = await asyncio.wait_for(
+                    self._primary.query(query, kind, limit), timeout=timeout
+                )
+                span.set_attribute("backend", "primary")
+            except Exception:
+                logger.warning(
+                    "Retriever: primary backend search failed or timed out, falling back",
+                    exc_info=True,
+                )
 
-        try:
-            return await asyncio.wait_for(
-                self._fallback.query(query, kind, limit), timeout=timeout
-            )
-        except Exception as exc:
-            raise RetrieverUnavailableError(
-                "search() failed: both primary and fallback backends errored or timed out"
-            ) from exc
+                try:
+                    results = await asyncio.wait_for(
+                        self._fallback.query(query, kind, limit), timeout=timeout
+                    )
+                    span.set_attribute("backend", "fallback")
+                except Exception as exc:
+                    raise RetrieverUnavailableError(
+                        "search() failed: both primary and fallback backends errored or timed out"
+                    ) from exc
 
-    async def list_eager(
-        self, kind: Literal["tool", "skill"] | None = None
-    ) -> list[Indexable]:
+            span.set_attribute("top_rank", results[0].rank if results else -1)
+            return results
+
+    async def list_eager(self, kind: Literal["tool", "skill"] | None = None) -> list[Indexable]:
         """Return all Indexables registered with eager=True. Served from
         Retriever's own in-memory cache, not delegated to either backend --
         eager items bypass search by design, not as a performance shortcut.

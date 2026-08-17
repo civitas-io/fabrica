@@ -22,6 +22,7 @@ import yaml
 
 from fabrica.managers.errors import SkillNotFoundError, SkillParseError
 from fabrica.managers.execute_in_sandbox import execute_in_sandbox
+from fabrica.observability import NullTracer, Tracer, traced
 from fabrica.presidium import PresidiumClient
 from fabrica.retriever import Indexable, RankedMatch, Retriever
 from fabrica.sandbox import RunResult, SandboxPool
@@ -46,11 +47,17 @@ class SkillManager:
         retriever: Retriever,
         sandbox_pool: SandboxPool,
         presidium_client: PresidiumClient,
+        *,
+        tracer: Tracer | None = None,
     ) -> None:
         self._retriever = retriever
         self._sandbox_pool = sandbox_pool
         self._presidium_client = presidium_client
         self._skills: dict[str, _RegisteredSkill] = {}
+        # `tracer` emits `fabrica.skill.find`/`fabrica.skill.run`
+        # (system-design.md §7) -- defaults to NullTracer(), a real no-op,
+        # matching the NullPresidiumClient/NullCompactor DI pattern.
+        self._tracer = tracer if tracer is not None else NullTracer()
 
     @property
     def tier(self) -> int:
@@ -115,8 +122,21 @@ class SkillManager:
         )
 
     async def find(self, query: str, *, limit: int = 5) -> list[RankedMatch]:
-        """Thin delegation -- same shape as ToolManager.find(), different kind."""
-        return await self._retriever.search(query, kind="skill", limit=limit)
+        """Thin delegation -- same shape as ToolManager.find(), different
+        kind -- plus its own fabrica.skill.find span nesting the
+        underlying fabrica.retriever.search span, same pattern as
+        ToolManager.find().
+        """
+        with traced(self._tracer, "fabrica.skill.find", query=query, kind="skill") as span:
+            results = await self._retriever.search(
+                query,
+                kind="skill",
+                limit=limit,
+                trace_id=span.trace_id,
+                parent_span_id=span.span_id,
+            )
+            span.set_attribute("result_count", len(results))
+            return results
 
     async def run(
         self, name: str, args: dict[str, Any], *, agent_id: str, scope: Scope, timeout: float = 30.0
@@ -134,8 +154,7 @@ class SkillManager:
             raise SkillNotFoundError(f"no registered skill named {name!r}")
         if skill.script is None:
             raise SkillNotFoundError(
-                f"skill {name!r} has no bundled 'script' to run -- it is "
-                f"find()-discoverable only"
+                f"skill {name!r} has no bundled 'script' to run -- it is find()-discoverable only"
             )
 
         script_body = (skill.skill_dir / skill.script).read_text()
@@ -157,4 +176,6 @@ class SkillManager:
             code=code,
             on_tool_call=on_tool_call,
             timeout=timeout,
+            tracer=self._tracer,
+            skill_name=name,
         )

@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 
+from fabrica.observability import NullTracer, Tracer, traced
 from fabrica.sandbox.backend import Sandbox
 from fabrica.sandbox.errors import SandboxPoolExhaustedError
 from fabrica.sandbox.types import RunResult, SandboxHandle, ToolCallCallback
@@ -24,16 +26,22 @@ class SandboxPool:
         warm_size: int,
         max_concurrent: int,
         acquire_timeout: float = 5.0,
+        tracer: Tracer | None = None,
     ) -> None:
         """`backend` is resolved by CivitasBridge at construction time
         based on host OS + deployment tier -- never chosen per-call.
         `warm_size` and `max_concurrent` implement the bounded-overflow
         design from system-design.md §6/§7.
+
+        `tracer` emits `fabrica.sandbox.acquire`/`fabrica.sandbox.run`
+        (system-design.md §7) -- defaults to NullTracer(), a real no-op,
+        matching the NullPresidiumClient/NullCompactor DI pattern.
         """
         self._backend = backend
         self._warm_size = warm_size
         self._max_concurrent = max_concurrent
         self._acquire_timeout = acquire_timeout
+        self._tracer = tracer if tracer is not None else NullTracer()
 
         self._warm: list[SandboxHandle] = []
         self._concurrent_count = 0
@@ -68,42 +76,66 @@ class SandboxPool:
                 handle = await self._backend.boot_clean()
                 self._warm.append(handle)
 
-    async def acquire(self) -> SandboxHandle:
+    async def acquire(
+        self, *, trace_id: str = "", parent_span_id: str | None = None
+    ) -> SandboxHandle:
         """Tries the warm pool first. If empty and under max_concurrent,
         cold-starts on demand. If at max_concurrent, queues up to
         acquire_timeout.
 
+        `trace_id`/`parent_span_id` let a caller (e.g. `execute_in_sandbox`)
+        nest this span under its own -- both default to "start a fresh
+        root span".
+
         Raises:
             SandboxPoolExhaustedError: no handle became available in time.
         """
-        try:
-            async with asyncio.timeout(self._acquire_timeout):
-                async with self._condition:
-                    while True:
-                        if self._warm:
-                            handle = self._warm.pop()
-                            self._concurrent_count += 1
-                            return handle
-                        if self._concurrent_count < self._max_concurrent:
-                            self._concurrent_count += 1
-                            # Cold-start outside the lock body conceptually,
-                            # but boot_clean() is awaited while still holding
-                            # the condition -- acceptable here since
-                            # SandboxPool's own bookkeeping (not the boot
-                            # itself) is what needs the lock; a future
-                            # optimization could release the lock around
-                            # the actual boot_clean() call if it becomes a
-                            # real contention bottleneck.
-                            return await self._backend.boot_clean()
-                        # At max_concurrent -- wait for a release() to free
-                        # a slot or refill the warm pool.
-                        await self._condition.wait()
-        except TimeoutError:
-            raise SandboxPoolExhaustedError(
-                f"no sandbox handle available within {self._acquire_timeout}s "
-                f"(warm={len(self._warm)}, concurrent={self._concurrent_count}, "
-                f"max_concurrent={self._max_concurrent})"
-            ) from None
+        start = time.monotonic()
+        with traced(
+            self._tracer,
+            "fabrica.sandbox.acquire",
+            trace_id=trace_id,
+            parent_span_id=parent_span_id,
+            tier=self.tier,
+        ) as span:
+            try:
+                async with asyncio.timeout(self._acquire_timeout):
+                    async with self._condition:
+                        while True:
+                            if self._warm:
+                                handle = self._warm.pop()
+                                self._concurrent_count += 1
+                                span.set_attribute("warm_hit", True)
+                                span.set_attribute(
+                                    "wait_ms", round((time.monotonic() - start) * 1000, 2)
+                                )
+                                return handle
+                            if self._concurrent_count < self._max_concurrent:
+                                self._concurrent_count += 1
+                                # Cold-start outside the lock body
+                                # conceptually, but boot_clean() is awaited
+                                # while still holding the condition --
+                                # acceptable here since SandboxPool's own
+                                # bookkeeping (not the boot itself) is what
+                                # needs the lock; a future optimization
+                                # could release the lock around the actual
+                                # boot_clean() call if it becomes a real
+                                # contention bottleneck.
+                                handle = await self._backend.boot_clean()
+                                span.set_attribute("warm_hit", False)
+                                span.set_attribute(
+                                    "wait_ms", round((time.monotonic() - start) * 1000, 2)
+                                )
+                                return handle
+                            # At max_concurrent -- wait for a release() to
+                            # free a slot or refill the warm pool.
+                            await self._condition.wait()
+            except TimeoutError:
+                raise SandboxPoolExhaustedError(
+                    f"no sandbox handle available within {self._acquire_timeout}s "
+                    f"(warm={len(self._warm)}, concurrent={self._concurrent_count}, "
+                    f"max_concurrent={self._max_concurrent})"
+                ) from None
 
     async def run(
         self,
@@ -112,12 +144,32 @@ class SandboxPool:
         *,
         on_tool_call: ToolCallCallback,
         timeout: float = 30.0,
+        trace_id: str = "",
+        parent_span_id: str | None = None,
     ) -> RunResult:
         """Delegates directly to the backend. Raises SandboxTimeoutError or
         SandboxCrashedError unchanged -- the handle is not usable after
-        either, per the contract.
+        either, per the contract. When either is raised, the span records
+        it via `set_error()` (real error attribution, not silence) before
+        propagating unchanged -- `traced()`'s own contract.
+
+        `trace_id`/`parent_span_id` let a caller nest this span under its
+        own, same as `acquire()`.
         """
-        return await self._backend.execute(handle, code, on_tool_call=on_tool_call, timeout=timeout)
+        with traced(
+            self._tracer,
+            "fabrica.sandbox.run",
+            trace_id=trace_id,
+            parent_span_id=parent_span_id,
+            tier=self.tier,
+        ) as span:
+            result = await self._backend.execute(
+                handle, code, on_tool_call=on_tool_call, timeout=timeout
+            )
+            span.set_attribute("duration_ms", result.duration_ms)
+            span.set_attribute("cpu_seconds", result.cpu_seconds)
+            span.set_attribute("exit_status", "ok" if result.success else "error")
+            return result
 
     async def release(self, handle: SandboxHandle) -> None:
         """The underlying instance is ALWAYS terminated -- never reused

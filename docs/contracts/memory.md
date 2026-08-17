@@ -335,6 +335,17 @@ the real class, not just an idealized one) -- including a real
 "restart" scenario: a second, independent `PersistedMemoryStore.create()`
 over the same underlying store sees everything the first one wrote.
 
+## Real addition: `tracer` DI on `MemoryManager`
+
+`MemoryManager` now accepts an optional `tracer: fabrica.observability
+.Tracer | None = None` (defaults to `NullTracer()`). `write()`/`search()`
+each emit a real `fabrica.memory.write`/`fabrica.memory.search` span
+carrying `Scope` fields (`user_id`/`session_id`/`agent_id`/`team_id`) and
+the backend class name as attributes -- standalone spans, not nested
+under anything else, since no caller flow established a parent context
+for them in this pass. Full design:
+[system-design.md §7](../system-design.md#7-observability-spans-this-system-emits).
+
 ## Open items for implementation
 
 1. The single-message-exceeds-budget edge case in `RecencyCompactor` (above) —

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from fabrica.managers.execute_in_sandbox import execute_in_sandbox
+from fabrica.observability import NullTracer, Tracer, traced
 from fabrica.presidium import PresidiumClient
 from fabrica.retriever import Indexable, RankedMatch, Retriever
 from fabrica.sandbox import RunResult, SandboxPool
@@ -18,10 +19,16 @@ class ToolManager:
         retriever: Retriever,
         sandbox_pool: SandboxPool,
         presidium_client: PresidiumClient,
+        *,
+        tracer: Tracer | None = None,
     ) -> None:
         self._retriever = retriever
         self._sandbox_pool = sandbox_pool
         self._presidium_client = presidium_client
+        # `tracer` emits `fabrica.tool.find`/`fabrica.tool.code_mode.run`
+        # (system-design.md §7) -- defaults to NullTracer(), a real no-op,
+        # matching the NullPresidiumClient/NullCompactor DI pattern.
+        self._tracer = tracer if tracer is not None else NullTracer()
         # Maps tool name -> the namespace that owns it, built up across all
         # register() calls -- lets on_tool_call route a call to whichever
         # namespace actually registered that tool, without the caller
@@ -60,9 +67,18 @@ class ToolManager:
 
     async def find(self, query: str, *, limit: int = 5) -> list[RankedMatch]:
         """The find() fallback for hosts that can't run code-mode. Thin
-        delegation -- no logic of its own beyond fixing kind="tool".
+        delegation -- no logic of its own beyond fixing kind="tool", plus
+        its own fabrica.tool.find span (system-design.md §7), nesting the
+        underlying fabrica.retriever.search span inside it -- two real,
+        distinct spans at two real layers, not one span standing in for
+        both.
         """
-        return await self._retriever.search(query, kind="tool", limit=limit)
+        with traced(self._tracer, "fabrica.tool.find", query=query, kind="tool") as span:
+            results = await self._retriever.search(
+                query, kind="tool", limit=limit, trace_id=span.trace_id, parent_span_id=span.span_id
+            )
+            span.set_attribute("result_count", len(results))
+            return results
 
     async def run_code(
         self, code: str, *, agent_id: str, scope: Scope, timeout: float = 30.0
@@ -94,4 +110,5 @@ class ToolManager:
             code=code,
             on_tool_call=on_tool_call,
             timeout=timeout,
+            tracer=self._tracer,
         )

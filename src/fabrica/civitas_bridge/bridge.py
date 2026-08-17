@@ -42,6 +42,7 @@ from fabrica.memory import (
     Summarizer,
 )
 from fabrica.memory import MemoryStore as MemoryStoreProtocol
+from fabrica.observability import NullTracer, Tracer
 from fabrica.presidium import GrantResult, PresidiumClient
 from fabrica.prompts import InMemoryPromptStore, PersistedPromptStore, PromptManager
 from fabrica.prompts import PromptStore as PromptStoreProtocol
@@ -123,6 +124,7 @@ class CivitasBridge:
         warm_size: int = _DEFAULT_WARM_SIZE,
         max_concurrent: int = _DEFAULT_MAX_CONCURRENT,
         sandbox_backend: Sandbox | None = None,
+        tracer: Tracer | None = None,
     ) -> None:
         """
         Raises:
@@ -152,6 +154,19 @@ class CivitasBridge:
         SubprocessSandbox (Tier 0) otherwise. Supplying a backend directly
         here is for tests that need a specific, deterministic tier without
         depending on the host's real capabilities.
+
+        tracer=None (the default) wires NullTracer() into every
+        constructed component -- a real no-op, matching every other DI'd
+        dependency in this codebase (PresidiumClient, Summarizer). A real
+        civitas.observability.tracer.Tracer() is NOT auto-constructed by
+        default here, deliberately: it has real side effects (an OTEL
+        SDK TracerProvider, a console exporter printing every span to
+        stdout when no OTLP endpoint is configured) that would silently
+        change behavior for every existing caller of build(), including
+        this codebase's own test suite. Pass a real, fully-constructed
+        Tracer explicitly (the same "external dependencies are always
+        fully-constructed objects" rule applied everywhere else) to get
+        real span emission.
         """
         if presidium_client is None and not allow_ungoverned:
             raise UngovernedConfigurationError(
@@ -181,6 +196,7 @@ class CivitasBridge:
         self._warm_size = warm_size
         self._max_concurrent = max_concurrent
         self._sandbox_backend = sandbox_backend
+        self._tracer: Tracer = tracer if tracer is not None else NullTracer()
 
     async def build(self) -> Fabrica:
         """Assembles the full object graph exactly once. See the module
@@ -201,15 +217,16 @@ class CivitasBridge:
             RecencyCompactor(self._summarizer) if self._summarizer is not None else NullCompactor()
         )
 
-        retriever = Retriever(KeywordBackend())
+        retriever = Retriever(KeywordBackend(), tracer=self._tracer)
         sandbox_pool = SandboxPool(
             self._sandbox_backend or select_sandbox_backend(),
             warm_size=self._warm_size,
             max_concurrent=self._max_concurrent,
+            tracer=self._tracer,
         )
 
-        tools = ToolManager(retriever, sandbox_pool, presidium_client)
-        skills = SkillManager(retriever, sandbox_pool, presidium_client)
+        tools = ToolManager(retriever, sandbox_pool, presidium_client, tracer=self._tracer)
+        skills = SkillManager(retriever, sandbox_pool, presidium_client, tracer=self._tracer)
 
         long_term_store: MemoryStoreProtocol
         prompt_store: PromptStoreProtocol
@@ -222,7 +239,9 @@ class CivitasBridge:
             long_term_store = InMemoryMemoryStore()
             prompt_store = InMemoryPromptStore()
 
-        memory = MemoryManager(InMemoryWorkingMemoryStore(), long_term_store, compactor)
+        memory = MemoryManager(
+            InMemoryWorkingMemoryStore(), long_term_store, compactor, tracer=self._tracer
+        )
         prompts = PromptManager(prompt_store)
 
         return Fabrica(

@@ -221,6 +221,17 @@ async def list_eager(
   [retrieval.md](../retrieval.md#backends--rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception)'s
   correction note; irrelevant to this contract's own scope either way.)
 
+## Real addition: `tracer` DI and `trace_id`/`parent_span_id` on `search()`
+
+`Retriever` now accepts an optional `tracer: fabrica.observability
+.Tracer | None = None` (defaults to `NullTracer()`). `search()` gained
+optional `trace_id`/`parent_span_id` keyword parameters, defaulting to
+"start a fresh root span" -- `ToolManager.find()`/`SkillManager.find()`
+pass their own span's identity down so `fabrica.retriever.search` nests
+as a real child of `fabrica.tool.find`/`fabrica.skill.find`, not a
+disconnected span. Full design:
+[system-design.md §7](../system-design.md#7-observability-spans-this-system-emits).
+
 ## Open items for implementation
 
 1. `list_eager`'s in-memory cache needs an invalidation strategy when an

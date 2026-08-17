@@ -56,14 +56,42 @@ not invented fresh.
    deferral, not left in limbo. Revisit before/at a real release, or the
    moment a real user's install footprint becomes a genuine complaint,
    whichever comes first. *(§3.1)*
-5. [ ] **Build real OTEL span emission across the nine spans named in
-   `system-design.md §7`** — currently one call site emits anything (a
-   `logger.info` stand-in, not a real exporter), covering 2 of 9. The span
-   *table* is already fully designed; this is implementation, not a new
-   design pass. Includes wiring a real `opentelemetry-sdk` exporter (a new
-   dependency — given item 4's deferred-split decision, this lands as a
-   normal core dependency for now, same as `mcp`/`uvicorn` today, not
-   gated behind an extra that doesn't exist yet). *(§3.3, first half)*
+5. [x] **Build real OTEL span emission across the nine spans named in
+   `system-design.md §7`** — all nine real now (`src/fabrica/observability.py`).
+   **Turned out to need no new dependency at all** (correcting the
+   assumption this item was written with): `Tracer`/`Span` are structural
+   Protocols matching `civitas.observability.tracer.Tracer`'s real,
+   public shape exactly -- a real, important finding while building this:
+   Civitas does NOT use OpenTelemetry's global `TracerProvider` registry,
+   it propagates `trace_id`/`parent_span_id` explicitly via its own
+   message-envelope fields, so a plain `opentelemetry.trace.get_tracer()`
+   call would not have actually routed through Civitas's own span
+   pipeline. `fabrica.observability` imports neither `opentelemetry` nor
+   `civitas` -- real OTEL flows transitively through `civitas` itself
+   (already a hard dependency) only once a caller supplies a real
+   `Tracer`. Every component defaults to `NullTracer()` (real no-op,
+   matching `NullPresidiumClient`/`NullCompactor`); `CivitasBridge` gained
+   a `tracer` constructor parameter, deliberately NOT auto-constructing a
+   real `civitas.observability.tracer.Tracer()` by default (real side
+   effects -- an OTEL provider, a console exporter -- that would silently
+   change every existing caller's behavior, this codebase's own test
+   suite included). Real nested trace trees, not disconnected same-
+   prefix spans: `fabrica.tool.code_mode.run`/`fabrica.skill.run` are the
+   real parent of `fabrica.presidium.check_grant`,
+   `fabrica.sandbox.acquire`, and `fabrica.sandbox.run`;
+   `fabrica.tool.find`/`fabrica.skill.find` nest `fabrica.retriever.search`
+   underneath. 15 new tests (6 unit, 5 full-object-graph integration
+   tests via a real `CivitasBridge`-built `Fabrica`, including one denied-
+   grant test proving `traced()` records and re-raises errors correctly
+   without swallowing them, and one proving a REAL
+   `civitas.observability.tracer.Tracer` satisfies the Protocol
+   structurally with zero adapter code -- not just a hand-rolled fake).
+   Two small real bugs found and fixed while wiring this up, not just
+   assumed correct: `check_grant`'s span was missing its own documented
+   `latency_ms` attribute; `None`-valued attributes (e.g. `Retriever
+   .search()`'s optional `kind`) would have silently triggered per-call
+   warnings against a real OTEL-backed span, now filtered in `traced()`
+   before reaching the `Tracer`. *(§3.3, first half)*
 6. [ ] **Design and build credential injection into `Sandbox`, plus the
    usage/budget-metering half of `civitas-presidium-integration.md`** — the
    most complex item in this phase: no existing mechanism to extend, real

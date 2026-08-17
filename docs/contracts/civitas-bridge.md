@@ -387,6 +387,25 @@ only" — not a new user-facing knob, and not a contradiction of
 "platform dispatch is auto-detected, not user-configured": real
 deployments never pass it, they get real dispatch.
 
+## Real addition: `tracer` DI, wired through the whole object graph
+
+`CivitasBridge.__init__` gained an optional `tracer:
+fabrica.observability.Tracer | None = None`, defaulting to `NullTracer()`
+and propagated into every constructed component (`Retriever`,
+`SandboxPool`, `ToolManager`, `SkillManager`, `MemoryManager`) so real
+span emission (system-design.md §7) is available end to end from one
+single injection point. **Deliberately not auto-constructing a real
+`civitas.observability.tracer.Tracer()` by default** -- it has real side
+effects (an OTEL `TracerProvider`, a console exporter printing every
+span to stdout when no OTLP endpoint is configured) that would silently
+change behavior for every existing caller of `build()`, this codebase's
+own test suite included. A real deployment passes a real,
+fully-constructed `Tracer` explicitly -- the same "external dependencies
+are always fully-constructed objects" rule applied to `PresidiumClient`/
+`Summarizer`. Full design and the real Civitas-Tracer finding that
+shaped this:
+[system-design.md §7](../system-design.md#7-observability-spans-this-system-emits).
+
 ## Open items for implementation
 
 1. Whether `CivitasBridge` should validate that `dynamic_supervisor_name`
