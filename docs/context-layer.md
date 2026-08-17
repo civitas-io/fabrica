@@ -34,6 +34,15 @@ Everything that governs **the content and execution of the context window**:
 4. **Prompts** — versioned, addressable prompt management.
 5. **Isolation** — the sandbox substrate that tool/skill code executes in, tiered from
    subprocess to microVM.
+6. **MCP surfaces, both directions** *(added after this list was first written --
+   real, built code now, not a late addition to the thesis)*: Fabrica as an
+   MCP **client**, consuming external MCP servers as a `ToolNamespace` source
+   (`MCPClient`/`MCPToolNamespace` — see [mcp-integration.md](mcp-integration.md));
+   and Fabrica as an MCP **server**, exposing its own tools/skills/memory/prompts
+   as one MCP endpoint (`FabricaMCPServer` — see [mcp-server.md](mcp-server.md)).
+   Both directions were explicitly re-checked against the "not Fabrica's
+   concern" boundary below before being built — see the note there for why
+   neither is the rejected "generic MCP proxy" category.
 
 ## Scope: what Fabrica does NOT own
 
@@ -49,8 +58,21 @@ Keep the pillar boundaries clean, exactly as Civitas/Presidium do:
 | A generic MCP proxy/registry | nobody — it's commoditized infra | see landscape.md |
 | Governed LLM/MCP gateway | Presidium (wraps agentgateway) | governance |
 
+**The line that matters, since scope item 6 above looks superficially similar
+to the rejected "generic MCP proxy" row**: a generic proxy aggregates *many*
+third-party MCP servers for *many* consumers as a standalone product — that's
+the commoditized, not-Fabrica category. `MCPClient` (Fabrica *consuming* one
+or more MCP servers as a tool source, still governed by the same grants/
+sandbox as any other tool) and `FabricaMCPServer` (Fabrica exposing its *own*
+capabilities, the same pattern as GitHub's or Claude Desktop's own MCP
+servers) are both the opposite shape. Checked explicitly, not assumed — see
+[mcp-server.md](mcp-server.md#the-constraint-checked-again-in-the-new-direction).
+
 Fabrica shapes and runs context. It does not run the process (Civitas) or decide
-permission (Presidium). It **emits** the spans and audit events those layers consume.
+permission (Presidium). It **emits** the spans and audit events those layers consume
+(**design intent, largely unbuilt today** — see
+[`docs/self-reflection-report.md`](self-reflection-report.md) §3.3 and
+[`docs/PLAN.md`](PLAN.md)).
 
 ## Interface-first, mirroring the platform
 

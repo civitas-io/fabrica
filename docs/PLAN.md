@@ -35,11 +35,14 @@ not invented fresh.
    and image alt-text), and the baked-in `<text>` labels inside
    `assets/package-structure.svg` itself, found while checking for other
    stragglers rather than stopping at the two files named.
-3. [ ] **Add MCP client/server to `context-layer.md`'s "Scope: what Fabrica
+3. [x] **Add MCP client/server to `context-layer.md`'s "Scope: what Fabrica
    owns" table** — `mcp-server.md` already correctly re-checked and passed
    the "not a generic MCP proxy" boundary test; this is just making the
    scope table match what was already decided elsewhere. Pure doc addition.
-   *(§3.5)*
+   *(§3.5)* — also added a note distinguishing scope item 6 from the
+   rejected "generic MCP proxy" row in the "does NOT own" table, and an
+   honesty caveat next to the pre-existing "emits spans and audit events"
+   claim (design intent, largely unbuilt — same finding as §3.3).
 4. [ ] **Decide and act on the `fabrica`/`fabrica-contrib` package split** —
    real work, not just a doc fix: either (a) actually split the package
    (move `mcp`, `uvicorn`, `FirecrackerSandbox` behind opt-in extras,
