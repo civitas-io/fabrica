@@ -6,7 +6,11 @@ import asyncio
 from datetime import UTC, datetime
 from typing import Any, Protocol, runtime_checkable
 
-from fabrica.prompts.errors import PromptBackendError
+from fabrica.prompts.errors import (
+    InvalidCacheBoundaryError,
+    PromptBackendError,
+    PromptTooLargeError,
+)
 from fabrica.prompts.types import PromptTemplate
 
 
@@ -67,6 +71,15 @@ class InMemoryPromptStore:
                 )
                 versions[next_version] = template
                 return template
+        except (PromptTooLargeError, InvalidCacheBoundaryError):
+            # Real fix: PromptTemplate's own construction-time validation
+            # (contracts/prompts.md open items 3-4) must NOT be swallowed
+            # into a generic "backend failed" error -- these are real,
+            # meaningful, catchable-by-name errors a caller should be able
+            # to distinguish from an actual storage failure, not just
+            # another PromptBackendError indistinguishable from a disk
+            # I/O error.
+            raise
         except Exception as exc:
             raise PromptBackendError(exc) from exc
 

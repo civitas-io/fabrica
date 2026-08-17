@@ -261,14 +261,28 @@ multiple prompt versions.
    computed atomically by the backend, or could two concurrent writers land
    on the same version number? Depends on the specific `PromptStore`
    implementation's transaction guarantees; not specified generically here.
-3. Whether `PromptTemplate.content` has any size ceiling at all (unlike
-   `RunResult.stdout`'s explicit 64KB cap) — unspecified, and prompt content
-   is normally small, but a caller could in principle `put()` something huge.
-4. `cache_boundary` has no validation against `content`'s actual length —
-   an author could supply an offset past the end of the string, or a
-   negative one. Not specified whether `PromptManager` should reject this or
-   pass it through as-is (consistent with its stated "never validates"
-   stance, but worth deciding deliberately rather than by default).
+3. ~~Whether `PromptTemplate.content` has any size ceiling at all...~~
+   **Resolved: yes, 256KB** (`MAX_PROMPT_CONTENT_BYTES`), enforced in
+   `PromptTemplate.__post_init__` -- rejects with `PromptTooLargeError`,
+   deliberately NOT truncating the way `RunResult.stdout` does: unlike
+   execution output, a prompt's content is authored, instructional
+   input, and silently truncating it would corrupt its meaning, not just
+   its length.
+4. ~~`cache_boundary` has no validation against `content`'s actual
+   length...~~ **Resolved: reject, not pass through.** Also enforced in
+   `PromptTemplate.__post_init__`, raising the new
+   `InvalidCacheBoundaryError` for a negative offset or one past the end
+   of `content` -- catching an author's mistake at write time beats a
+   confusing runtime bug later in whatever downstream code slices
+   `content` at that boundary. Validating at the type's own construction
+   (not in `PromptManager`, which still never validates anything else,
+   or in any one `PromptStore` implementation) means every construction
+   path gets the guarantee for free, with nothing to duplicate or forget
+   in a future backend. A real bug found and fixed while wiring this up:
+   `InMemoryPromptStore.put()`'s broad `except Exception` was swallowing
+   both new errors into a generic `PromptBackendError`, indistinguishable
+   from an actual storage failure -- fixed to let them propagate
+   unwrapped.
 5. `load()`'s PROMPT.md frontmatter schema is specified only loosely here
    (`name` required, `cacheable`/`cache_boundary` optional, everything else
    -> `metadata`) — no formal schema validation (YAML types, unexpected

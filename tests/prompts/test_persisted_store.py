@@ -33,14 +33,19 @@ class TestCreate:
     async def test_create_rehydrates_from_an_existing_blob(self) -> None:
         blob_store = _FakeBlobStore()
         seed = await PersistedPromptStore.create(blob_store)
-        await seed.put("greeting", "Hello, {{name}}!", cacheable=True, cache_boundary=42)
+        # "Hello, {{name}}!" is 16 characters -- 7 (the real, static
+        # "Hello, " prefix) is a valid boundary, not the old test's
+        # out-of-range 42 (kept passing verbatim before contracts/
+        # prompts.md open item 4's construction-time validation existed
+        # to reject it).
+        await seed.put("greeting", "Hello, {{name}}!", cacheable=True, cache_boundary=7)
 
         restarted = await PersistedPromptStore.create(blob_store)
         template = await restarted.get("greeting")
         assert template is not None
         assert template.content == "Hello, {{name}}!"
         assert template.cacheable is True
-        assert template.cache_boundary == 42
+        assert template.cache_boundary == 7
         assert template.version == 1
 
 

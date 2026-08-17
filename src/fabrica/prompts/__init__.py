@@ -1,6 +1,12 @@
 """PromptStore, PromptManager -- see docs/contracts/prompts.md."""
 
-from fabrica.prompts.errors import PromptBackendError, PromptError, PromptParseError
+from fabrica.prompts.errors import (
+    InvalidCacheBoundaryError,
+    PromptBackendError,
+    PromptError,
+    PromptParseError,
+    PromptTooLargeError,
+)
 from fabrica.prompts.manager import PromptManager
 from fabrica.prompts.store import (
     BlobStore,
@@ -8,11 +14,13 @@ from fabrica.prompts.store import (
     PersistedPromptStore,
     PromptStore,
 )
-from fabrica.prompts.types import PromptTemplate
+from fabrica.prompts.types import MAX_PROMPT_CONTENT_BYTES, PromptTemplate
 
 __all__ = [
+    "MAX_PROMPT_CONTENT_BYTES",
     "BlobStore",
     "InMemoryPromptStore",
+    "InvalidCacheBoundaryError",
     "PersistedPromptStore",
     "PromptBackendError",
     "PromptError",
@@ -20,4 +28,5 @@ __all__ = [
     "PromptParseError",
     "PromptStore",
     "PromptTemplate",
+    "PromptTooLargeError",
 ]

@@ -65,14 +65,18 @@ async def test_load_extracts_cacheable_and_cache_boundary(
     manager: PromptManager, tmp_path: Path
 ) -> None:
     prompt_file = tmp_path / "PROMPT.md"
+    # "content here" is 12 characters -- 7 is a real, valid boundary, not
+    # the old test's out-of-range 100 (kept passing verbatim before
+    # contracts/prompts.md open item 4's construction-time validation
+    # existed to reject it).
     prompt_file.write_text(
-        "---\nname: system-prompt\ncacheable: true\ncache_boundary: 100\n---\ncontent here"
+        "---\nname: system-prompt\ncacheable: true\ncache_boundary: 7\n---\ncontent here"
     )
 
     template = await manager.load(prompt_file)
 
     assert template.cacheable is True
-    assert template.cache_boundary == 100
+    assert template.cache_boundary == 7
 
 
 async def test_load_puts_extra_frontmatter_fields_into_metadata(

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
+
 from fabrica.prompts import InMemoryPromptStore
 
 
@@ -96,10 +98,61 @@ async def test_delete_unknown_is_a_noop() -> None:
 
 async def test_cacheable_and_cache_boundary_stored_verbatim() -> None:
     store = InMemoryPromptStore()
-    template = await store.put("system-prompt", "static content", cacheable=True, cache_boundary=42)
+    # "static content" is 14 characters -- 7 is a real, valid boundary,
+    # not the old test's out-of-range 42 (kept passing verbatim before
+    # contracts/prompts.md open item 4's construction-time validation
+    # existed to reject it).
+    template = await store.put("system-prompt", "static content", cacheable=True, cache_boundary=7)
 
     assert template.cacheable is True
-    assert template.cache_boundary == 42
+    assert template.cache_boundary == 7
+
+
+async def test_put_rejects_a_cache_boundary_past_the_end_of_content() -> None:
+    from fabrica.prompts import InvalidCacheBoundaryError
+
+    store = InMemoryPromptStore()
+    with pytest.raises(InvalidCacheBoundaryError):
+        await store.put("system-prompt", "short", cache_boundary=42)
+
+
+async def test_put_rejects_a_negative_cache_boundary() -> None:
+    from fabrica.prompts import InvalidCacheBoundaryError
+
+    store = InMemoryPromptStore()
+    with pytest.raises(InvalidCacheBoundaryError):
+        await store.put("system-prompt", "short", cache_boundary=-1)
+
+
+async def test_put_rejects_content_over_the_size_ceiling() -> None:
+    from fabrica.prompts import MAX_PROMPT_CONTENT_BYTES, PromptTooLargeError
+
+    store = InMemoryPromptStore()
+    with pytest.raises(PromptTooLargeError):
+        await store.put("huge-prompt", "x" * (MAX_PROMPT_CONTENT_BYTES + 1))
+
+
+async def test_put_accepts_content_exactly_at_the_size_ceiling() -> None:
+    from fabrica.prompts import MAX_PROMPT_CONTENT_BYTES
+
+    store = InMemoryPromptStore()
+    template = await store.put("just-fits", "x" * MAX_PROMPT_CONTENT_BYTES)
+    assert len(template.content) == MAX_PROMPT_CONTENT_BYTES
+
+
+async def test_put_rejects_content_too_large_as_a_real_backend_error_type_not_generic() -> None:
+    """A real fix made alongside this validation: PromptTemplate's own
+    construction-time errors must not be swallowed into a generic
+    PromptBackendError -- a caller needs to be able to catch
+    PromptTooLargeError specifically, distinct from an actual storage
+    failure.
+    """
+    from fabrica.prompts import MAX_PROMPT_CONTENT_BYTES, PromptBackendError, PromptTooLargeError
+
+    store = InMemoryPromptStore()
+    with pytest.raises(PromptTooLargeError) as exc_info:
+        await store.put("huge-prompt", "x" * (MAX_PROMPT_CONTENT_BYTES + 1))
+    assert not isinstance(exc_info.value, PromptBackendError)
 
 
 async def test_concurrent_puts_assign_distinct_versions() -> None:

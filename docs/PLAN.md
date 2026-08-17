@@ -161,6 +161,8 @@ doc it's already named in — not repeated here.
 
 ### Easy
 
+**Status: complete (all six items, 7–12).**
+
 7. [x] `civitas-bridge.md` open item 2: `build()`'s idempotency —
    **decided: cached, a second call returns the same `Fabrica` instance**
    (avoids a second live `SandboxPool`/warm pool, and, in service mode, a
@@ -195,11 +197,25 @@ doc it's already named in — not repeated here.
     expected, only surfacing as a real process hang during garbage
     collection at shutdown (confirmed via a real stack dump). 5 new tests
     across both backends plus `SandboxPool`'s pass-through.
-11. [ ] `prompts.md` open items 3–4: `PromptTemplate.content` size ceiling;
-    `cache_boundary` validation against actual content length.
-12. [ ] `memory.md` open item 2: `WorkingMemoryQuotaExceeded`'s default
-    ceiling — currently a guess (256KB suggested), no real usage pattern to
-    validate against yet; pick a value and state it's a placeholder.
+11. [x] `prompts.md` open items 3–4: `PromptTemplate.content` size ceiling
+    (256KB, `MAX_PROMPT_CONTENT_BYTES`) and `cache_boundary` validation --
+    **decided: reject, don't silently pass through or truncate**, both
+    enforced in `PromptTemplate.__post_init__` so every construction path
+    gets the guarantee for free. New `PromptTooLargeError`/
+    `InvalidCacheBoundaryError`. Real bug found and fixed alongside this:
+    `InMemoryPromptStore.put()`'s broad `except Exception` was swallowing
+    these into a generic `PromptBackendError`, indistinguishable from an
+    actual storage failure -- fixed to let them propagate unwrapped. 3
+    existing tests used deliberately out-of-range `cache_boundary` values
+    (valid before this validation existed) -- fixed to use real, in-range
+    values rather than loosened to accommodate the old fixtures. 5 new
+    tests.
+12. [x] `memory.md` open item 2: `WorkingMemoryQuotaExceeded`'s default
+    ceiling -- **found already resolved in code**, just not marked as
+    such in the contract: `DEFAULT_QUOTA_BYTES = 256 * 1024` already
+    ships with an honest "placeholder, not validated" docstring, and
+    `quota_bytes` is already a real, overridable constructor parameter,
+    already tested. Pure documentation fix -- no code change needed.
 
 ### Medium
 

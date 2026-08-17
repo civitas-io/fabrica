@@ -350,9 +350,16 @@ for them in this pass. Full design:
 
 1. The single-message-exceeds-budget edge case in `RecencyCompactor` (above) —
    needs a product decision, not a contract default.
-2. `WorkingMemoryQuotaExceeded`'s default ceiling (256KB suggested above) is a
-   guess, not validated against any real working-memory usage pattern — no
-   spike exists for what a realistic session's scratchpad actually accumulates.
+2. ~~`WorkingMemoryQuotaExceeded`'s default ceiling...~~ **Resolved: 256KB,
+   shipped as `DEFAULT_QUOTA_BYTES`** (`working_memory.py`), with its own
+   docstring stating plainly it's a placeholder, not validated against
+   any real working-memory usage pattern -- no spike exists for what a
+   realistic session's scratchpad actually accumulates. `quota_bytes` is
+   a real, overridable constructor parameter on `InMemoryWorkingMemoryStore`,
+   not a hardcoded constant -- a deployment with real data can override
+   it today without waiting for that spike. Revisit the DEFAULT (not the
+   mechanism, which is already real and tested) if real usage data ever
+   shows 256KB too small or too generous.
 3. ~~Per `memory.md` open question 9: the whole preserve-verbatim-plus-summarize
    strategy has zero empirical backing~~ **Resolved for the strategy, not the
    number.** [SPIKE-recency-compactor-validation.md](../../specs/archive/spikes/SPIKE-recency-compactor-validation.md)
