@@ -19,10 +19,12 @@ is a decision left in limbo, and the last two are real product gaps against
 named success metrics — all found by checking the code against the vision,
 not invented fresh.
 
-1. [ ] **Rewrite `README.md`** to reflect actual current state — all six
+1. [x] **Rewrite `README.md`** to reflect actual current state — all six
    object-model contracts done, `FirecrackerSandbox`/platform dispatch real,
    both MCP directions built, real test counts (195 local + 14 real-hardware),
-   twelve spikes. Pure rewrite, no decisions required. *(§3.6)*
+   twelve spikes. Pure rewrite, no decisions required. *(§3.6)* — also fixed
+   the "interface-first, `fabrica`/`fabrica-contrib`" claim and the "spans and
+   audit events" claim to state honestly that both are designed, not built.
 2. [ ] **Correct `context-layer.md` and `docs/retrieval.md`'s `KeywordBackend`
    claim** — both currently assert Rust+PyO3 in the present tense; the real
    code is pure-Python `rank-bm25`. Restate as the real, deliberate v1
