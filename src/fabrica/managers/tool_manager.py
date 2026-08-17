@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from fabrica.managers.execute_in_sandbox import execute_in_sandbox
@@ -74,10 +75,12 @@ class ToolManager:
         both.
         """
         with traced(self._tracer, "fabrica.tool.find", query=query, kind="tool") as span:
+            start = time.monotonic()
             results = await self._retriever.search(
                 query, kind="tool", limit=limit, trace_id=span.trace_id, parent_span_id=span.span_id
             )
             span.set_attribute("result_count", len(results))
+            span.set_attribute("latency_ms", round((time.monotonic() - start) * 1000, 2))
             return results
 
     async def run_code(

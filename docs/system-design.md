@@ -226,14 +226,14 @@ of the nine.
 
 | Component | Span | Key attributes |
 |---|---|---|
-| `ToolManager` | `fabrica.tool.find` | query, kind, result_count |
+| `ToolManager` | `fabrica.tool.find` | query, kind, result_count, latency_ms |
 | `ToolManager` | `fabrica.tool.code_mode.run` | agent_id, code_hash, duration_ms, tool_call_count |
-| `SkillManager` | `fabrica.skill.find` | query, result_count |
+| `SkillManager` | `fabrica.skill.find` | query, result_count, latency_ms |
 | `SkillManager` | `fabrica.skill.run` | agent_id, skill_name, duration_ms |
 | `SandboxPool` | `fabrica.sandbox.acquire` | tier, warm_hit, wait_ms |
 | `SandboxPool` | `fabrica.sandbox.run` | tier, duration_ms, cpu_seconds, exit_status |
 | `Retriever` | `fabrica.retriever.search` | backend, query, limit, top_rank |
-| `MemoryManager` | `fabrica.memory.write` / `fabrica.memory.search` | scope fields, backend |
+| `MemoryManager` | `fabrica.memory.write` / `fabrica.memory.search` | scope fields, backend, volume_bytes (real content byte length -- the usage/budget-metering dimension `civitas-presidium-integration.md` names) |
 | `PresidiumClient` | `fabrica.presidium.check_grant` | decision, latency_ms |
 
 **A real, important finding while implementing this**: `civitas

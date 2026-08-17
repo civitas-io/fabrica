@@ -95,12 +95,18 @@ so a session/user/team has **one** budget, not two disconnected ones.
 
 ### What Fabrica emits
 
-| Component | Consumption events |
-|---|---|
-| `Sandbox` ([isolation.md](isolation.md)) | cpu-seconds, wall-clock duration, memory bytes — per run |
-| `ToolNamespace` / `find` ([tool-execution.md](tool-execution.md), [retrieval.md](retrieval.md)) | call count, latency — per tool per call |
-| `MemoryStore` ([memory.md](memory.md)) | read/write volume — per scope |
-| `SkillStore` ([skills-gateway.md](skills-gateway.md)) | invocation count — per skill |
+**Implemented** as span attributes (`system-design.md §7`, `src/fabrica/observability.py`) --
+the consumption events ARE the spans; there is no separate metering
+mechanism, per this doc's own "emits standardized consumption events"
+language.
+
+| Component | Consumption events | Status |
+|---|---|---|
+| `Sandbox` ([isolation.md](isolation.md)) | cpu-seconds, wall-clock duration | **Real** -- `fabrica.sandbox.run`'s `cpu_seconds`/`duration_ms` |
+| `Sandbox` -- memory bytes | -- | **Real, honest gap, not silently skipped**: measured empirically, not assumed -- `resource.getrusage(RUSAGE_CHILDREN).ru_maxrss` is a monotonically non-decreasing HIGH-WATER-MARK across the whole parent process's lifetime, not a per-call delta (confirmed by direct measurement: a 20MB child run *after* a 200MB one reports the 200MB figure, not its own). Reporting this naively as a per-run number would be silently wrong, not just imprecise -- worse than omitting it. Left unmeasured, same honesty standard as `FirecrackerSandbox.cpu_seconds=0.0`. A correct per-run measurement needs actual per-process sampling (e.g. polling `/proc/<pid>/status` or a `psutil` dependency), not attempted here. |
+| `ToolNamespace` / `find` ([tool-execution.md](tool-execution.md), [retrieval.md](retrieval.md)) | call count, latency | **Real** -- `fabrica.tool.find`/`fabrica.skill.find`'s `result_count`/`latency_ms` |
+| `MemoryStore` ([memory.md](memory.md)) | read/write volume | **Real** -- `fabrica.memory.write`/`search`'s `volume_bytes` (real content byte length, not an item count) |
+| `SkillStore` ([skills-gateway.md](skills-gateway.md)) | invocation count | **Real, implicitly** -- each `fabrica.skill.run` span IS one invocation; a real usage consumer counts spans over a window rather than reading a pre-aggregated counter attribute, the same pattern any span-based metering system uses |
 
 Every event carries the same `Scope` already used by `MemoryStore` — **extended to
 include `team_id`**, since per-team ceilings aren't covered by the original
@@ -125,6 +131,17 @@ It only **checks before executing**: if Presidium's policy engine already flags 
 scope as over-budget — returned the same way as any other ALLOW/DENY/
 REQUIRE_APPROVAL decision — Fabrica refuses the run *before* it starts. Same
 pattern as every other governance seam in this doc; no new enforcement path invented.
+
+**Implemented, and it needed zero new Fabrica code** -- `execute_in_sandbox`'s
+existing `check_grant()` gate (already built for grant enforcement) already
+satisfies this exactly: a real `PresidiumClient` returning `deny` for ANY
+reason -- an over-budget scope included, indistinguishable from Fabrica's
+side from any other deny -- refuses the run before `SandboxPool.acquire()`
+is ever called. Proven directly, not just argued:
+`tests/test_observability_integration.py::test_an_over_budget_deny_refuses_the_run_before_touching_the_sandbox_at_all`
+asserts zero `fabrica.sandbox.*` spans exist when a `PresidiumClient` denies
+for an explicitly budget-shaped reason -- the refusal genuinely happens
+before any real compute is touched, not just before an exception is raised.
 
 ### Deployment shape
 

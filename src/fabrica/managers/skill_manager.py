@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -128,6 +129,7 @@ class SkillManager:
         ToolManager.find().
         """
         with traced(self._tracer, "fabrica.skill.find", query=query, kind="skill") as span:
+            start = time.monotonic()
             results = await self._retriever.search(
                 query,
                 kind="skill",
@@ -136,6 +138,7 @@ class SkillManager:
                 parent_span_id=span.span_id,
             )
             span.set_attribute("result_count", len(results))
+            span.set_attribute("latency_ms", round((time.monotonic() - start) * 1000, 2))
             return results
 
     async def run(

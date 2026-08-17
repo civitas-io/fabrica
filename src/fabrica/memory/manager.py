@@ -57,6 +57,11 @@ class MemoryManager:
         ) as span:
             memory_id = await self._long_term.write(scope, item)
             span.set_attribute("memory_id", memory_id)
+            # Real usage/budget consumption dimension
+            # (civitas-presidium-integration.md's "MemoryStore ... read/write
+            # volume") -- content bytes, not just an item count, since a
+            # ledger rolling up storage consumption needs the actual size.
+            span.set_attribute("volume_bytes", len(item.content.encode()))
             return memory_id
 
     async def search(self, scope: Scope, query: str, limit: int = 5) -> list[MemoryItem]:
@@ -73,6 +78,7 @@ class MemoryManager:
         ) as span:
             results = await self._long_term.search(scope, query, limit)
             span.set_attribute("result_count", len(results))
+            span.set_attribute("volume_bytes", sum(len(item.content.encode()) for item in results))
             return results
 
     async def get(self, scope: Scope, id: str) -> MemoryItem | None:

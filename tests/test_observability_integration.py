@@ -104,6 +104,7 @@ async def test_tool_find_emits_a_nested_tool_find_and_retriever_search_span(
     search_span = tracer.by_name("fabrica.retriever.search")
     assert find_span.attributes["query"] == "add two numbers"
     assert find_span.attributes["result_count"] == 1
+    assert isinstance(find_span.attributes["latency_ms"], float)
     assert find_span.ended is True
     # Real nesting, not two disconnected spans sharing a name prefix.
     assert search_span.trace_id == find_span.trace_id
@@ -210,6 +211,55 @@ async def test_skill_run_emits_a_span_with_skill_name(
     await fabrica.close()
 
 
+async def test_an_over_budget_deny_refuses_the_run_before_touching_the_sandbox_at_all(
+    tracer: _RecordingTracer,
+) -> None:
+    """The real proof behind civitas-presidium-integration.md's usage/
+    budget-ceilings design: 'Fabrica ONLY checks before executing... if
+    Presidium's policy engine already flags a scope as over-budget,
+    Fabrica refuses the run before it starts.' No new Fabrica mechanism
+    exists for this -- a real PresidiumClient returning `deny` for ANY
+    reason (an over-budget scope included) already refuses the run via
+    the exact same check_grant() gate proven in the grant-denial test
+    above. This test names the budget scenario explicitly and proves the
+    sandbox is never touched at all -- zero fabrica.sandbox.* spans,
+    zero real compute consumed -- not just that an exception was raised.
+    """
+    from fabrica.managers import GrantDeniedError
+    from fabrica.presidium import GrantResult
+
+    class _OverBudgetPresidiumClient:
+        """Stands in for a real PresidiumClient whose policy engine has
+        already flagged this scope as over-budget -- indistinguishable,
+        from Fabrica's side, from any other deny (system-design.md's own
+        point: no new decision type, the same ALLOW/DENY/REQUIRE_APPROVAL
+        shape).
+        """
+
+        async def check_grant(self, *, agent_id: str, action: str, scope: Scope) -> GrantResult:
+            return GrantResult(decision="deny", reason="team t1 is over its sandbox-cpu budget")
+
+    fabrica = await CivitasBridge(
+        allow_ungoverned=True, presidium_client=_OverBudgetPresidiumClient(), tracer=tracer
+    ).build()
+    await fabrica.tools.register(make_add_namespace())
+
+    with pytest.raises(GrantDeniedError, match="over its sandbox-cpu budget"):
+        await fabrica.tools.run_code(
+            "namespace.call('add', {'a': 1, 'b': 1})",
+            agent_id="agent-1",
+            scope=Scope(team_id="t1"),
+        )
+
+    # The whole point: no sandbox.acquire, no sandbox.run -- the refusal
+    # happened before any real resource was ever touched.
+    assert not any(s.name.startswith("fabrica.sandbox.") for s in tracer.spans)
+    grant_span = tracer.by_name("fabrica.presidium.check_grant")
+    assert grant_span.attributes["decision"] == "deny"
+
+    await fabrica.close()
+
+
 async def test_memory_write_and_search_emit_real_spans_with_scope_attributes(
     tracer: _RecordingTracer,
 ) -> None:
@@ -228,6 +278,8 @@ async def test_memory_write_and_search_emit_real_spans_with_scope_attributes(
         assert span.attributes["team_id"] == "t1"
         assert span.ended is True
     assert "memory_id" in write_span.attributes
+    assert write_span.attributes["volume_bytes"] == len(b"the sky is blue")
     assert search_span.attributes["result_count"] == 1
+    assert search_span.attributes["volume_bytes"] == len(b"the sky is blue")
 
     await fabrica.close()

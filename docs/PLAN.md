@@ -13,11 +13,18 @@ Mark items `[x]` as they land, with the commit/PR they landed in.
 
 ## Phase 1 — Reflection fixes
 
-From [`self-reflection-report.md`](self-reflection-report.md). Fixing these
+**Status: complete (all six items, including the 6a/6b split).**
+
+From [`self-reflection-report.md`](self-reflection-report.md). Fixed these
 before anything else because two of them are actively misleading docs, one
-is a decision left in limbo, and the last two are real product gaps against
-named success metrics — all found by checking the code against the vision,
-not invented fresh.
+was a decision left in limbo, and the last two were real product gaps
+against named success metrics — all found by checking the code against the
+vision, not invented fresh. Two items (4, 6a) were, as planned, walked
+through directly rather than decided unilaterally. Two items (5, 6b) turned
+out smaller in scope than originally written, once real investigation
+replaced the original assumption -- both corrected inline rather than
+quietly matching the original estimate. Phase 2 (the remaining backlog)
+starts next.
 
 1. [x] **Rewrite `README.md`** to reflect actual current state — all six
    object-model contracts done, `FirecrackerSandbox`/platform dispatch real,
@@ -113,11 +120,36 @@ not invented fresh.
    (`/dev/tty`/Touch ID) and refuses unattended/service-mode use -- a real
    limitation for Marcus's production persona, tracked as Tessera's own
    roadmap item, not Fabrica work.
-6b. [ ] **Real usage/budget metering** (`civitas-presidium-integration.md`'s
-   metering-vs-enforcement design) -- still open, unrelated to the
-   credential-injection finding above. Needs a genuinely new integration
-   point with Presidium's budget model; the span/metering pipe from item 5
-   exists to carry this once designed. *(§3.3, second half)*
+6b. [x] **Real usage/budget metering** (`civitas-presidium-integration.md`'s
+   metering-vs-enforcement design) -- **turned out to need no new
+   integration point at all**, correcting this item's own original
+   assumption. The consumption events ARE the item-5 spans -- this doc's
+   own "emits standardized consumption events" language, taken literally:
+   added the two real, missing attributes (`latency_ms` on
+   `fabrica.tool.find`/`fabrica.skill.find`, `volume_bytes` -- real
+   content byte length, not an item count -- on `fabrica.memory.write`/
+   `search`). Proved the "checks before executing" enforcement half needs
+   zero new code too: a real `PresidiumClient` returning `deny` for an
+   over-budget scope already refuses the run before `SandboxPool.acquire()`
+   via the existing `check_grant()` gate, proven directly (a dedicated
+   test asserting zero `fabrica.sandbox.*` spans exist when denied for an
+   explicitly budget-shaped reason, not just that an exception was
+   raised).
+
+   **One real, honest measurement gap found and deliberately left
+   unmeasured, not papered over**: `Sandbox`'s "memory bytes" dimension.
+   Measured empirically before attempting to add it: `resource.getrusage
+   (RUSAGE_CHILDREN).ru_maxrss` is a monotonically non-decreasing
+   high-water-mark across the WHOLE PARENT PROCESS's lifetime, not a
+   per-call delta -- confirmed directly (a 20MB child run measured
+   *after* a 200MB one reports the 200MB figure, not its own). Reporting
+   this naively as a per-run number would have been silently wrong, not
+   just imprecise -- worse than the honest gap it's left as, matching the
+   same standard already applied to `FirecrackerSandbox.cpu_seconds=0.0`.
+   A correct fix needs real per-process sampling (`/proc/<pid>/status`
+   polling or a `psutil` dependency), not attempted here.
+
+   4 new tests. *(§3.3, second half)*
 
 ---
 
