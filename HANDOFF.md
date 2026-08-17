@@ -4,22 +4,18 @@
 re-deriving anything already decided. Read this first, then follow the links —
 don't re-read the whole repo linearly.
 
-**A self-reflection audit exists** at
-[`docs/self-reflection-report.md`](docs/self-reflection-report.md) — a
-point-in-time check of the real code/docs against the founding vision
-(`personas.md`, `problem-definition.md`, `context-layer.md`). Real findings:
-the `fabrica`/`fabrica-contrib` package split was never built (`mcp`/`uvicorn`
-are unconditional core dependencies today), `KeywordBackend`'s docs still
-claim Rust/PyO3 while the real code is pure-Python `rank-bm25`, and Elena's
-whole observability/audit persona is ~90% unimplemented (1 of 9 designed
-spans emits anything, as a log stand-in, not a real OTEL exporter) —
-read that doc before assuming any of those three are further along than
-they are.
+**Resume here: [`docs/PLAN.md`](docs/PLAN.md) is the single ordered work
+queue** — everything from a self-reflection audit
+([`docs/self-reflection-report.md`](docs/self-reflection-report.md), a
+point-in-time check of the real code/docs against the founding vision) plus
+the full remaining backlog, sorted easiest first, most complex last.
 
-**The active work queue is [`docs/PLAN.md`](docs/PLAN.md)** — the
-reflection fixes above, plus the full remaining backlog, in one ordered
-list (easiest first, most complex last, agreed with the user directly).
-Work through it top to bottom rather than picking work ad hoc.
+**Status as of this update: Phase 1 (all 6 reflection fixes) and Phase 2's
+Easy tier (items 7–12) are BOTH fully complete.** Next up is Phase 2's
+Medium tier, starting at item 13 (`Retriever`'s eager-cache invalidation) --
+see "Immediate next action" below and `PLAN.md` directly for the exact list.
+Do not re-run the self-reflection audit or re-derive the plan -- both are
+current and were the actual output of real investigation, not guesses.
 
 ---
 
@@ -36,663 +32,207 @@ validated by spike to be both ~79% cheaper *and* more correct than traditional
 direct tool-calling (`SPIKE-code-mode-execution.md`).
 
 Repo: `civitas-io/fabrica` (public). Design/validate/critique/architecture/
-system-design/contracts is complete, and **all six object-model contracts
-PLUS both MCP directions are now real, tested code** (`src/fabrica/`) —
-see "Current state" immediately below for exactly what exists and what's
-still genuinely left (mostly HTTP/SSE MCP transport and the
-`civitas-contrib` migration/PR cleanup).
+system-design/contracts is complete, and **all six object-model contracts,
+both MCP directions, a real self-hosted Tier 2 sandbox (`FirecrackerSandbox`),
+real platform dispatch, and real end-to-end OTEL observability are all real,
+tested code** (`src/fabrica/`) — see "Current state" immediately below for
+exactly what exists and what's still genuinely left (Phase 2's Medium/Complex
+backlog in `docs/PLAN.md` — nothing blocking, nothing MDP-critical).
 
 ---
 
 ## Current state — read this section, not the chronological log below, for "where are we"
 
-**This section is authoritative — rewritten in full for this compaction, not
-appended to, since the previous version had drifted: the opening paragraph
-above still said "no code exists yet" while this section's own nested detail
-had grown to 225 lines describing five real, tested components.** Detailed
-narrative for each component (bugs found, exact reasoning) lives in `git log`
-commit messages, not repeated here — this section states facts, not stories.
+**This section is authoritative — rewritten in full again for this
+compaction, not appended to, matching this doc's own established
+convention.** Detailed narrative for any specific decision (bugs found,
+exact reasoning) lives in `git log` commit messages and the relevant
+`docs/contracts/*.md`'s own "Real addition"/"Correction found during
+implementation" sections — not repeated here. This section states facts
+and points at where the reasoning actually lives, not a retelling.
 
 ### Design phase: complete
 
 Full discovery→define→design→validate→critique→architecture→system-design→contracts
-arc. Thirteen spikes, all real hardware/API evidence. Nine contracts written
-(`Retriever`, `Sandbox`, `managers.md`, `memory.md`, `prompts.md`,
-`civitas-bridge.md`, `mcp-integration.md`, `mcp-server.md`,
-`managed-sandbox.md`). Four platform-wide
-rules confirmed multiple times, safe to apply without re-deriving:
-**library-first/low-coupling** (`architecture.md §1a`); **requests, never
-reaches in** (toward Civitas and Presidium alike); **external dependencies are
-always fully-constructed objects, never raw config**; **fail closed by
-default, explicit greppable opt-in to bypass** (four confirmed instances:
-`allow_ungoverned`, `allow_unsandboxed`, `allow_weak_isolation_for_external_callers`,
-plus the general rule itself).
+arc. Thirteen spikes, all real hardware/API evidence, in `specs/archive/spikes/`
+(twelve from the original arc, plus
+[SPIKE-tessera-credential-integration.md](specs/archive/spikes/SPIKE-tessera-credential-integration.md)).
+Nine contracts (`Retriever`, `Sandbox`, `managers.md`, `memory.md`,
+`prompts.md`, `civitas-bridge.md`, `mcp-integration.md`, `mcp-server.md`,
+`managed-sandbox.md`). Platform-wide rules confirmed multiple times, safe
+to apply without re-deriving: **library-first/low-coupling**
+(`architecture.md §1a`); **requests, never reaches in** (toward Civitas
+and Presidium alike); **external dependencies are always fully-constructed
+objects, never raw config**; **fail closed by default, explicit greppable
+opt-in to bypass** (five confirmed instances: `allow_ungoverned`,
+`allow_unsandboxed`, `allow_weak_isolation_for_external_callers`,
+`UnsupportedSandboxConfigurationError`, `CallbackBridge`'s no-bypass
+token).
 
-### Implementation phase: all six object-model contracts are real code
+### Implementation phase: real, tested, and substantially beyond the original object model
 
-`src/fabrica/` — all built to their exact contracts, all with real tests (not
-mocked stubs standing in for untested logic), 195 tests total locally (plus
-14 more -- `tests/sandbox/test_firecracker_backend.py` (10) and
-`tests/sandbox/test_pool_with_firecracker.py` (4) -- that only run on real
-Linux+KVM+Firecracker, skipped everywhere else, verified 14/14 for real on
-the homelab, filesystem genuinely clean afterward), clean
-`ruff`/`mypy --strict`, stable across repeated runs:
+`src/fabrica/` — 232 tests total (217 passing locally + 15 that only run
+for real on Linux+KVM+Firecracker, skipped elsewhere, verified 15/15 on
+the homelab), clean `ruff`/`mypy --strict`, stable across repeated runs
+(process-exit cleanliness independently verified, not just assertion
+pass/fail — see the sandbox-timeout entry below for why that distinction
+matters).
 
-- **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend` (pure-Python
-  BM25 via `rank-bm25`, deliberately not Rust/PyO3 yet — no performance
-  number justifies that tooling cost). 16 tests.
-- **`Sandbox`/`SandboxPool`** (`src/fabrica/sandbox/`) — `SubprocessSandbox`
-  (Tier 0), a REAL subprocess + ZMQ `ipc://` tool-call bridge, not a stub.
-  17 tests, including one real end-to-end tool-call round trip through an
-  actual subprocess boundary.
+**All six object-model contracts, both MCP directions, self-hosted Tier 2
+isolation, real platform dispatch, and real end-to-end observability are
+real code, not designs waiting on implementation:**
+
+- **`Retriever`** (`src/fabrica/retriever/`) — `KeywordBackend`, pure-Python
+  BM25 via `rank-bm25`. **Known, deliberate doc/code gap, now corrected**:
+  `context-layer.md`/`retrieval.md` originally claimed this ships as a
+  Rust+PyO3 binding; the real, shipped v1 is pure-Python — no performance
+  evidence yet justifies the Rust tooling cost. Both docs corrected to
+  say so plainly, including in the rendered `package-structure.svg`
+  diagram itself.
+- **`Sandbox`/`SandboxPool`** (`src/fabrica/sandbox/`) — **two real
+  backends**, not one: `SubprocessSandbox` (Tier 0) and
+  `FirecrackerSandbox` (Tier 2, self-hosted, validated end to end on real
+  hardware including a real `vsock` tool call crossing an actual microVM
+  boundary — see `contracts/sandbox.md`'s own "real Tier 2 implementation
+  notes"). **Real, automatic platform dispatch**
+  (`fabrica.sandbox.select_sandbox_backend()`) picks between them —
+  `CivitasBridge.build()` calls it by default; the exact two real outcomes
+  today (Tier 1/`gVisor`/`srt` and macOS/Windows Tier 2 remain
+  unimplemented) are stated honestly, not oversold. A reusable script
+  (`scripts/build_firecracker_rootfs.sh`) builds the deployable rootfs
+  image, documented in `docs/deployment/firecracker-rootfs.md`.
+  `SandboxPool.close()` is real (a genuine shutdown gap found by testing
+  against a real backend, not the fast in-memory test double). Both
+  `acquire()`/`run()` accept an optional `tool_call_timeout`, closing
+  `contracts/sandbox.md`'s own open item 3 — finding and fixing, along
+  the way, a real hang in `SubprocessSandbox`'s cleanup path only visible
+  by checking process-exit cleanliness, not test assertions (full story
+  in `contracts/sandbox.md`'s open-items resolution, not repeated here).
 - **`managers.md`** (`src/fabrica/managers/`, `src/fabrica/tools/`,
   `src/fabrica/presidium.py`, `src/fabrica/scope.py`) — `execute_in_sandbox`,
-  `ToolManager`, `SkillManager`. `SkillManager`'s `SKILL.md` parser validated
-  against the real 81-skill `bigpowers` catalog. `PresidiumClient` here is
-  the Protocol only — the real REST+mTLS implementation is deliberately
-  deferred (see "Immediate next action" below for why). 12 tests.
-- **`MemoryManager`** (`src/fabrica/memory/`) — all three facets:
-  `InMemoryWorkingMemoryStore`, `RecencyCompactor`/`NullCompactor` (both named
-  edge cases from the contract exercised directly, not glossed over),
-  `InMemoryMemoryStore`. 23 tests.
-- **`PromptManager`** (`src/fabrica/prompts/`) — `InMemoryPromptStore` with
-  real atomic version assignment under concurrency, `PromptManager`'s cache,
-  `load()`'s `PROMPT.md` parser. 24 tests.
-- **`PersistedMemoryStore`/`PersistedPromptStore`** (`fabrica/memory/store.py`,
-  `fabrica/prompts/store.py`) — closes `civitas-bridge.md`'s own flagged
-  gap (item 2, resolved below): `request_state_persistence` returned a
-  `ComponentStateHandle` with nothing to receive it. Both are backed by a
-  LOCALLY-defined `BlobStore` Protocol (`get`/`set` over a whole-dict
-  blob) — deliberately NOT an import of
-  `fabrica.civitas_bridge.state.ComponentStateHandle`, since
-  `fabrica.civitas_bridge` already imports `fabrica.memory`/
-  `fabrica.prompts`, making the reverse import a real circular import, not
-  just an architecture preference. `ComponentStateHandle` already
-  satisfies `BlobStore`'s shape today, duck-typed. Write-through on every
-  mutation (no partial updates possible over a whole-blob store), loaded
-  once at construction via an async `create()` factory; both delegate to
-  their existing `InMemory*` implementations internally so matching/
-  scoring/atomic-versioning logic is never duplicated. `CivitasBridge.build()`
-  now wires these in for service mode only — library mode is unchanged.
-  17 new tests: a minimal `BlobStore` test double for each (isolating the
-  persistence logic itself), a real `civitas.plugins.state.InMemoryStateStore`
-  + `ComponentStateHandle` round trip for each (proving the duck-typing
-  against the real class, not an idealized one), and three
-  `CivitasBridge`-level integration tests proving a SECOND, independent
-  `build()` over the same `civitas_state_store` genuinely recovers prior
-  memory/prompt state (a real restart scenario) while library mode never
-  persists across builds at all.
-  **Found and fixed along the way, unrelated to this feature**: two
-  pre-existing `mypy --strict` failures in `tests/memory/test_manager.py`/
-  `test_compactor.py` (a missing type annotation, a `str` where a
-  `Literal` was required) — never surfaced before because `tests/memory`/
-  `tests/prompts` had never actually been included in this project's
-  `mypy` invocation until this pass added them.
-- **`CivitasBridge`** (`src/fabrica/civitas_bridge/`) — resolved via option
-  (b): defer `PresidiumClient`'s real REST+mTLS engineering (no real
-  Presidium endpoint exists to validate it against), build the
-  `civitas`-facing half for real instead. `CivitasRuntime`/`StateStore` are
-  structural Protocols (no hard `civitas` dependency for those); `GenServer`
-  is a genuine, deliberate exception — imported directly, because
-  Civitas's real dynamic-spawn mechanism is nominally coupled to that
-  concrete class, not just its structural shape (mypy caught this for
-  real when a first attempt at a structural `CivitasGenServer` Protocol
-  failed contravariance checking against `Runtime.spawn`'s actual
-  signature). `civitas>=0.11.0` is now a real runtime dependency of
-  `fabrica-context`, not dev-only — the one deliberate exception to
-  "depend on shapes, not packages", consistent with `CivitasBridge` being
-  the one component `architecture.md §1a` licenses to integrate tightly.
-  `request_supervision`/`request_state_persistence` are both real and
-  tested against a genuine `civitas.runtime.Runtime`/`DynamicSupervisor`/
-  `InMemoryStateStore` (spawning a real `GenServer`, real name-collision
-  `SpawnError`, real name-bound state isolation) — not against a
-  hand-rolled test double. 21 tests.
+  `ToolManager`, `SkillManager`. `SkillManager`'s `SKILL.md` parser
+  validated against the real 81-skill `bigpowers` catalog.
+  `PresidiumClient` here is the Protocol only — the real REST+mTLS
+  implementation is genuinely blocked externally (see "What's left"
+  below).
+- **`MemoryManager`** (`src/fabrica/memory/`) — all three facets
+  (`InMemoryWorkingMemoryStore`, `RecencyCompactor`/`NullCompactor`,
+  `InMemoryMemoryStore`), plus `PersistedMemoryStore` for `CivitasBridge`
+  service mode (a real `ComponentStateHandle`-backed adapter, not the
+  in-memory default).
+- **`PromptManager`** (`src/fabrica/prompts/`) — `InMemoryPromptStore`
+  with real atomic version assignment under concurrency, plus
+  `PersistedPromptStore` for service mode. `PromptTemplate` now validates
+  its own `content` size (256KB ceiling) and `cache_boundary` range at
+  construction time — real, rejecting errors
+  (`PromptTooLargeError`/`InvalidCacheBoundaryError`), not silent
+  pass-through or truncation.
+- **`CivitasBridge`** (`src/fabrica/civitas_bridge/`) — all six
+  object-model contracts compose here. `civitas>=0.11.0` is a real
+  runtime dependency (the one deliberate exception to "depend on shapes,
+  not packages," per `architecture.md §1a`). `request_supervision`/
+  `request_state_persistence` are both real and tested against genuine
+  `civitas.runtime.Runtime`/`DynamicSupervisor`/`InMemoryStateStore` — not
+  hand-rolled test doubles. `build()` is idempotent (a second call
+  returns the same `Fabrica` instance — a real decision, not an
+  oversight); `dynamic_supervisor_name` is validated upfront via
+  `civitas.runtime.Runtime.get_agent()`, raising a clear
+  `SupervisorNotFoundError` instead of a later bus-routing failure. A
+  `tracer` constructor parameter wires a real `civitas.observability
+  .tracer.Tracer` through the whole object graph (see the observability
+  entry below).
+- **`MCPClient`/`MCPToolNamespace`** (`src/fabrica/mcp/`) — a real MCP
+  client against the actual, current `mcp` v2.0.0 SDK, `srt`-sandboxed
+  connections included. **Validated against a second, real, independently-
+  built system**: `tests`/the credentials spike prove this composes with
+  Tessera's real `tsr mcp` server with zero adapter code (see
+  `docs/credentials.md`).
+- **`FabricaMCPServer`** (`src/fabrica/mcp/server.py`) — both stdio AND
+  HTTP transports real (HTTP reuses `mcp`'s own bearer-auth middleware,
+  not hand-rolled ASGI). `WeakIsolationError`'s tier check is real and
+  now has a genuine Tier-2 answer to give it (`FirecrackerSandbox` via
+  platform dispatch), not just an always-must-opt-out Tier-0-only world.
+- **Real, end-to-end observability** (`src/fabrica/observability.py`) —
+  all nine spans named in `system-design.md §7` are real, not the single
+  `logger.info` stand-in this project shipped with earlier. `Tracer`/
+  `Span` are structural Protocols matching `civitas.observability.tracer
+  .Tracer`'s real, public shape exactly — a real, load-bearing finding:
+  Civitas does NOT use OpenTelemetry's global `TracerProvider` registry,
+  so a generic `opentelemetry.trace.get_tracer()` call would not actually
+  have routed through Civitas's own span pipeline. Every component
+  defaults to `NullTracer()` (real no-op); `CivitasBridge`'s `tracer`
+  parameter wires in a real one. Full nested trace trees (code-mode's
+  outer span genuinely parents `check_grant`/`sandbox.acquire`/
+  `sandbox.run`), not disconnected same-prefix spans. Real usage/budget
+  consumption events ride these same spans (`latency_ms`, `volume_bytes`)
+  — no separate metering subsystem exists or was needed.
+- **Credentials: a real, validated architectural decision, not a
+  subsystem** (`docs/credentials.md`) — `Sandbox` gets NO
+  credential-injection mechanism at all, deliberately. Tessera (a real,
+  separately-built agent-blind credential broker) independently arrived
+  at the same rule Fabrica needed (never inject a secret into an
+  interpreter running untrusted code) — validated end to end with zero
+  new Fabrica code: a real `tsr mcp` process composed with Fabrica's real
+  `MCPClient` inside a real `SubprocessSandbox` code-mode run.
 
-  **Two real gaps found and fixed in `contracts/civitas-bridge.md` before
-  writing code against it, not papered over**: (1) `system-design.md`'s
-  component matrix calls every manager a `GenServer` under service mode,
-  but Civitas's real spawn mechanism reconstructs an agent class from a
-  dotted path with only `name` — structurally incompatible with this
-  codebase's constructor-injected managers (`ToolManager(retriever,
-  sandbox_pool, presidium_client)`, etc). Resolved: `request_supervision`
-  stays real and tested, but no manager calls it in v1 — it's available
-  for a genuinely fresh, self-contained `GenServer`-shaped component,
-  which none of Fabrica's own managers are. (2) `request_state_persistence`
-  returns a `ComponentStateHandle` over a whole-blob `get`/`set`, but no
-  `StateStore`-backed `MemoryStore`/`PromptStore` adapter exists to
-  receive it (never designed in `contracts/memory.md`/`contracts/prompts.md`).
-  Resolved the same way: the method itself is real and tested, `build()`
-  just doesn't call it for managers yet — both `MemoryManager`/
-  `PromptManager` use their in-memory default stores in both modes until
-  that adapter is designed as its own unit of work.
-
-Real bugs found and fixed by actually running things, not caught by review —
-worth knowing these exist as a class, not just as history: macOS's long tmp
-paths breaking `ipc://` socket length limits; a package submodule named
-`types.py` shadowing Python's own stdlib `types` when run as a script;
-`pytest` needing unique test-module basenames across the whole suite unless
-test directories are proper packages (fixed by adding `__init__.py`
-everywhere under `tests/`).
-
-Two real contract gaps found and fixed in the docs *before* writing code
-against them: `ToolNamespace` had no enumeration method (added
-`list_schemas()`); `ToolManager.register()`/`SkillManager.load()` were
-declared sync but need to await `Retriever.register()`'s `async def` (both
-corrected to async).
-
-- **`MCPClient`/`MCPToolNamespace`** (`src/fabrica/mcp/`) — migrated real
-  code from `civitas-contrib/packages/fabrica`, not a rewrite. Two real
-  corrections found reconciling against the actually-installed `mcp`
-  v2.0.0 SDK (not transcribed from the older-SDK-era migrated code
-  unchanged): attribute access is snake_case now (`tool.input_schema`,
-  `result.is_error`), not the migrated code's camelCase; and `srt`
-  (replacing `BubblewrapSandbox`) structurally REFUSES an
-  unrestricted-network config (`allowedDomains: ["*"]` is a hard config
-  error, confirmed by running `srt` directly) — `SandboxConfig.network=
-  "allow"` now raises `UnsupportedSandboxConfigurationError` at
-  `connect()` time rather than silently downgrading or passing through a
-  config `srt` itself would reject (fifth confirmed
-  fail-closed-by-default instance). `MCPToolNamespace`'s async-constructor
-  gap (contract's own flagged open item) resolved with an async factory,
-  `MCPToolNamespace.create(client)`. 21 tests, all against a REAL MCP
-  server subprocess (`tests/mcp/fixtures/echo_server.py`, the actual `mcp`
-  library's own server-side API, not a mock) — including real
-  `srt`-sandboxed connections.
-- **`FabricaMCPServer`** (`src/fabrica/mcp/server.py`) — built against
-  `mcp.server.lowlevel.Server`'s real, current constructor-callback API
-  (`on_list_tools`/`on_call_tool`/`on_list_prompts`/`on_get_prompt`), not
-  an older decorator-based `FastMCP` style some `mcp` SDK versions use.
-  Five fixed MCP tools + native Prompts mapping, exactly per the contract.
-  **Both stdio AND HTTP transports are real** — HTTP reuses the `mcp`
-  library's OWN bearer-auth support (`Server.streamable_http_app
-  (token_verifier=...)`, real `AuthenticationMiddleware`/`BearerAuthBackend`/
-  `RequireAuthMiddleware`) via a small `_TokenVerifierAdapter`, rather than
-  hand-rolled ASGI middleware — confirmed working end to end with a real
-  `uvicorn` server + real bearer-token accept/reject before wiring it in,
-  not assumed from docs. `agent_id` is resolved from the verified token's
-  `AccessToken.subject`, never from caller-supplied arguments.
-  A real, previously-undocumented gap found and fixed at the same time:
-  `ServerTransportConfig`'s "authenticator required if kind='http'" was
-  only ever a docstring claim — `__post_init__` now actually enforces it.
-  13 tests total: 8 against a REAL `mcp.ClientSession` over a real stdio
-  subprocess to a real `CivitasBridge`-built `Fabrica`
-  (`tests/mcp/fixtures/fabrica_stdio_server.py`, including one genuine
-  code-mode execution reached entirely through the MCP protocol), 5 more
-  against a REAL `uvicorn`-hosted HTTP server with real bearer-token
-  accept/reject (unauthenticated rejected, wrong token rejected, correct
-  token resolves to the right `agent_id`, memory writes/searches stay
-  correctly `Scope`-isolated per resolved `agent_id`).
-  **`WeakIsolationError`'s real tier check is now implemented too** (see
-  its own entry below) — the only thing still deliberately NOT built is
-  the legacy SSE transport (distinct from the modern streamable-HTTP
-  transport implemented here) — building the deprecated `mcp` transport
-  first would be backwards.
-- **`WeakIsolationError`'s real tier check** (`src/fabrica/sandbox/`,
-  `src/fabrica/managers/`, `src/fabrica/mcp/server.py`) — closes the gap
-  `mcp-server.md` flagged: `Sandbox`/`SandboxPool` gained a real, queryable
-  `tier: int` property (`SubprocessSandbox.tier == 0`), delegated one level
-  up through `ToolManager.tier`/`SkillManager.tier` so `FabricaMCPServer`
-  can check isolation strength without reaching into either manager's
-  private `SandboxPool` reference. `FabricaMCPServer.__init__` now
-  genuinely raises `WeakIsolationError` when `fabrica.tools.tier < 2` and
-  `allow_weak_isolation_for_external_callers` is false — tested directly
-  against a real `CivitasBridge`-built `Fabrica`.
-  **Honest, stated-not-hidden consequence**: only Tier 0
-  (`SubprocessSandbox`) exists anywhere in this codebase today, so every
-  real `FabricaMCPServer(kind="http")` deployment must currently pass
-  `allow_weak_isolation_for_external_callers=True` to construct at all —
-  the fail-closed default working exactly as intended, not a bug. All
-  existing HTTP/stdio test fixtures were updated to this explicit opt-in
-  once the real check started firing (confirmed: it broke all 10 of them
-  immediately, exactly as it should have).
-  8 new tests: `tier` on `SubprocessSandbox`/`SandboxPool`/`ToolManager`/
-  `SkillManager`, plus `WeakIsolationError` actually raising (and NOT
-  raising with the opt-in) against a real `Fabrica`.
-  **Found and fixed along the way, unrelated to this feature, same Boy
-  Scout Rule pattern as the previous item**: 11 more pre-existing
-  `mypy --strict` failures across `tests/tools`/`tests/retriever`/
-  `tests/sandbox`/`tests/managers` (missing parameter/return type
-  annotations, an un-narrowed `str | None`) — every test directory in
-  this project has now actually been mypy-checked at least once; none had
-  been, systematically, before this pass.
-
-**Not built yet, deliberately**: the real `fabrica-contrib[mem0|zep|letta|
-cognee|langmem]` adapters (need real external services to test against,
-`memory.md`'s own "wrap, don't build" thesis); a `StateStore`-backed
-`MemoryStore`/`PromptStore` adapter for `CivitasBridge`'s service mode
-(see `CivitasBridge`'s own entry above for why).
+**Not built yet, deliberately, and named as such, not hidden**: real
+`fabrica-contrib[mem0|zep|letta|cognee|langmem]` memory adapters (need
+real external services to validate against); the `fabrica`/
+`fabrica-contrib` package split itself (a real, decided deferral until
+closer to a release — see `context-layer.md`'s own "Decided, not just
+found stale" note); Tier 1 isolation (`gVisor`/`srt`); managed-sandbox
+provider adapters and `TunnelProvider` backends (interfaces designed,
+credentials/priority both block real implementation).
 
 ### What's left, in priority order
 
-1. **BLOCKED, not just deferred: `PresidiumClient`'s real REST+mTLS
-   implementation.** Explicitly re-confirmed and re-scoped in a direct
-   discussion (not re-derived from scratch): Presidium has no HTTP server
-   anywhere in its codebase today (`PolicyEngine.evaluate()` is an
-   in-process library call, nothing else) -- there is no real API
-   contract to build a client against. Building one now would mean
-   *inventing* a REST request/response shape ourselves and testing the
-   client only against that same invention (a self-written fake mTLS
-   server) -- real client engineering (mTLS handshake, timeout,
-   fail-closed-on-any-failure, possibly a circuit breaker) would be
-   validated, but the wire format would NOT be, since nothing exists yet
-   to validate it against. If real Presidium ever ships an actual REST
-   server, there's a real chance this client would need rebuilding to
-   match its actual shape anyway.
+**The full, current, line-by-line list is [`docs/PLAN.md`](docs/PLAN.md)
+— read that, not this summary, before picking up work.** High-level
+status:
 
-   **Blocked on**: a real Presidium REST/HTTP server existing (in the
-   `presidium` repo, or wherever Presidium's own team decides to build
-   it) -- not on any decision or work item inside `civitas-io/fabrica`
-   itself. `NullPresidiumClient` and the `PresidiumClient` Protocol are
-   real and fully sufficient for everything built here; nothing is
-   waiting on this to proceed. Revisit only when a real Presidium
-   endpoint exists to validate against -- at that point, building the
-   real client stops being "invent-then-test-against-our-own-invention"
-   and becomes normal, real integration work.
-2. A batch of older, explicitly-fine-to-leave-deferred design-layer items
-   (`tool-execution.md`, `retrieval.md`, `isolation.md`, `skills-gateway.md`
-   open questions) and smaller contract-level wrinkles (`RecencyCompactor`'s
-   `preserve_last_n=6` still unvalidated, multi-tenant `FabricaMCPServer`
-   untested under real concurrent load, `WeakIsolationError`'s
-   construction-time-only check with no live re-check if a deployment's
-   tier changes) — see `git log` and the contracts themselves for the full
-   list; none of these block anything above.
+1. **Phase 1 (the six self-reflection fixes) — DONE, in full.** Stale
+   README, the `KeywordBackend` Rust/PyO3 doc claim, `context-layer.md`'s
+   MCP scope gap, the package-split decision, real OTEL span emission,
+   and credentials/usage-metering are all resolved. Two of the six were
+   walked through directly with the user rather than decided
+   unilaterally (the package split, credentials), matching this
+   project's own established norm for bigger/ambiguous decisions.
+2. **Phase 2's Easy tier (items 7–12) — DONE, in full.** `CivitasBridge`'s
+   `build()` idempotency and upfront supervisor validation; `find()`'s
+   kind-override question (decided: no override); `Sandbox`'s
+   per-tool-call timeout (found and fixed a genuinely subtle hang bug
+   along the way); `PromptTemplate`'s size/`cache_boundary` validation;
+   `WorkingMemoryQuotaExceeded`'s ceiling (found already resolved,
+   just undocumented as such).
+3. **Phase 2's Medium tier (items 13–18) — NOT STARTED, pick up here
+   next.** `Retriever`'s eager-cache invalidation and batch atomicity;
+   `RecencyCompactor`'s single-message-exceeds-budget edge case;
+   `PromptManager`'s cache eviction policy; `FirecrackerSandbox` real
+   per-VM CPU accounting; a real, minimal, purpose-built Firecracker
+   rootfs image.
+4. **Phase 2's Complex tier (items 19–24)** — Tier 1 isolation,
+   `FirecrackerSandbox` snapshot/restore, `jailer` integration, managers
+   as supervised `GenServer`s (flagged for a direct walkthrough before
+   starting — a real architecture-level call, same reasoning as the
+   package-split/credentials decisions), managed-provider adapters,
+   `TunnelProvider` backends.
+5. **BLOCKED, not just deferred: `PresidiumClient`'s real REST+mTLS
+   implementation.** No real Presidium HTTP server exists anywhere to
+   build/validate a client against — `PolicyEngine.evaluate()` is an
+   in-process library call, nothing else. Revisit only if a real
+   Presidium deployment ever exists to build against; not actionable
+   from this repo alone.
+6. **Deliberately deferred, named, not re-litigated per `PLAN.md`'s own
+   closing section**: third-party skill trust/signing, log
+   tamper-evidence, other memory backends beyond Mem0, `SKILL.md`
+   optional fields/bundled resources, Windows Tier 1, macOS/Windows
+   Tier 2 `vsock` equivalents.
 
-   **First one resolved, walking through this batch one by one**:
-   `retrieval.md` open item 2 (`eager` per-deployment vs. per-item) was
-   actually a live dead-feature gap, not just an open design question --
-   `Indexable.eager` had existed as a field the whole time, but nothing
-   anywhere ever set it to `True`. Resolved as author-declared/per-item:
-   `ToolSchema.eager: bool = False` and an optional `SKILL.md`
-   `eager: true` frontmatter field, both flowing through into
-   `Indexable(eager=...)` unchanged; `MCPToolNamespace`-sourced tools stay
-   `eager=False` always (external servers shouldn't unilaterally claim
-   always-visible status). A per-deployment override remains a real,
-   deferred idea, not built. 3 new tests (180 total).
+**Immediate next action**: open `docs/PLAN.md`, start at item 13
+(`Retriever`'s eager-cache invalidation strategy — Medium tier, first
+item). Nothing above it is blocking; item 5 (`PresidiumClient`) is the
+only genuinely external blocker and does not gate anything else.
 
-   **Second one resolved, documentation-only**: `tool-execution.md` open
-   item 1 (sandbox API language -- Python now, TypeScript later?).
-   Confirmed the implementation already answers this unconditionally --
-   every `code` parameter across `Sandbox`/`SandboxPool`/
-   `execute_in_sandbox`/`ToolManager`/`SkillManager` is a plain `str`
-   with no language dimension at all. Resolved as Python-only for v1,
-   explicitly, not left an unexamined default -- deliberately NOT
-   building a language-dispatch abstraction now, since there's no second
-   backend to put behind it and the real future demand is genuinely
-   unknown. No code change; `docs/tool-execution.md` updated.
-
-   **Third one resolved, also documentation-only**: `skills-gateway.md`
-   open item 2 (exact `SKILL.md` frontmatter fields to index).
-   `SkillManager.load()` already reads only `name`/`description`
-   (required, spec-conformant) plus two Fabrica extensions
-   (`script`/`eager`) -- every optional spec field (`license`,
-   `allowed-tools`, `version`, `author`, `compatibility`) and vendor
-   extension is parsed but never read out, not rejected. Resolved as
-   deliberate: the doc's own real-corpus check found 0/81 bigpowers
-   skills use any optional field, and there's no consumer anywhere in
-   the architecture for one yet (no `SkillManager.open(name)`-equivalent
-   to `ToolNamespace.open()`). No code change; `docs/skills-gateway.md`
-   updated. All three quick decisions in this batch are now done.
-
-   **Fourth item, a real spike, also now done**: `contracts/memory.md`
-   open item 3's remaining half -- whether `preserve_last_n=6`
-   specifically is a good value. [SPIKE-recency-compactor-n-value.md](specs/archive/spikes/SPIKE-recency-compactor-n-value.md)
-   varied `preserve_last_n` (2, 6, 10) against a REAL, deliberately tight
-   `budget_tokens` boundary this time (the first spike's scenario "had
-   plenty of room") -- calling the actual
-   `RecencyCompactor`/`_select_preserved` production code directly, not
-   a reimplementation. The real budget-clipping mechanism engaged
-   exactly as coded (`preserve_last_n=10`'s request correctly honored
-   down to 6, the most the tight budget allowed, in every run), and all
-   three N values scored 5/5 grounded-correct -- the value made no
-   observable difference in this scenario. Narrowed, not fully closed:
-   multiple competing facts and precision-sensitive facts a summary
-   might round remain untested -- both spikes together have only
-   validated the single-clear-constraint case.
-
-   **Fifth item, the stress test, also now done**:
-   `contracts/mcp-server.md` open item 3 (multi-tenant `FabricaMCPServer`
-   untested under real concurrent load). `tests/mcp/test_server_stress.py`
-   -- a real `uvicorn` server, 10 simultaneous agents each opening their
-   OWN real `mcp.client.streamable_http` connection concurrently (via
-   `asyncio.gather`, not sequential), distinct bearer tokens resolving to
-   distinct `agent_id`s, contending for the same shared
-   `SandboxPool`/`Retriever`. Three real findings: concurrent memory
-   writes/searches across all 10 agents stayed correctly `Scope`-isolated
-   under genuine concurrent pressure (each agent's search saw EXACTLY its
-   own item); 10 concurrent code-mode executions against
-   `max_concurrent=4` all completed correctly through the bounded-overflow
-   queue with no cross-talk between agents. 2 tests (183 total at the time).
-
-   **A third test (`max_concurrent=1`, forcing full serialization) was
-   added, then later removed** after a real, later investigation (see the
-   isolation-adapter research entry below) found it was genuinely more
-   sensitive to ambient system load than the other two -- not a
-   `FabricaMCPServer`/`SandboxPool` bug, confirmed by the same failure
-   later appearing in the `max_concurrent=4` test too once heavy
-   background load (Docker/SearXNG) was running, and by full reliability
-   returning once that load stopped. Dropped rather than kept in a
-   load-dependent state, since its incremental value over
-   `max_concurrent=4` was real but marginal. 182 tests as of the most
-   recent count.
-
-   **A real flake was caught and fixed running the full suite
-   repeatedly, not just the new file in isolation** -- exactly the
-   discipline this catches things for: the heavy-serialization test
-   passed 10/10 in isolation but failed 2/5 times in the FULL suite
-   (`MCPError(-32000, 'SSE stream ended without a response')`).
-   Root cause: under full-suite CPU load, the deliberately extreme
-   10-agents-through-1-concurrent-slot scenario can legitimately take
-   longer than httpx2's short 5s default timeout to reach the back of
-   its queue, causing the CLIENT to give up mid-request -- a test-
-   construction problem, not a `FabricaMCPServer`/`SandboxPool` bug.
-   Fixed by giving that specific test's HTTP clients a longer timeout
-   (25s) matching the scenario's own realistic worst-case duration.
-   Re-verified clean across 6 consecutive full-suite runs afterward, not
-   just re-run once and assumed fixed.
-
-   Remaining batch items need a bigger product call this agent shouldn't
-   make alone -- nothing left is a quick resolution or a boundable spike.
-
-   **First product call made, with the user, not alone**: `isolation.md`
-   open question 1 (self-host Firecracker vs. managed adapter for v1).
-   Turned out to not really be an either/or at the positioning level --
-   both `isolation.md` and `landscape.md` already recommended both,
-   eventually; the genuinely open part was build SEQUENCING, since
-   neither exists in code at all today (only `SubprocessSandbox`/Tier 0
-   is real) and the two are wildly different sizes of effort.
-   **Decided: build a managed adapter (E2B/Modal) first**, treating
-   self-hosted Firecracker (a full orchestration stack -- `jailer`, a
-   REST control plane, `vsock`, a dedicated rootfs/kernel, snapshot/
-   restore pool management) as the long-term production target to build
-   once real demand forces it, not abandoned. `docs/isolation.md`/
-   `docs/landscape.md` updated with the full reasoning.
-
-   **New sub-blocker surfaced immediately, same shape as
-   `PresidiumClient`'s**: no local E2B or Modal API credentials exist to
-   build/test a real adapter against a live account. Both Python SDKs
-   (`e2b`, `modal`) are real, installable packages with real published
-   REST APIs (unlike Presidium, which has no API at all anywhere) --
-   genuinely different from the Presidium situation in one important way:
-   there IS a real, documented spec to build correctly against even
-   without live credentials. Awaiting a decision on how to proceed:
-   (a) if real E2B/Modal credentials become available, build and test
-   for real against a live account; (b) build the real client engineering
-   against the actual published API shape, tested with a self-written
-   fake server matching their documented contract (more legitimate here
-   than it would be for Presidium, since a real spec exists); (c) defer
-   until credentials exist, same as `PresidiumClient`.
-
-   **Follow-up research + design, done in direct discussion, not alone,
-   per the user's explicit "be careful, this is critical to Fabrica's
-   market positioning" instruction**: the user correctly flagged that
-   enterprises may prefer a hyperscaler-native option over a third-party
-   vendor relationship. Real research (current docs fetched directly, not
-   assumed from memory) found a genuine field of FIVE managed providers,
-   not two -- E2B, Modal, **AWS Bedrock AgentCore Code Interpreter**,
-   **Azure Container Apps Dynamic Sessions**, **GCP Agent Sandbox**
-   (GKE-native, a meaningfully different operational shape than the
-   other four -- closer to "self-hosted, but on GCP's infrastructure").
-   Documented with real, sourced API shapes in
-   [landscape.md §3a](docs/landscape.md).
-
-   **The real finding from this research**: none of the five can satisfy
-   `Sandbox.execute()`'s `on_tool_call` callback as currently designed --
-   it assumes a local socket (ZMQ `ipc://`/`vsock`), but every managed
-   provider runs the guest in a genuinely separate network with no local
-   socket path back to Fabrica at all. Resolved with a network callback
-   bridge instead (Fabrica exposes a real, short-lived, per-run-tokened
-   HTTP endpoint; injected code POSTs tool calls to it) -- designed in
-   full, including the real local-dev tunnel requirement and a real
-   security requirement (unguessable per-run token, no `allow_*` escape
-   hatch), in the new
-   [contracts/managed-sandbox.md](docs/contracts/managed-sandbox.md).
-   `ManagedSandboxAdapter`'s `boot_clean()`/`execute()`/`terminate()`/
-   `health_check()` mapped concretely onto each of the five providers'
-   real primitives. A real cost dimension also flagged explicitly: every
-   call against a managed provider is billed, unlike every `Sandbox`
-   backend built so far -- directly relevant to Marcus's own "can't blow
-   the budget" success metric, sharpening why `SandboxPool`'s existing
-   bounded-overflow bounds matter here specifically.
-
-   **Five follow-up decisions made in direct discussion, walking through
-   the doc together, after presenting it back for review**:
-
-   1. **RE-SEQUENCED: self-hosted Firecracker now ships FIRST**, reversing
-      the earlier "managed adapter first" call. Deciding factor: self-
-      hosted Firecracker is genuinely FREE per-execution; every one of
-      the five managed providers bills per API call. Combined with a
-      real, live homelab already available (see below), the original
-      effort-asymmetry argument no longer dominates. Managed-provider
-      *interfaces* stay designed now (`ManagedSandboxAdapter`,
-      `contracts/managed-sandbox.md`) -- only their implementation moves
-      to second priority. `docs/isolation.md`/`docs/landscape.md` updated
-      with the full reversal, not silently overwritten.
-   2. **Tunnel choice resolved**: a `TunnelProvider` Protocol, three
-      backends in a decided priority order -- Tailscale (specifically
-      **Funnel**, not plain tailnet membership -- a real technical
-      distinction worth getting right: a managed provider's sandbox is
-      never a member of anyone's tailnet, so only Funnel's public-HTTPS-
-      exposure mode actually works here), then Cloudflare Tunnel, then
-      ngrok. None implemented yet; the Protocol + priority order are the
-      resolved, durable part.
-   3. **Per-provider network-egress-allowlist config: explicitly deferred**,
-      decided per-provider only once that specific provider is actually
-      being implemented, not designed generically now -- same "ship the
-      default, revisit if forced" logic used throughout this project.
-   4. Confirmed as-is: still blocked on real credentials, same shape as
-      `PresidiumClient`.
-   5. **`RunResult` stays stdout-only for now, explicitly** -- binary/file/
-      image return support (E2B/Azure both have first-class support for
-      this) flagged as a real, NAMED future extension, not built or
-      designed now; `RunResult`'s stdout-only shape was itself a
-      deliberate, spike-validated decision that any extension needs its
-      own design pass to not quietly undermine.
-
-   **Self-hosted Firecracker, now the actual next priority, not just
-   "in parallel"**: confirmed the homelab used for
-   `SPIKE-firecracker-boot-restore-latency.md` (`kodiak@darkenergy`)
-   is still live over SSH, with KVM present and the entire prior spike
-   environment intact (Firecracker/`jailer` binaries, kernel, rootfs,
-   even a prior snapshot) -- a real head start for actually building the
-   self-hosted Tier 2 backend for real, not from scratch.
-
-   **Before writing `FirecrackerSandbox`, spiked the one genuinely
-   unvalidated piece first, per this project's own established
-   discipline**: `on_tool_call`'s host↔guest bridge over `vsock` had
-   never been built or tested at all -- the boot/restore spike
-   explicitly booted with no networking whatsoever.
-   [SPIKE-firecracker-vsock-callback-bridge.md](specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)
-   proved a real, bidirectional `AF_VSOCK` round trip on the same real
-   hardware -- a real Python socket inside the guest connecting to
-   `CID=2` (host), a real Python listener on the host receiving it and
-   replying, both directions confirmed with actual data, not just the
-   vsock device configuring without error. Twelfth spike.
-
-   **A real negative finding along the way**: `debugfs -w` (the only
-   available way to inject files into the rootfs image without an
-   interactive `sudo` password) created a genuinely inconsistent
-   directory entry on this modern (`metadata_csum`-enabled) ext4 image
-   -- a file that appeared in `ls` but failed `cat`/`stat` lookup
-   immediately after. Worked around for this spike (booted straight
-   into `/bin/sh` over the console, driven via a FIFO, no rootfs
-   modification needed at all) but means **a real guest-shim process
-   baked into the rootfs -- the actual production need -- requires a
-   proper, root-based image-build step**, not ad-hoc runtime patching.
-   This is now a named, real blocker for the next phase of
-   `FirecrackerSandbox` work: either the user provides `sudo` access on
-   the homelab (interactively, or via a documented non-interactive
-   method), or a different image-build path (a purpose-built minimal
-   rootfs, cloud-init, or similar) gets chosen instead.
-
-   **Resolved -- the user granted small, precisely scoped `sudo` access**
-   (`NOPASSWD` rules for `mount -o loop`/`umount` against exactly
-   `/mnt/fcrootfs`, `losetup`, and a follow-up `cp *.py`-scoped rule --
-   verified: general `sudo` still requires a password, nothing broader
-   was granted). This unlocked a full, real validation of the ACTUAL
-   production shim (not a one-off interactive command) -- see the
-   twelfth spike's own "Update" section (extended, not a new spike --
-   same underlying question, now validated with the real production
-   code instead of a one-off command).
-
-   **`FirecrackerSandbox` is now REAL, implemented, and validated end to
-   end on real hardware** (`src/fabrica/sandbox/firecracker_backend.py`,
-   `contracts/sandbox.md`). Real cold boot (v1 scope, deliberately --
-   snapshot/restore combined with the vsock bridge is a genuinely
-   separate, unvalidated combination, deferred as real follow-on work,
-   not the mechanism itself), a real `vsock` callback bridge using the
-   real `_firecracker_guest_shim.py` (mirrors `_guest_shim.py`'s exact
-   shape -- namespace injection, stdout capture, a result trailer -- over
-   a small hand-rolled length-prefixed JSON protocol instead of ZMQ,
-   since ZMQ has no `vsock` transport binding), real cleanup (kills the
-   real firecracker process, removes every file it created).
-
-   **Two real resource leaks found and fixed by inspecting the
-   filesystem after real test runs, not assumed clean**: `terminate()`
-   wasn't cleaning up `vsock_uds` itself (only the `{vsock_uds}_{port}`
-   proxy socket); `boot_clean()`'s own failure paths weren't cleaning up
-   anything at all, only the success path was. Fixed with one shared
-   `_cleanup_files()` helper, plus a dedicated regression test
-   (`test_terminate_removes_every_file_it_created`) that checks the real
-   filesystem, not just that `terminate()` runs without raising.
-
-   10 new tests (`tests/sandbox/test_firecracker_backend.py`), skipped
-   everywhere except a real Linux+KVM+Firecracker environment (same
-   discipline as the `srt`-sandboxed MCP tests) -- run for real via SSH
-   on the homelab (a synced checkout + a real venv there, not just
-   type-checked locally), **10/10 passing, 3/3 consecutive clean runs**,
-   confirmed zero leftover files afterward.
-
-   Genuinely still open, named honestly, not hidden: snapshot/restore
-   (deferred, see above); a real, purpose-built minimal rootfs image
-   (still uses the existing general-purpose Ubuntu 24.04 image, named as
-   its own scope item since the very first Firecracker spike); `jailer`
-   hardening (explicitly out of scope in every Firecracker spike so
-   far); real per-VM CPU-second accounting (`cpu_seconds` is honestly
-   `0.0` for now, not a fabricated number).
-
-   **A real, pre-existing `SandboxPool` gap found immediately after,
-   by wrapping `SandboxPool` around the real `FirecrackerSandbox`
-   (not just the fast in-memory `_FakeBackend` used to test the pool's
-   own bookkeeping in isolation) and inspecting `/tmp` after real test
-   runs**: `SandboxPool` had no `close()`/shutdown mechanism at all --
-   warm-pool instances were simply abandoned forever. This existed for
-   `SubprocessSandbox` too, just invisibly (an orphaned OS process,
-   easy to miss); with `FirecrackerSandbox` it's a full, impossible-to-
-   miss orphaned 1GB rootfs copy per warm slot. Fixed properly, contract
-   first (`contracts/sandbox.md`), then code: `SandboxPool.close()`
-   drains and terminates every warm instance, correctly waiting for any
-   in-flight background refill task first so a refill that completes
-   mid-close can't leak one more instance; `Fabrica` gained a public
-   `sandbox_pool` field and its own `close()` delegating to it (there
-   was previously no discoverable way to reach the pool from a built
-   `Fabrica` at all -- `tools`/`skills` each held it privately). 6 new
-   tests (3 unit-level against `_FakeBackend`, including one that
-   deterministically proves the in-flight-refill race is handled
-   correctly; 1 `CivitasBridge`-level integration test; a new
-   `SandboxPool.warm_count` public property added specifically so tests
-   don't need to reach into private state). Re-verified for real on the
-   homelab after the fix: 3/3 clean runs, filesystem genuinely clean
-   afterward, not just passing.
-3. **New, small, and genuinely optional**: a Tier 1 backend
-   (`GvisorSandbox`/`SrtSandbox`, `isolation.md`) would let a real
-   deployment satisfy `WeakIsolationError`'s Tier-2-minimum bar without
-   the explicit opt-in — not required (the opt-in exists specifically so
-   this isn't blocking), but worth noting as the natural next isolation
-   milestone if `FabricaMCPServer(kind="http")` sees real external use.
-
-4. **Resolved -- real platform dispatch, closing the biggest actual
-   MDP gap left after `FirecrackerSandbox` shipped**: user asked to
-   "tackle all the relevant ones towards an MDP, and defer the rest."
-   The most consequential real gap wasn't on the original open-items
-   list at all -- it surfaced from reading `contracts/civitas-bridge.md`
-   closely: the contract always said `build()` constructs `Sandbox`
-   "platform-dispatched" (`isolation.md`), but the actual code always
-   hardcoded `SubprocessSandbox()`, unconditionally, regardless of host.
-   That was invisible before -- a hardcoded choice and a dispatch
-   function with only one real outcome look identical from the outside
-   until a second real outcome exists. Once `FirecrackerSandbox` (Tier
-   2) became real, `Tier 2` existed in the codebase but was completely
-   unreachable through the one real assembly path every deployment goes
-   through.
-
-   Fixed, contract first (`contracts/civitas-bridge.md`,
-   `docs/isolation.md`), then code:
-   `fabrica.sandbox.dispatch.select_sandbox_backend()` -- real detection
-   (Linux + real `/dev/kvm` + real `FABRICA_FC_BINARY`/
-   `FABRICA_FC_KERNEL`/`FABRICA_FC_ROOTFS` artifacts all present) returns
-   a real `FirecrackerSandbox`; anything else returns `SubprocessSandbox`,
-   honestly reflecting that Tier 1 and macOS/Windows Tier 2 remain
-   unimplemented -- exactly two real outcomes today, not the full
-   five-tier table. `CivitasBridge.build()` now calls
-   `self._sandbox_backend or select_sandbox_backend()` -- the new
-   `sandbox_backend` constructor parameter is `isolation.md`'s own named
-   "hidden override for testing/CI only," not a new user-facing knob.
-
-   Directly closes item 3 above too: `WeakIsolationError`'s tier check
-   needed no code change (it already genuinely queried `.tier`), but was
-   previously provably permanently-inert ("only Tier 0 is implemented
-   anywhere") -- now a real Linux+KVM+Firecracker deployment genuinely
-   satisfies it without the opt-in. Both the constructor docstring and a
-   stale module-level "what this deliberately does not cover" comment in
-   `mcp/server.py` were corrected to say so, rather than left stale next
-   to now-working code.
-
-   11 new tests: 5 deterministic `select_sandbox_backend()` unit tests
-   (`tests/sandbox/test_dispatch.py`, monkeypatching platform/env/
-   filesystem rather than depending on this dev machine's real
-   capabilities), 2 `CivitasBridge`-level dispatch-wiring tests (default
-   dispatch is real, not hardcoded; the override is honored verbatim),
-   1 `FabricaMCPServer` test proving a genuinely Tier-2-backed `Fabrica`
-   constructs cleanly without the opt-in (the real proof this whole
-   check was built for), plus the pre-existing Tier-0 test made
-   deterministic (forced via the override, since default dispatch is no
-   longer guaranteed to be Tier 0 on every host). All local (195 passed,
-   14 correctly skipped, stable across repeated runs, `ruff`/
-   `mypy --strict` clean) -- no homelab-only test needed here since
-   dispatch's real-hardware outcome was already proven directly by
-   `test_pool_with_firecracker.py`'s tier assertion.
-
-   **Deferred, explicitly, as agreed** (not part of this MDP pass):
-   snapshot/restore, a minimal purpose-built rootfs, `jailer` hardening,
-   real per-VM CPU accounting, managed-provider adapters, `TunnelProvider`
-   backends. None of these block a real Tier-2-capable deployment from
-   working correctly today; they are performance, hardening-in-depth, or
-   a second isolation path, not correctness gaps in the one that exists.
-
-5. **Resolved -- the one remaining real reproducibility gap toward an
-   MDP**: after platform dispatch (item 4), the only way to produce a
-   working `FirecrackerSandbox` rootfs image was still a one-off set of
-   manual commands run by hand on one specific machine -- not something
-   a second deployer could actually follow. Fixed with
-   [`scripts/build_firecracker_rootfs.sh`](scripts/build_firecracker_rootfs.sh)
-   (a real, reusable, idempotent script: copies the base image fresh
-   each run rather than mutating it in place, mounts/bakes in the guest
-   shim/unmounts always via a trap, guards against a stale mount from a
-   failed prior run) and
-   [`docs/deployment/firecracker-rootfs.md`](docs/deployment/firecracker-rootfs.md)
-   (the exact `sudoers` lines needed, spelled out precisely -- not
-   "figure out the right scoping yourself").
-
-   Verified for real on the homelab, not just written and assumed
-   correct: ran the script fresh (a genuinely new artifact, not my
-   earlier hand-built one), then ran the full 14-test Firecracker suite
-   against ITS output -- 3/3 clean, filesystem genuinely clean
-   afterward. Also exercised all three of the script's error-handling
-   paths for real (missing base rootfs, nonexistent mount point, a
-   stale mount left by a simulated failed prior run) -- all three exit
-   non-zero with a clear, actionable message rather than a confusing
-   failure deep inside `mount`/`cp`.
-
-**Immediate next action**: item 1 is genuinely blocked on something
-external to this repo, not actionable right now. Items 3, 4, and 5 are
-all resolved as of this update -- together, these were the full "tackle
-what's relevant toward an MDP" scope from the open-items list.
-**Deliberately still deferred, as agreed**: snapshot/restore, a real
-minimal purpose-built rootfs, `jailer` hardening, real per-VM CPU
-accounting, managed-provider adapters, `TunnelProvider` backends -- none
-of these block a real Tier-2-capable deployment from working correctly
-today. Pick up item 2 (the deferred design-layer batch) next, or begin
-working through the explicitly-deferred batch above.
 
 ## Read in this order if you're new to this
 
@@ -869,13 +409,16 @@ edge case still has no defined behavior.
   The `VZVirtioSocketDevice` (macOS/libkrun) and `AF_HYPERV` (Windows)
   equivalents remain completely unproven -- genuinely still open, just a
   narrower gap than before (one platform done, two remain, not zero).
-- **Contract-level open items**, each named in its own doc rather than silently
-  assumed: `Retriever`'s eager-cache invalidation and batch-atomicity;
-  whether `Sandbox.run()`'s `on_tool_call` needs its own timeout distinct
-  from the overall one; `managers.md`'s `find()`-kind-override question.
-  (`Sandbox`'s replenishment-scheduling mechanism and release-on-unknown-
-  handle behavior, listed here in earlier revisions, are now resolved --
-  see `contracts/sandbox.md`'s own open-items list.)
+- **Contract-level open items still genuinely open** (Phase 2's Medium/
+  Complex tiers, `docs/PLAN.md`): `Retriever`'s eager-cache invalidation
+  and batch-atomicity; `RecencyCompactor`'s single-message-exceeds-budget
+  edge case; `PromptManager`'s cache eviction policy;
+  `FirecrackerSandbox`'s real per-VM CPU accounting and a minimal
+  purpose-built rootfs image. (`Sandbox`'s replenishment-scheduling
+  mechanism, release-on-unknown-handle behavior, `on_tool_call`'s own
+  timeout, and `managers.md`'s `find()`-kind-override question, listed
+  here in earlier revisions, are now all resolved -- see each contract's
+  own open-items list.)
 - **Windows Tier 1** (`srt`'s Windows mode) — deliberately deferred, not
   blocking, per explicit direction ("small segment, spike only if a gap forces it").
 - **macOS Tier 2** (libkrun) ships despite having no snapshot/restore — explicit
