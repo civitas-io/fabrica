@@ -56,9 +56,10 @@ commit messages, not repeated here — this section states facts, not stories.
 ### Design phase: complete
 
 Full discovery→define→design→validate→critique→architecture→system-design→contracts
-arc. Twelve spikes, all real hardware/API evidence. Eight contracts written
+arc. Thirteen spikes, all real hardware/API evidence. Nine contracts written
 (`Retriever`, `Sandbox`, `managers.md`, `memory.md`, `prompts.md`,
-`civitas-bridge.md`, `mcp-integration.md`, `mcp-server.md`). Four platform-wide
+`civitas-bridge.md`, `mcp-integration.md`, `mcp-server.md`,
+`managed-sandbox.md`). Four platform-wide
 rules confirmed multiple times, safe to apply without re-deriving:
 **library-first/low-coupling** (`architecture.md §1a`); **requests, never
 reaches in** (toward Civitas and Presidium alike); **external dependencies are

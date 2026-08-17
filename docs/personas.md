@@ -42,8 +42,9 @@ match," and need no SDK-specific glue. Tracked separately from the human persona
 - **JTBD:** *"When an agent calls a tool or executes generated code, I want to control
   and audit exactly what it can reach, so I can prove compliance without slowing
   builders down."*
-- **Touches:** grants/policy seams into Presidium, credential injection into the
-  sandbox, audit events.
+- **Touches:** grants/policy seams into Presidium, host-side credentialed tool
+  calls (never sandbox-side -- see [credentials.md](credentials.md)), audit
+  events.
 - **Fear:** a secret leaking into the model's context window or a log.
 
 ### 4. Devon — Skill / Tool Author

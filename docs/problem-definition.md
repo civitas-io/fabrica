@@ -74,7 +74,7 @@ and a scalable sandbox pool, so a bad run can't touch the host or blow the budge
 |---|---|
 | Zero-code-change tier upgrade | Tier 0 \u2192 Tier 1 (gVisor) \u2192 Tier 2 (Firecracker) is a **config change only** |
 | Warm-pool restore latency | p99 in **single-digit ms** from a Firecracker snapshot |
-| Zero credential leakage | secrets injected into a sandbox never appear in model context, logs, or OTEL spans |
+| Zero credential leakage | **Resolved by decision, not by hardening an injection path** -- see [credentials.md](credentials.md): `Sandbox` gets no credential-injection mechanism at all, so there is no leakage path through the sandbox boundary to defend in the first place. Validated end to end with a real, independently-built credential broker (Tessera) in [SPIKE-tessera-credential-integration.md](../specs/archive/spikes/SPIKE-tessera-credential-integration.md). |
 | Self-healing pool | a crashed sandbox-pool process restarts automatically under Civitas supervision |
 
 **Non-goals**

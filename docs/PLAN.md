@@ -92,16 +92,32 @@ not invented fresh.
    .search()`'s optional `kind`) would have silently triggered per-call
    warnings against a real OTEL-backed span, now filtered in `traced()`
    before reaching the `Tracer`. *(§3.3, first half)*
-6. [ ] **Design and build credential injection into `Sandbox`, plus the
-   usage/budget-metering half of `civitas-presidium-integration.md`** — the
-   most complex item in this phase: no existing mechanism to extend, real
-   security surface (a credential reaching sandboxed, untrusted code), and
-   a genuinely new integration point with Presidium's budget model.
-   Depends on item 5 landing first (the span/metering pipe needs to exist
-   before usage events have anywhere to go). **Walk through the credential-
-   injection design directly before building** — same reasoning as item 4:
-   this is exactly the class of decision this project has always paused
-   on rather than making unilaterally. *(§3.3, second half)*
+6a. [x] **Credential injection into `Sandbox`** — walked through directly,
+   as planned, before any code. **Resolved as a decision, not a build**:
+   Fabrica builds no credential-injection mechanism into `Sandbox` at all.
+   Investigated Tessera (`tsr`, a real, separately-built agent-blind
+   credential broker already part of the Civitas toolchain) first, rather
+   than designing from scratch. Real finding: Tessera's own interpreter/
+   exec-wrapper denylist structurally refuses to inject a secret into a
+   Python interpreter running caller-supplied code -- exactly what
+   `Sandbox.execute()` is. Two independently-built systems agree
+   credentials must never reach an interpreter about to run untrusted
+   code. Validated end to end, not just argued: Fabrica's real, unmodified
+   `MCPClient`/`MCPToolNamespace`/`ToolManager` stack composed with a
+   real, unmodified `tsr mcp` process with **zero new Fabrica code** --
+   model-generated code running inside a real `SubprocessSandbox` called
+   a Tessera-backed tool, with only the redacted result crossing back
+   ([SPIKE-tessera-credential-integration.md](../specs/archive/spikes/SPIKE-tessera-credential-integration.md),
+   [`docs/credentials.md`](credentials.md)). Honest gap named, not
+   Fabrica's to fix: Tessera's approval model requires a human present
+   (`/dev/tty`/Touch ID) and refuses unattended/service-mode use -- a real
+   limitation for Marcus's production persona, tracked as Tessera's own
+   roadmap item, not Fabrica work.
+6b. [ ] **Real usage/budget metering** (`civitas-presidium-integration.md`'s
+   metering-vs-enforcement design) -- still open, unrelated to the
+   credential-injection finding above. Needs a genuinely new integration
+   point with Presidium's budget model; the span/metering pipe from item 5
+   exists to carry this once designed. *(§3.3, second half)*
 
 ---
 

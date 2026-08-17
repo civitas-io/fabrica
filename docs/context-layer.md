@@ -54,7 +54,7 @@ Keep the pillar boundaries clean, exactly as Civitas/Presidium do:
 | OTEL span plumbing | Civitas | Fabrica *emits*, Civitas *collects* |
 | Policy: ALLOW/DENY of a tool or code run | Presidium | governance decision |
 | Grants: which tools/skills an agent may touch | Presidium | authorization |
-| Credential vault / token exchange | Presidium (+ tessera at CLI) | governance |
+| Credential vault / token exchange | Presidium (+ tessera at CLI) | governance -- see [credentials.md](credentials.md) for why `Sandbox` itself gets no credential-injection mechanism at all |
 | A generic MCP proxy/registry | nobody — it's commoditized infra | see landscape.md |
 | Governed LLM/MCP gateway | Presidium (wraps agentgateway) | governance |
 
