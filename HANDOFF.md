@@ -16,6 +16,11 @@ spans emits anything, as a log stand-in, not a real OTEL exporter) —
 read that doc before assuming any of those three are further along than
 they are.
 
+**The active work queue is [`docs/PLAN.md`](docs/PLAN.md)** — the
+reflection fixes above, plus the full remaining backlog, in one ordered
+list (easiest first, most complex last, agreed with the user directly).
+Work through it top to bottom rather than picking work ad hoc.
+
 ---
 
 ## What Fabrica is, in one paragraph

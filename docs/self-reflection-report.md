@@ -220,3 +220,9 @@ things that drifted unnoticed.
    Tier 1 would provide.
 5. Everything in §4 stays exactly where it is — correctly deferred, no
    action needed from this report.
+
+**This priority order, plus the full remaining backlog from the previous
+"what's remaining" evaluation, is now tracked as one ordered queue in
+[`PLAN.md`](PLAN.md)** — easiest first, most complex last, agreed with the
+user directly. That doc is authoritative on sequencing; this one stays a
+point-in-time record of the findings themselves.
