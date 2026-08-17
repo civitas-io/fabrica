@@ -142,11 +142,25 @@ class SkillManager:
             return results
 
     async def run(
-        self, name: str, args: dict[str, Any], *, agent_id: str, scope: Scope, timeout: float = 30.0
+        self,
+        name: str,
+        args: dict[str, Any],
+        *,
+        agent_id: str,
+        scope: Scope,
+        timeout: float = 30.0,
+        tool_call_timeout: float | None = None,
     ) -> RunResult:
         """Runs a NAMED, pre-written, author-trusted script -- not
         arbitrary generated code, per system-design.md §1's genuine
         distinction from run_code().
+
+        `tool_call_timeout` is threaded through for API symmetry with
+        `ToolManager.run_code()` (contracts/sandbox.md open item 3) --
+        currently inert here, since this manager's own `on_tool_call`
+        always returns instantly (skills have no tool access in this
+        pass); kept so a future skill implementation with real tool
+        access doesn't need a signature change to gain it.
 
         Raises:
             SkillNotFoundError: name isn't registered, or has no bundled
@@ -179,6 +193,7 @@ class SkillManager:
             code=code,
             on_tool_call=on_tool_call,
             timeout=timeout,
+            tool_call_timeout=tool_call_timeout,
             tracer=self._tracer,
             skill_name=name,
         )

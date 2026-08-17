@@ -23,7 +23,11 @@ from typing import Any, cast
 import zmq
 import zmq.asyncio
 
-from fabrica.sandbox.errors import SandboxCrashedError, SandboxTimeoutError
+from fabrica.sandbox.errors import (
+    SandboxCrashedError,
+    SandboxTimeoutError,
+    SandboxToolCallTimeoutError,
+)
 from fabrica.sandbox.types import MAX_STDOUT_BYTES, RunResult, SandboxHandle, ToolCallCallback
 
 # Invoked as `python -m fabrica.sandbox._guest_shim`, NOT `python <path>` --
@@ -70,6 +74,7 @@ class SubprocessSandbox:
         *,
         on_tool_call: ToolCallCallback,
         timeout: float,
+        tool_call_timeout: float | None = None,
     ) -> RunResult:
         ipc_path = self._socket_dir / f"{handle.id}.sock"
         ipc_addr = f"ipc://{ipc_path}"
@@ -94,25 +99,90 @@ class SubprocessSandbox:
         async def _serve_tool_calls() -> None:
             while True:
                 request = await rep_socket.recv_json()
-                result = await on_tool_call(request["tool"], request["params"])
+                if tool_call_timeout is not None:
+                    try:
+                        result = await asyncio.wait_for(
+                            on_tool_call(request["tool"], request["params"]),
+                            timeout=tool_call_timeout,
+                        )
+                    except TimeoutError as exc:
+                        # Complete the REP socket's strict request/reply
+                        # cycle before raising -- the child is about to
+                        # be killed and will never read this, but leaving
+                        # the exchange mid-cycle is bad hygiene regardless
+                        # of whether it was the actual cause of the real
+                        # hang found below (it wasn't -- see the finally
+                        # block's own note).
+                        with contextlib.suppress(Exception):
+                            await rep_socket.send_json(
+                                {
+                                    "success": False,
+                                    "value": None,
+                                    "error_message": "tool call timed out",
+                                }
+                            )
+                        raise SandboxToolCallTimeoutError(
+                            f"sandbox {handle.id}: tool call {request['tool']!r} did "
+                            f"not complete within {tool_call_timeout}s"
+                        ) from exc
+                else:
+                    result = await on_tool_call(request["tool"], request["params"])
                 await rep_socket.send_json(result)
 
+        # Real correction, closing contracts/sandbox.md open item 3: a
+        # naive asyncio.wait_for(proc.communicate(...), timeout=timeout)
+        # around ONLY the process communication, with serve_task running
+        # as a fully separate fire-and-forget task, meant a hung/timed-out
+        # tool call inside serve_task was never actually observed by this
+        # method at all -- the process would sit blocked waiting for a
+        # ZMQ reply that never arrives, silently consuming the FULL
+        # `timeout` budget before the outer wait_for finally fired,
+        # reporting a generic SandboxTimeoutError with no attribution to
+        # the real cause. Racing both tasks with FIRST_COMPLETED lets a
+        # tool-call timeout kill the process immediately and report a
+        # SandboxToolCallTimeoutError, not wait out the rest of the
+        # overall budget first.
         serve_task = asyncio.ensure_future(_serve_tool_calls())
+        communicate_task = asyncio.ensure_future(proc.communicate(code.encode()))
 
         try:
-            stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                proc.communicate(code.encode()), timeout=timeout
+            done, _pending = await asyncio.wait(
+                {serve_task, communicate_task}, timeout=timeout, return_when=asyncio.FIRST_COMPLETED
             )
-        except TimeoutError:
-            proc.kill()
-            await proc.wait()
-            raise SandboxTimeoutError(
-                f"sandbox {handle.id} did not complete within {timeout}s"
-            ) from None
+            if communicate_task in done:
+                stdout_bytes, stderr_bytes = communicate_task.result()
+            else:
+                proc.kill()
+                await proc.wait()
+                if serve_task in done:
+                    exc = serve_task.exception()
+                    if exc is not None:
+                        raise exc
+                raise SandboxTimeoutError(f"sandbox {handle.id} did not complete within {timeout}s")
         finally:
             serve_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
+            communicate_task.cancel()
+            # A REAL bug found here, not assumed away: awaiting a task
+            # that already completed with an exception RE-RAISES that
+            # exception -- suppressing only asyncio.CancelledError (not
+            # ANY exception) meant a tool-call timeout's own
+            # SandboxToolCallTimeoutError, already handled above, got
+            # raised a SECOND time here, silently skipping every
+            # statement below (rep_socket.close(), ctx.destroy(),
+            # ipc_path.unlink()) without ever surfacing as a visible
+            # error -- because the re-raised exception happened to be the
+            # exact same type pytest.raises() in a caller's test was
+            # already expecting, so the test itself passed while leaking
+            # the zmq Context. That leaked Context's own __del__ later
+            # hung indefinitely during a full GC pass at interpreter
+            # shutdown (pytest's own gc_collect_harder(), confirmed via a
+            # real py-spy-adjacent stack dump), not during the test
+            # itself -- which is exactly why the test appeared to pass
+            # before this fix.
+            with contextlib.suppress(asyncio.CancelledError, Exception):
                 await serve_task
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await communicate_task
             rep_socket.close(linger=0)
             ctx.term()
             ipc_path.unlink(missing_ok=True)
@@ -166,10 +236,14 @@ def _parse_trailer(stderr_bytes: bytes) -> dict[str, Any] | None:
         trailer = json.loads(lines[-1])
     except json.JSONDecodeError:
         return None
-    if not isinstance(trailer, dict) or not {
-        "success",
-        "error_message",
-        "tool_call_count",
-    } <= trailer.keys():
+    if (
+        not isinstance(trailer, dict)
+        or not {
+            "success",
+            "error_message",
+            "tool_call_count",
+        }
+        <= trailer.keys()
+    ):
         return None
     return cast("dict[str, Any]", trailer)

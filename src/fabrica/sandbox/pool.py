@@ -144,6 +144,7 @@ class SandboxPool:
         *,
         on_tool_call: ToolCallCallback,
         timeout: float = 30.0,
+        tool_call_timeout: float | None = None,
         trace_id: str = "",
         parent_span_id: str | None = None,
     ) -> RunResult:
@@ -154,7 +155,9 @@ class SandboxPool:
         propagating unchanged -- `traced()`'s own contract.
 
         `trace_id`/`parent_span_id` let a caller nest this span under its
-        own, same as `acquire()`.
+        own, same as `acquire()`. `tool_call_timeout` is passed straight
+        through to the backend -- see `Sandbox.execute()`'s own docstring
+        (contracts/sandbox.md open item 3).
         """
         with traced(
             self._tracer,
@@ -164,7 +167,11 @@ class SandboxPool:
             tier=self.tier,
         ) as span:
             result = await self._backend.execute(
-                handle, code, on_tool_call=on_tool_call, timeout=timeout
+                handle,
+                code,
+                on_tool_call=on_tool_call,
+                timeout=timeout,
+                tool_call_timeout=tool_call_timeout,
             )
             span.set_attribute("duration_ms", result.duration_ms)
             span.set_attribute("cpu_seconds", result.cpu_seconds)

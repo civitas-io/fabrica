@@ -175,10 +175,26 @@ doc it's already named in — not repeated here.
    construction. Found and fixed a real, pre-existing test gap while
    adding this: one test used a service-mode `CivitasBridge` against a
    topology that never actually defined the named supervisor.
-9. [ ] `managers.md` open item 1: decide whether `find()` should accept a
-   `kind` override or always fix it per manager.
-10. [ ] `sandbox.md` open item 3: decide whether `on_tool_call` needs its
-    own timeout distinct from `run()`'s overall one.
+9. [x] `managers.md` open item 1: `find()`'s `kind` override — **decided:
+   no override, stays fixed per manager.** A caller genuinely needing
+   "search everything" already has a real way to get it --
+   `Retriever.search(query, kind=None)` directly. No code change: this
+   was already the implemented behavior.
+10. [x] `sandbox.md` open item 3: `on_tool_call`'s own timeout — **decided:
+    yes**, a new optional `tool_call_timeout` on `Sandbox.execute()`/
+    `SandboxPool.run()`, threaded through both managers, raising a new
+    `SandboxToolCallTimeoutError` when it fires. Found and fixed two real
+    bugs in `SubprocessSandbox` while implementing this, not assumed
+    correct on the first pass: (1) a hung tool call was never actually
+    observed by `execute()` at all before this, silently consuming the
+    entire overall timeout budget first; (2) a genuinely nasty cleanup
+    bug where awaiting an already-exception-holding task in `finally`
+    re-raised that same exception a second time, silently skipping every
+    remaining cleanup statement -- invisible in normal test runs because
+    the re-raised exception happened to match what the test already
+    expected, only surfacing as a real process hang during garbage
+    collection at shutdown (confirmed via a real stack dump). 5 new tests
+    across both backends plus `SandboxPool`'s pass-through.
 11. [ ] `prompts.md` open items 3–4: `PromptTemplate.content` size ceiling;
     `cache_boundary` validation against actual content length.
 12. [ ] `memory.md` open item 2: `WorkingMemoryQuotaExceeded`'s default

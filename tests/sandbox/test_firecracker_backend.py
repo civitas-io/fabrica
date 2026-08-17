@@ -13,6 +13,7 @@ exactly how that's built):
 
 from __future__ import annotations
 
+import asyncio
 import os
 import shutil
 from pathlib import Path
@@ -20,7 +21,7 @@ from typing import Any
 
 import pytest
 
-from fabrica.sandbox import SandboxCrashedError, SandboxTimeoutError
+from fabrica.sandbox import SandboxCrashedError, SandboxTimeoutError, SandboxToolCallTimeoutError
 from fabrica.sandbox.firecracker_backend import FirecrackerSandbox
 
 _FC_BINARY = os.environ.get("FABRICA_FC_BINARY", "")
@@ -145,6 +146,38 @@ async def test_execute_raises_timeout_error_and_kills_process(backend: Firecrack
                 on_tool_call=_no_tool_calls,
                 timeout=1.0,
             )
+    finally:
+        await backend.terminate(handle)
+
+
+async def test_tool_call_timeout_fires_before_the_overall_timeout(
+    backend: FirecrackerSandbox,
+) -> None:
+    """contracts/sandbox.md open item 3, resolved: a hung tool call is
+    caught by tool_call_timeout specifically (SandboxToolCallTimeoutError,
+    not a generic SandboxTimeoutError), well before the much larger
+    overall timeout budget would have caught it -- real, on real hardware,
+    same as the SubprocessSandbox proof.
+    """
+    import time as _time
+
+    async def hangs_forever(tool: str, params: dict[str, Any]) -> dict[str, Any]:
+        await asyncio.sleep(30)
+        return {"unreachable": True}
+
+    handle = await backend.boot_clean()
+    try:
+        start = _time.monotonic()
+        with pytest.raises(SandboxToolCallTimeoutError):
+            await backend.execute(
+                handle,
+                "namespace.call('slow_tool', {})",
+                on_tool_call=hangs_forever,
+                timeout=30.0,
+                tool_call_timeout=0.5,
+            )
+        elapsed = _time.monotonic() - start
+        assert elapsed < 10.0
     finally:
         await backend.terminate(handle)
 

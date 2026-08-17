@@ -261,10 +261,19 @@ the real Civitas-Tracer finding that shaped this:
 
 ## Open items for implementation
 
-1. Should `find()` on both managers accept a `kind` override, or is fixing it
-   (`"tool"` for `ToolManager`, `"skill"` for `SkillManager`) always correct?
-   Fixing it seems right given each manager's own identity, but not stress-tested
-   against a real caller needing "search everything" through a single manager.
+1. ~~Should `find()` on both managers accept a `kind` override...~~
+   **Resolved: no override, `find()` stays fixed per manager.** A caller
+   genuinely needing "search everything" already has a real, existing way
+   to get it -- call `Retriever.search(query, kind=None)` directly, which
+   already supports searching across all kinds (`contracts/retriever.md`).
+   Adding a `kind` override to `ToolManager.find()`/`SkillManager.find()`
+   would mean re-exposing a capability the shared `Retriever` already
+   provides, through two managers that are deliberately kept separate
+   for their different trust models (`architecture.md §1a`) -- coupling
+   them to a generality neither actually needs on its own is the exact
+   pattern that principle argues against. No code change: this was
+   already the implemented behavior, only the open question needed
+   closing.
 2. ~~Span-naming convention for skills vs. tools~~ **Resolved while writing this
    contract** — `system-design.md §7` was missing a `SkillManager` row entirely,
    not just an inconsistent name. Added `fabrica.skill.find` and

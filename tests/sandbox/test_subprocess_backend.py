@@ -4,11 +4,18 @@ callback bridge actually works, not just that the code looks plausible.
 
 from __future__ import annotations
 
+import asyncio
+import time
 from typing import Any
 
 import pytest
 
-from fabrica.sandbox import SandboxCrashedError, SandboxTimeoutError, SubprocessSandbox
+from fabrica.sandbox import (
+    SandboxCrashedError,
+    SandboxTimeoutError,
+    SandboxToolCallTimeoutError,
+    SubprocessSandbox,
+)
 
 
 @pytest.fixture
@@ -112,6 +119,59 @@ async def test_execute_raises_timeout_error_and_kills_process(backend: Subproces
         await backend.execute(
             handle, "import time; time.sleep(10)", on_tool_call=_no_tool_calls, timeout=0.5
         )
+
+
+async def test_tool_call_timeout_fires_before_the_overall_timeout_and_kills_the_process(
+    backend: SubprocessSandbox,
+) -> None:
+    """The real proof behind contracts/sandbox.md open item 3's fix: a
+    hung tool call is caught by tool_call_timeout, attributed specifically
+    (SandboxToolCallTimeoutError, not a generic SandboxTimeoutError), and
+    the process is killed immediately -- not left to consume the entire,
+    much larger overall `timeout` budget first.
+    """
+    handle = await backend.boot_clean()
+
+    async def hangs_forever(tool: str, params: dict[str, Any]) -> dict[str, Any]:
+        await asyncio.sleep(30)
+        return {"unreachable": True}
+
+    start = time.monotonic()
+    with pytest.raises(SandboxToolCallTimeoutError):
+        await backend.execute(
+            handle,
+            "namespace.call('slow_tool', {})",
+            on_tool_call=hangs_forever,
+            timeout=30.0,
+            tool_call_timeout=0.3,
+        )
+    elapsed = time.monotonic() - start
+    # The whole point: bounded by tool_call_timeout (0.3s), nowhere near
+    # the overall 30s budget.
+    assert elapsed < 5.0
+
+
+async def test_tool_call_timeout_none_preserves_original_behavior(
+    backend: SubprocessSandbox,
+) -> None:
+    """tool_call_timeout=None (the default) must change nothing -- a slow
+    but real tool call that completes within the overall timeout still
+    succeeds normally.
+    """
+    handle = await backend.boot_clean()
+
+    async def slow_but_fine(tool: str, params: dict[str, Any]) -> dict[str, Any]:
+        await asyncio.sleep(0.2)
+        return {"success": True, "value": "done", "error_message": None}
+
+    result = await backend.execute(
+        handle,
+        "result = namespace.call('slow_tool', {})\nprint(result['value'])",
+        on_tool_call=slow_but_fine,
+        timeout=5.0,
+    )
+    assert result.success is True
+    assert result.stdout.strip() == "done"
 
 
 async def test_execute_raises_crashed_error_when_shim_produces_no_trailer(

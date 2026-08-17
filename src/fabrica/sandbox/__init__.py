@@ -10,6 +10,7 @@ from fabrica.sandbox.errors import (
     SandboxError,
     SandboxPoolExhaustedError,
     SandboxTimeoutError,
+    SandboxToolCallTimeoutError,
 )
 from fabrica.sandbox.firecracker_backend import FirecrackerSandbox
 from fabrica.sandbox.pool import SandboxPool
@@ -27,6 +28,7 @@ __all__ = [
     "SandboxPool",
     "SandboxPoolExhaustedError",
     "SandboxTimeoutError",
+    "SandboxToolCallTimeoutError",
     "SubprocessSandbox",
     "ToolCallCallback",
     "select_sandbox_backend",

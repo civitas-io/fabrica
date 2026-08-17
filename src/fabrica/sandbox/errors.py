@@ -14,6 +14,20 @@ class SandboxTimeoutError(SandboxError):
     """
 
 
+class SandboxToolCallTimeoutError(SandboxTimeoutError):
+    """A single on_tool_call invocation did not complete within
+    tool_call_timeout, distinct from run()'s overall timeout -- closes
+    contracts/sandbox.md's open item 3 ("a single slow tool call could
+    otherwise consume the whole budget silently"). A subclass of
+    SandboxTimeoutError, not a sibling: the consequence is identical (the
+    instance is killed, the handle is no longer usable), so an existing
+    `except SandboxTimeoutError` handler still catches this unchanged --
+    only a caller that wants to distinguish "one bad tool implementation"
+    from "the sandboxed code itself ran long" needs to catch this
+    specifically.
+    """
+
+
 class SandboxCrashedError(SandboxError):
     """The instance died unexpectedly during run() -- not a timeout, not a
     code-level exception. Handle is no longer usable. Matches

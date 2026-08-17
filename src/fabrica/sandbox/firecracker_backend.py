@@ -36,7 +36,11 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fabrica.sandbox.errors import SandboxCrashedError, SandboxTimeoutError
+from fabrica.sandbox.errors import (
+    SandboxCrashedError,
+    SandboxTimeoutError,
+    SandboxToolCallTimeoutError,
+)
 from fabrica.sandbox.types import MAX_STDOUT_BYTES, RunResult, SandboxHandle, ToolCallCallback
 
 _HOST_VSOCK_PORT = 5555  # matches _firecracker_guest_shim.py's own constant
@@ -305,6 +309,7 @@ class FirecrackerSandbox:
         *,
         on_tool_call: ToolCallCallback,
         timeout: float,
+        tool_call_timeout: float | None = None,
     ) -> RunResult:
         state = self._instances[handle.id]
         start_time = time.monotonic()
@@ -320,7 +325,20 @@ class FirecrackerSandbox:
                 message = await _recv(state.reader)
                 if message["type"] == "tool_call":
                     tool_call_count += 1
-                    result = await on_tool_call(message["tool"], message["params"])
+                    if tool_call_timeout is not None:
+                        try:
+                            result = await asyncio.wait_for(
+                                on_tool_call(message["tool"], message["params"]),
+                                timeout=tool_call_timeout,
+                            )
+                        except TimeoutError as exc:
+                            raise SandboxToolCallTimeoutError(
+                                f"firecracker instance {handle.id}: tool call "
+                                f"{message['tool']!r} did not complete within "
+                                f"{tool_call_timeout}s"
+                            ) from exc
+                    else:
+                        result = await on_tool_call(message["tool"], message["params"])
                     await _send(
                         state.writer,
                         {

@@ -84,13 +84,24 @@ class ToolManager:
             return results
 
     async def run_code(
-        self, code: str, *, agent_id: str, scope: Scope, timeout: float = 30.0
+        self,
+        code: str,
+        *,
+        agent_id: str,
+        scope: Scope,
+        timeout: float = 30.0,
+        tool_call_timeout: float | None = None,
     ) -> RunResult:
         """The code-mode headline path. on_tool_call is wired here to
         actually invoke the registered ToolNamespace's real functions --
         this is where "real tool access" is implemented, not inside
         execute_in_sandbox, which knows nothing about what a tool call
         actually does.
+
+        `tool_call_timeout`, when set, bounds each individual tool call
+        separately from `timeout`'s overall budget (contracts/sandbox.md
+        open item 3) -- `None` (the default) preserves the original
+        behavior exactly.
         """
 
         async def on_tool_call(tool: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -113,5 +124,6 @@ class ToolManager:
             code=code,
             on_tool_call=on_tool_call,
             timeout=timeout,
+            tool_call_timeout=tool_call_timeout,
             tracer=self._tracer,
         )

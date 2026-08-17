@@ -5,6 +5,7 @@ not just that acquire()/release() run without error.
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 
 import pytest
 
@@ -26,6 +27,7 @@ class _FakeBackend:
         self.boot_count = 0
         self.terminated: list[str] = []
         self._tier = tier
+        self.last_tool_call_timeout: float | None = None
 
     @property
     def tier(self) -> int:
@@ -42,7 +44,9 @@ class _FakeBackend:
         *,
         on_tool_call: ToolCallCallback,
         timeout: float,
+        tool_call_timeout: float | None = None,
     ) -> RunResult:
+        self.last_tool_call_timeout = tool_call_timeout
         raise NotImplementedError("not exercised by these tests")
 
     async def terminate(self, handle: SandboxHandle) -> None:
@@ -50,6 +54,10 @@ class _FakeBackend:
 
     async def health_check(self) -> bool:
         return True
+
+
+async def _unused(tool: str, params: dict[str, Any]) -> dict[str, Any]:
+    raise AssertionError("not exercised by these tests")
 
 
 def test_tier_property_delegates_to_backend() -> None:
@@ -197,3 +205,25 @@ async def test_warm_count_reflects_prewarm_and_close() -> None:
 
     await pool.close()
     assert pool.warm_count == 0
+
+
+async def test_run_passes_tool_call_timeout_through_to_the_backend() -> None:
+    backend = _FakeBackend()
+    pool = SandboxPool(backend, warm_size=0, max_concurrent=5)
+    handle = await pool.acquire()
+
+    with pytest.raises(NotImplementedError):
+        await pool.run(handle, "code", on_tool_call=_unused, tool_call_timeout=1.5)
+
+    assert backend.last_tool_call_timeout == 1.5
+
+
+async def test_run_defaults_tool_call_timeout_to_none() -> None:
+    backend = _FakeBackend()
+    pool = SandboxPool(backend, warm_size=0, max_concurrent=5)
+    handle = await pool.acquire()
+
+    with pytest.raises(NotImplementedError):
+        await pool.run(handle, "code", on_tool_call=_unused)
+
+    assert backend.last_tool_call_timeout is None

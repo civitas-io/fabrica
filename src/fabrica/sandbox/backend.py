@@ -44,7 +44,19 @@ class Sandbox(Protocol):
         *,
         on_tool_call: ToolCallCallback,
         timeout: float,
-    ) -> RunResult: ...
+        tool_call_timeout: float | None = None,
+    ) -> RunResult:
+        """tool_call_timeout, when set, bounds each individual
+        on_tool_call() invocation separately from `timeout`'s overall
+        budget -- closes contracts/sandbox.md's open item 3. `None` (the
+        default) preserves the original behavior exactly: only the
+        overall `timeout` applies, no per-call bound. Raises
+        SandboxToolCallTimeoutError (a SandboxTimeoutError subclass) when
+        a single call exceeds it -- the instance is killed either way,
+        same consequence as the overall timeout, just attributed more
+        specifically.
+        """
+        ...
 
     async def terminate(self, handle: SandboxHandle) -> None:
         """Tear down an instance permanently. Called by SandboxPool on

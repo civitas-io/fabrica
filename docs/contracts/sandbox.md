@@ -393,9 +393,39 @@ children, not disconnected spans. Full design:
    `self._instances.pop(handle.id, None)` and returns early;
    `SubprocessSandbox.terminate()`'s `unlink(missing_ok=True)` is
    harmless regardless. Found true by inspection, not newly added.
-3. Whether `run()`'s `on_tool_call` callback itself needs its own timeout
-   distinct from `run()`'s overall `timeout` — a single slow tool call
-   could otherwise consume the whole budget silently.
+3. ~~Whether `run()`'s `on_tool_call` callback itself needs its own
+   timeout...~~ **Resolved: yes.** New optional `tool_call_timeout: float
+   | None = None` on `Sandbox.execute()`/`SandboxPool.run()`, threaded
+   through `execute_in_sandbox`/`ToolManager.run_code()`/`SkillManager
+   .run()`. `None` (the default) preserves the original behavior exactly.
+   When set, a hung tool call raises the new `SandboxToolCallTimeoutError`
+   (a `SandboxTimeoutError` subclass, same consequence -- instance killed,
+   handle unusable -- just attributed specifically) well before the much
+   larger overall `timeout` would have caught it, on both backends.
+
+   **A real, subtle bug found and fixed while implementing this on
+   `SubprocessSandbox`, not assumed correct**: the original
+   `asyncio.wait_for(proc.communicate(...), timeout=timeout)` structure
+   ran `serve_task` (the tool-call loop) as a fully separate fire-and-
+   forget task -- a hung/timed-out tool call inside it was never actually
+   observed by `execute()` at all, silently consuming the FULL overall
+   `timeout` budget before a generic, unattributed `SandboxTimeoutError`
+   finally fired. Fixed by racing both tasks with
+   `asyncio.wait(..., return_when=FIRST_COMPLETED)`. That fix itself
+   surfaced a second, genuinely nasty bug: cleanup code in `finally`
+   awaited the already-exception-holding `serve_task` while only
+   suppressing `asyncio.CancelledError`, not the actual exception it
+   held -- silently re-raising the SAME exception type a second time,
+   which skipped every remaining cleanup statement (`ctx.term()`
+   included) without ever surfacing as a visible test failure, because
+   the re-raised exception happened to match what the calling test's
+   `pytest.raises()` was already expecting. The leaked `zmq.asyncio
+   .Context` then hung indefinitely during a full garbage-collection
+   pass at process shutdown (confirmed via a real stack dump, not
+   guessed) -- entirely invisible unless a test explicitly checks the
+   process exits cleanly, not just that assertions pass. Fixed by
+   suppressing any exception (not just `CancelledError`) when draining
+   an already-completed task purely for cleanup purposes.
 4. **New**: `FirecrackerSandbox`'s snapshot/restore support -- v1 always
    cold-boots; validating restore combined with an already-live vsock
    connection, then implementing it, is real, separate follow-on work.

@@ -28,6 +28,7 @@ async def execute_in_sandbox(
     code: str,
     on_tool_call: ToolCallCallback,
     timeout: float = 30.0,
+    tool_call_timeout: float | None = None,
     tracer: Tracer | None = None,
     skill_name: str | None = None,
 ) -> RunResult:
@@ -91,6 +92,7 @@ async def execute_in_sandbox(
                 code,
                 on_tool_call=on_tool_call,
                 timeout=timeout,
+                tool_call_timeout=tool_call_timeout,
                 trace_id=outer_span.trace_id,
                 parent_span_id=outer_span.span_id,
             )
