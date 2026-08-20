@@ -254,9 +254,19 @@ multiple prompt versions.
 
 ## Open items for implementation
 
-1. `PromptManager`'s cache has no eviction policy specified (size ceiling,
-   TTL, or unbounded-in-process) — needs a decision before implementation,
-   not assumed to be safe by default.
+1. ~~`PromptManager`'s cache has no eviction policy specified...~~
+   **Resolved: unbounded in-process, no size ceiling or TTL.** Prompt
+   catalogs are expected to be small and curated (unlike tool/skill
+   catalogs or memory, where volume is the whole point) -- unbounded
+   caching of `(name, version)` entries is a reasonable default for that
+   shape of workload, matching this project's own "ship the default,
+   revisit if forced" pattern used elsewhere (Windows Tier 1, macOS
+   Tier 2, `KeywordBackend`'s pure-Python v1). Not validated against any
+   real large-catalog deployment -- named plainly as an assumption, not
+   hidden as a silent default. Revisit with an LRU/TTL bound only if a
+   real deployment's prompt catalog turns out large enough for unbounded
+   growth to matter; `put()`/`delete()`'s existing invalidation logic
+   would be unaffected by adding a bound later.
 2. Concurrent `put()` calls to the same `name` — is `version = max + 1`
    computed atomically by the backend, or could two concurrent writers land
    on the same version number? Depends on the specific `PromptStore`

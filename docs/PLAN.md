@@ -251,9 +251,16 @@ doc it's already named in — not repeated here.
     silently (loses information without signaling). `CompactionResult
     .preserved == []` is itself the observable signal, no new field
     needed. Pure documentation fix -- no code change needed.
-16. [ ] `prompts.md` open item 1: `PromptManager`'s cache eviction policy
-    (size ceiling, TTL, or unbounded) — needs a decision before it matters
-    at real scale.
+16. [x] `prompts.md` open item 1: `PromptManager`'s cache eviction policy
+    (size ceiling, TTL, or unbounded) -- **found already resolved in
+    code**, same shape as items 12 and 15: `PromptManager`'s own
+    docstring already stated "unbounded in-process cache" as a real,
+    reasoned decision (prompt catalogs expected to be small and curated,
+    unlike tool/skill catalogs or memory), just never reflected in the
+    contract's own open-items list. Pure documentation fix -- no code
+    change, no new test (there is no meaningful way to test the absence
+    of an eviction mechanism beyond what `test_get_is_cached_avoids
+    _backend_round_trip` already proves about the cache itself).
 17. [ ] `FirecrackerSandbox` real per-VM CPU accounting — wire Firecracker's
     own metrics API; `cpu_seconds` is currently honestly `0.0`.
 18. [ ] A real, minimal, purpose-built Firecracker rootfs image — replacing
