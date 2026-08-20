@@ -1,11 +1,20 @@
 # Contract: `Sandbox` / `SandboxPool`
 
-**Status:** Implemented -- `SubprocessSandbox` (Tier 0) and, as of this
-update, `FirecrackerSandbox` (Tier 2, self-hosted) both real, tested
-against real hardware (`SubprocessSandbox` continuously; `FirecrackerSandbox`
-against a real homelab with KVM -- see
+**Status:** Implemented -- `SubprocessSandbox` (Tier 0), `SrtSandbox`
+(Tier 1, wraps `srt`), and `FirecrackerSandbox` (Tier 2, self-hosted) all
+real, tested against real hardware (`SubprocessSandbox` continuously;
+`SrtSandbox` live-verified on macOS, including real network-allowlist
+enforcement -- Linux/Windows untested, `srt` documents support for both
+but neither has been exercised here; `FirecrackerSandbox` against a real
+homelab with KVM -- see
 [SPIKE-firecracker-vsock-callback-bridge.md](../../specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)).
-Tier 1 (gVisor/`srt`) not yet implemented. · **Last updated:** 2026-08
+`SubprocessSandbox` and `SrtSandbox` share their subprocess-launch/ZMQ
+mechanics via `_shim_runner.run_shimmed_subprocess()`, parameterized only
+by the command prefix wrapping the guest shim -- not two independently
+maintained copies. Tier 1 gVisor (Linux) remains not implemented
+separately; `srt`'s own Linux support (bubblewrap+netns) may cover that
+platform once verified, avoiding a second Tier 1 implementation
+entirely. · **Last updated:** 2026-08
 **Supersedes:** the `Sandbox` sketch in [isolation.md](../isolation.md)
 **Depends on:** [system-design.md](../system-design.md) §1 (object model), §3
 (internal code-mode flow, the callback this contract implements), §6 (resilience

@@ -13,13 +13,16 @@ from fabrica.sandbox.errors import (
     SandboxToolCallTimeoutError,
 )
 from fabrica.sandbox.firecracker_backend import FirecrackerSandbox
+from fabrica.sandbox.network_policy import NetworkPolicy
 from fabrica.sandbox.pool import SandboxPool
+from fabrica.sandbox.srt_backend import SrtSandbox, srt_available
 from fabrica.sandbox.subprocess_backend import SubprocessSandbox
 from fabrica.sandbox.types import MAX_STDOUT_BYTES, RunResult, SandboxHandle, ToolCallCallback
 
 __all__ = [
     "MAX_STDOUT_BYTES",
     "FirecrackerSandbox",
+    "NetworkPolicy",
     "RunResult",
     "Sandbox",
     "SandboxCrashedError",
@@ -29,7 +32,9 @@ __all__ = [
     "SandboxPoolExhaustedError",
     "SandboxTimeoutError",
     "SandboxToolCallTimeoutError",
+    "SrtSandbox",
     "SubprocessSandbox",
     "ToolCallCallback",
     "select_sandbox_backend",
+    "srt_available",
 ]

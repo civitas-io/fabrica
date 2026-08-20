@@ -16,6 +16,7 @@ import pytest
 
 from fabrica.civitas_bridge import CivitasBridge
 from fabrica.memory.types import MemoryItem
+from fabrica.sandbox import SubprocessSandbox
 from fabrica.scope import Scope
 from fabrica.tools import DictToolNamespace, ToolSchema
 
@@ -115,7 +116,14 @@ async def test_tool_find_emits_a_nested_tool_find_and_retriever_search_span(
 
 
 async def test_run_code_emits_the_full_nested_span_tree(tracer: _RecordingTracer) -> None:
-    fabrica = await CivitasBridge(allow_ungoverned=True, tracer=tracer).build()
+    # Explicit SubprocessSandbox (Tier 0), not select_sandbox_backend()'s
+    # real auto-detection -- this test asserts on tier==0 specifically,
+    # which must not depend on whether the machine running it happens to
+    # have `srt` on PATH (select_sandbox_backend() prefers SrtSandbox,
+    # Tier 1, when it's available -- see dispatch.py).
+    fabrica = await CivitasBridge(
+        allow_ungoverned=True, tracer=tracer, sandbox_backend=SubprocessSandbox()
+    ).build()
     await fabrica.tools.register(make_add_namespace())
 
     result = await fabrica.tools.run_code(

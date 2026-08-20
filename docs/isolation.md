@@ -29,13 +29,35 @@ only — it is not documented as a supported user option.
 
 **Implemented**: `fabrica.sandbox.select_sandbox_backend()` is the real
 auto-detection function `CivitasBridge.build()` calls by default. Real
-host detection today has exactly two outcomes, stated honestly rather
-than matching the full five-tier table below in the abstract:
-Firecracker (Tier 2) when Linux + real `/dev/kvm` + real
+host detection today has three outcomes, stated honestly rather than
+matching the full five-tier table below in the abstract: Firecracker
+(Tier 2) when Linux + real `/dev/kvm` + real
 `FABRICA_FC_BINARY`/`FABRICA_FC_KERNEL`/`FABRICA_FC_ROOTFS` artifacts are
-all present; `SubprocessSandbox` (Tier 0) otherwise. The hidden
-testing/CI override is `CivitasBridge`'s own `sandbox_backend`
+all present; `SrtSandbox` (Tier 1) when the real `srt` binary is on PATH
+and Firecracker wasn't selected; `SubprocessSandbox` (Tier 0) otherwise.
+The hidden testing/CI override is `CivitasBridge`'s own `sandbox_backend`
 constructor parameter — real deployments never pass it.
+
+**`SrtSandbox` note, added when this was implemented**: wraps `srt`
+(`@anthropic-ai/sandbox-runtime`) around the exact same guest-shim/ZMQ
+`ipc://` mechanism `SubprocessSandbox` already uses (shared in
+`_shim_runner.py`) — the OS-level restriction wraps the outside of an
+identical subprocess invocation, not a different execution model. Real,
+OS-enforced, allow-only network policy (`network.allowedDomains`, empty
+by default = deny all) closes a confirmed gap in Tier 0: its guest shim
+execs code with unrestricted Python builtins, so sandboxed code can
+`import socket` directly, bypassing the intended tool-call bridge
+entirely. Verified live on macOS (Seatbelt): an allowlisted domain
+resolves and connects, a non-allowlisted one gets a real proxy-level
+403. `srt` also documents Linux (bubblewrap+netns) and Windows (WFP)
+support — **not yet exercised on either**, stated honestly rather than
+assumed from the README. One asymmetry worth knowing: `srt`'s
+`allowUnixSockets` allowlist is path-based on macOS only ("ignored on
+Linux, seccomp cannot filter by path" per its own schema) — the guest
+shim's callback socket needs either a per-path allow (macOS) or the
+broader `allowAllUnixSockets` opt-in (Linux, a real, small isolation
+weakening: any Unix socket, not just this one), never silently
+defaulted.
 
 ## The tiers, per platform
 
@@ -45,7 +67,7 @@ it depends on the host OS, auto-detected and swapped in transparently.
 | Tier | Linux | macOS | Windows |
 |---|---|---|---|
 | 0 | subprocess / OS user — none → OS-level, ~0ms | *(same)* | *(same)* |
-| 1 | **gVisor** — user-space kernel, ~100ms | **`srt`** (Anthropic's Sandbox Runtime, built on `sandbox-exec`/Seatbelt) — real enforcement confirmed (write/network denial), **p50 152ms** ([SPIKE-macos-isolation-srt-libkrun.md](../specs/archive/spikes/SPIKE-macos-isolation-srt-libkrun.md)) | `srt` claims Windows support (`windows-install`: dedicated `srt-sandbox` user + WFP filters) — **untested, deferred**. Windows is a small segment; if `srt` works there, no further action needed. If a real gap surfaces, spike then. |
+| 1 | **gVisor** — user-space kernel, ~100ms — not implemented; `srt` (below) may cover this platform instead, since it also supports Linux via bubblewrap+netns, not yet exercised here | **`SrtSandbox` — implemented** (`contracts/sandbox.md`), wraps `srt` (Anthropic's Sandbox Runtime, `sandbox-exec`/Seatbelt) — real enforcement confirmed (write/read/network denial, allow-only network via `network.allowedDomains`), live-verified end to end including the guest-shim ZMQ callback bridge, **p50 152ms** ([SPIKE-macos-isolation-srt-libkrun.md](../specs/archive/spikes/SPIKE-macos-isolation-srt-libkrun.md)) | `srt` claims Windows support (`windows-install`: dedicated `srt-sandbox` user + WFP filters) via the same `SrtSandbox` implementation — **untested, deferred**. Windows is a small segment; if `srt` works there, no further action needed. If a real gap surfaces, spike then. |
 | 2 | **Firecracker** — microVM, own kernel (KVM). **Implemented** (`FirecrackerSandbox`, `contracts/sandbox.md`) -- real, cold-boot-only v1, validated end to end on real hardware including a real `vsock` tool-call round trip ([SPIKE-firecracker-vsock-callback-bridge.md](../specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)). Boot: **VMM-ready ~10.5ms**, **full-userspace-ready ~1,055ms with an unoptimized image** — these are different signals, not one number ([SPIKE-firecracker-boot-restore-latency.md](../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)). **Restore from snapshot: 8.1–10.7ms**, validated separately, not yet combined with the vsock bridge -- v1 always cold-boots. | **libkrun** (`Virtualization.framework`-based) — **cold-boot-only, permanently: no snapshot/restore support exists.** This is a structural ceiling, not a bug to fix. Accepted and shippable — snapshot/restore is valuable, not mandatory. | Hyper-V isolation / Windows Sandbox — real, hypervisor-backed, but seconds-to-minutes boot, not milliseconds. Not a near-term priority. |
 | 3 | **Kata Containers** — microVM in k8s, ~60–150ms | no direct equivalent (k8s-node-specific) | no direct equivalent |
 

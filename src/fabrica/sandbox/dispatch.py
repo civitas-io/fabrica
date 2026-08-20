@@ -16,6 +16,8 @@ from pathlib import Path
 
 from fabrica.sandbox.backend import Sandbox
 from fabrica.sandbox.firecracker_backend import FirecrackerSandbox
+from fabrica.sandbox.network_policy import NetworkPolicy
+from fabrica.sandbox.srt_backend import SrtSandbox, srt_available
 from fabrica.sandbox.subprocess_backend import SubprocessSandbox
 
 _FC_BINARY_ENV = "FABRICA_FC_BINARY"
@@ -23,10 +25,10 @@ _FC_KERNEL_ENV = "FABRICA_FC_KERNEL"
 _FC_ROOTFS_ENV = "FABRICA_FC_ROOTFS"
 
 
-def select_sandbox_backend() -> Sandbox:
+def select_sandbox_backend(network_policy: NetworkPolicy | None = None) -> Sandbox:
     """The best tier THIS host can prove it can run -- not the best tier
-    isolation.md's table describes in the abstract. Only two real
-    outcomes exist today, stated honestly:
+    isolation.md's table describes in the abstract. Three real outcomes
+    exist today, stated honestly:
 
     - FirecrackerSandbox (Tier 2), when ALL of: running on Linux, real
       KVM present (/dev/kvm exists), and real deployment-specific
@@ -38,13 +40,22 @@ def select_sandbox_backend() -> Sandbox:
       external dependency, not invented" shape as PresidiumClient's and
       Summarizer's constructor-injection, adapted for a factory function
       rather than a required injected object because a real, safe
-      fallback (Tier 0) exists when they're absent, unlike those two.
-    - SubprocessSandbox (Tier 0) otherwise -- covers macOS, Windows,
-      Linux without KVM, and Linux without the Firecracker artifacts
-      configured. Tier 1 (gVisor/srt) and macOS/Windows Tier 2
-      (libkrun/Hyper-V) remain unimplemented (contracts/sandbox.md),
-      so there is no third real outcome yet -- adding one later is
-      additive to this function, not a rework of it.
+      fallback exists when they're absent, unlike those two.
+    - SrtSandbox (Tier 1), when the `srt` binary is present on PATH and
+      Firecracker wasn't selected -- covers macOS and Linux-without-KVM
+      today (verified live on macOS only so far; srt documents Linux/
+      Windows support, not yet exercised here -- see srt_backend.py's
+      own honesty note). `network_policy` defaults to
+      NetworkPolicy() (empty allowlist = deny all network) if the
+      caller doesn't pass one -- a caller that forgets to pass a real
+      scope-derived policy gets a sandbox with NO network access at
+      all, never an accidentally-open one.
+    - SubprocessSandbox (Tier 0) otherwise -- the last resort when
+      neither Firecracker nor `srt` is available. Provides NO network
+      or filesystem isolation (see its own module docstring) --
+      selecting this path for anything a scope document must bound is
+      a real gap, not a acceptable degraded mode; callers should treat
+      Tier 0 selection here as a loud signal, not a quiet fallback.
     """
     if _firecracker_available():
         return FirecrackerSandbox(
@@ -52,6 +63,8 @@ def select_sandbox_backend() -> Sandbox:
             kernel_image_path=os.environ[_FC_KERNEL_ENV],
             base_rootfs_path=os.environ[_FC_ROOTFS_ENV],
         )
+    if srt_available():
+        return SrtSandbox(network_policy or NetworkPolicy())
     return SubprocessSandbox()
 
 

@@ -1,9 +1,11 @@
 """Tests for select_sandbox_backend() -- real platform dispatch, per
 docs/isolation.md. Deterministic: monkeypatches platform.system(),
-Path.exists(), and the FABRICA_FC_* env vars rather than depending on
-whatever this test machine actually has -- the real end-to-end proof
-that dispatch picks FirecrackerSandbox for real, on real Linux+KVM+
-Firecracker, lives in test_pool_with_firecracker.py / HANDOFF.md instead.
+Path.exists(), the FABRICA_FC_* env vars, and srt_available() rather than
+depending on whatever this test machine actually has -- the real
+end-to-end proof that dispatch picks FirecrackerSandbox for real, on real
+Linux+KVM+Firecracker, lives in test_pool_with_firecracker.py /
+HANDOFF.md instead; the real proof SrtSandbox actually enforces network
+restrictions lives in test_srt_backend.py.
 """
 
 from __future__ import annotations
@@ -13,7 +15,12 @@ from pathlib import Path
 
 import pytest
 
-from fabrica.sandbox import FirecrackerSandbox, SubprocessSandbox, select_sandbox_backend
+from fabrica.sandbox import (
+    FirecrackerSandbox,
+    SrtSandbox,
+    SubprocessSandbox,
+    select_sandbox_backend,
+)
 
 
 def _clear_fc_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -21,16 +28,41 @@ def _clear_fc_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(name, raising=False)
 
 
-def test_defaults_to_subprocess_sandbox_when_env_vars_absent(
+def _force_srt_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Real srt may or may not be installed on whatever machine runs this
+    # suite -- tests asserting a SubprocessSandbox fallback must not
+    # depend on that; tests asserting SrtSandbox selection do so via
+    # _force_srt_available below instead.
+    monkeypatch.setattr("fabrica.sandbox.dispatch.srt_available", lambda: False)
+
+
+def _force_srt_available(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("fabrica.sandbox.dispatch.srt_available", lambda: True)
+
+
+def test_defaults_to_subprocess_sandbox_when_env_vars_absent_and_no_srt(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _clear_fc_env(monkeypatch)
+    _force_srt_unavailable(monkeypatch)
     monkeypatch.setattr(platform, "system", lambda: "Linux")
     monkeypatch.setattr(Path, "exists", lambda self: True)  # even /dev/kvm "present"
 
     backend = select_sandbox_backend()
 
     assert isinstance(backend, SubprocessSandbox)
+
+
+def test_selects_srt_sandbox_on_macos_when_srt_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _clear_fc_env(monkeypatch)
+    _force_srt_available(monkeypatch)
+    monkeypatch.setattr(platform, "system", lambda: "Darwin")
+
+    backend = select_sandbox_backend()
+
+    assert isinstance(backend, SrtSandbox)
 
 
 def test_defaults_to_subprocess_sandbox_on_macos_even_with_full_env(
@@ -44,6 +76,7 @@ def test_defaults_to_subprocess_sandbox_on_macos_even_with_full_env(
     monkeypatch.setenv("FABRICA_FC_KERNEL", str(kernel))
     monkeypatch.setenv("FABRICA_FC_ROOTFS", str(rootfs))
     monkeypatch.setattr(platform, "system", lambda: "Darwin")
+    _force_srt_unavailable(monkeypatch)
 
     backend = select_sandbox_backend()
 
@@ -61,6 +94,7 @@ def test_defaults_to_subprocess_sandbox_on_linux_without_kvm(
     monkeypatch.setenv("FABRICA_FC_KERNEL", str(kernel))
     monkeypatch.setenv("FABRICA_FC_ROOTFS", str(rootfs))
     monkeypatch.setattr(platform, "system", lambda: "Linux")
+    _force_srt_unavailable(monkeypatch)
     real_exists = Path.exists
 
     def _fake_exists(self: Path) -> bool:
@@ -84,6 +118,7 @@ def test_defaults_to_subprocess_sandbox_when_configured_kernel_path_does_not_exi
     monkeypatch.setenv("FABRICA_FC_KERNEL", str(tmp_path / "no-such-kernel"))
     monkeypatch.setenv("FABRICA_FC_ROOTFS", str(rootfs))
     monkeypatch.setattr(platform, "system", lambda: "Linux")
+    _force_srt_unavailable(monkeypatch)
     real_exists = Path.exists
 
     def _fake_exists(self: Path) -> bool:
@@ -109,6 +144,7 @@ def test_selects_firecracker_sandbox_when_linux_kvm_and_real_artifacts_all_prese
     monkeypatch.setenv("FABRICA_FC_KERNEL", str(kernel))
     monkeypatch.setenv("FABRICA_FC_ROOTFS", str(rootfs))
     monkeypatch.setattr(platform, "system", lambda: "Linux")
+    _force_srt_unavailable(monkeypatch)
     real_exists = Path.exists
 
     def _fake_exists(self: Path) -> bool:

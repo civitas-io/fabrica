@@ -1,11 +1,15 @@
 """The Sandbox protocol -- see docs/contracts/sandbox.md.
 
 A single-tier backend. Implementations: SubprocessSandbox (Tier 0,
-implemented), FirecrackerSandbox (Tier 2, self-hosted, implemented --
-real vsock callback bridge, validated on real hardware, see
-SPIKE-firecracker-vsock-callback-bridge.md). GvisorSandbox / SrtSandbox
-(Tier 1) and LibkrunSandbox (Tier 2, macOS) remain not implemented. Never
-used directly outside Fabrica -- always wrapped by SandboxPool.
+implemented), SrtSandbox (Tier 1, implemented -- wraps `srt`, real
+OS-level network/filesystem enforcement, live-verified on macOS; Linux/
+Windows untested), FirecrackerSandbox (Tier 2, self-hosted, implemented
+-- real vsock callback bridge, validated on real hardware, see
+SPIKE-firecracker-vsock-callback-bridge.md). GvisorSandbox (Tier 1,
+Linux -- may be superseded by SrtSandbox once its own Linux support is
+verified, avoiding a second implementation) and LibkrunSandbox (Tier 2,
+macOS) remain not implemented. Never used directly outside Fabrica --
+always wrapped by SandboxPool.
 """
 
 from __future__ import annotations
