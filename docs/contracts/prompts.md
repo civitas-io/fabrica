@@ -233,6 +233,46 @@ this component performs on a consumer's behalf.
   whether prompt template access needs governance is unresolved
   (`prompts.md` open question 4), not silently assumed to be "no."
 
+## Real addition: `tracer` DI on `PromptManager`, closing a gap bigger than a missing attribute
+
+Until now, `PromptManager` emitted NOTHING -- not a missing attribute on
+an existing span, the whole component had no tracer integration at all,
+unlike every other manager (`system-design.md §7`'s own span table never
+listed it). Found and closed while extending the context-footprint
+metering dimension (`civitas-presidium-integration.md`) from
+`MemoryManager` to the rest of the system that returns content for a
+caller to put into a model's context.
+
+`PromptManager` now accepts an optional `tracer: fabrica.observability
+.Tracer | None = None` (defaults to `NullTracer()`, the same DI shape as
+everywhere else). `get()` emits `fabrica.prompt.get` with `prompt_name`,
+`version`, a real `cache_hit` boolean (mirroring `SandboxPool.acquire()`'s
+`warm_hit`), and `volume_bytes` (real content byte length -- the same
+dimension `MemoryManager.write()`/`search()` already emits, `0` when
+the name doesn't resolve to anything). `put()` emits `fabrica.prompt.put`
+with `prompt_name`, the assigned `version`, and `volume_bytes` of the
+content being written.
+
+**A real naming collision found immediately, not assumed safe**:
+`fabrica.observability.traced()`'s own second positional parameter is
+itself called `name` (the SPAN's name) -- passing the prompt's `name` as
+a keyword attribute (`name=name`) collides with it. Both spans use
+`prompt_name` instead, caught by a failing test on the very first attempt,
+not found by inspection alone.
+
+**A real, correct existing behavior surfaced while writing the test for
+it, not a bug**: calling `get(name)` (no `version`) immediately after
+`put(name, ...)` is a genuine cache MISS, not a hit -- `put()` only
+populates the cache entry for the SPECIFIC version it just wrote
+(`(name, version)`), and explicitly POPS `(name, None)`'s "latest" alias
+since latest just changed, rather than speculatively repopulating it.
+The first test written here assumed the opposite and failed, which is
+how this was caught.
+
+`CivitasBridge.build()` was found NOT wiring `tracer` through to
+`PromptManager` at all (it already did for `MemoryManager`) -- fixed
+alongside this addition, not a separate follow-up.
+
 ## Real addition, mirroring `memory.md`'s `PersistedMemoryStore`: `PersistedPromptStore`
 
 Same gap, same resolution shape: `PersistedPromptStore`

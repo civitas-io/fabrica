@@ -290,7 +290,7 @@ class CivitasBridge:
         memory = MemoryManager(
             InMemoryWorkingMemoryStore(), long_term_store, compactor, tracer=self._tracer
         )
-        prompts = PromptManager(prompt_store)
+        prompts = PromptManager(prompt_store, tracer=self._tracer)
 
         self._built = Fabrica(
             tools=tools, skills=skills, memory=memory, prompts=prompts, sandbox_pool=sandbox_pool

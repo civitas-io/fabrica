@@ -259,6 +259,17 @@ everywhere else. Real spans: `fabrica.tool.find`/`fabrica.skill.find`
 the real Civitas-Tracer finding that shaped this:
 [system-design.md §7](../system-design.md#7-observability-spans-this-system-emits).
 
+**Later addition**: `fabrica.tool.find`/`fabrica.skill.find` also carry
+`volume_bytes` -- real bytes of the returned `Indexable.description`
+fields, the context-footprint metering dimension
+(`civitas-presidium-integration.md`) extended here to match what
+`MemoryManager.write()`/`search()` and (later) `PromptManager.get()`/
+`put()` already emit. `description` specifically, not the whole
+`Indexable` object serialized -- it's the field `retriever/types.py`
+itself calls out as "the only field actually embedded/matched", the
+realistic proxy for what a caller actually renders into a model's
+context, not administrative metadata like `id`/`kind`/`eager`.
+
 ## Open items for implementation
 
 1. ~~Should `find()` on both managers accept a `kind` override...~~

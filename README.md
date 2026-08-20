@@ -37,11 +37,12 @@ keep the "Fabrica" name, only the package name differs.
 > currently ships everything, including `mcp`/`uvicorn`, as required
 > dependencies; **now a decided, deliberate deferral until closer to a real
 > release**, not an open question). **Real OTEL span emission is now
-> built** — all nine spans named in `system-design.md §7` are real, not a
-> log stand-in, closing what was the largest gap found. Credential
-> injection into `Sandbox` and real usage/budget metering remain unbuilt.
-> All tracked, in order, in [`docs/PLAN.md`](docs/PLAN.md), the active work
-> queue — not silently deferred.
+> built** — all ten spans named in `system-design.md §7` are real (originally
+> nine -- `PromptManager` gained `fabrica.prompt.get`/`fabrica.prompt.put`
+> afterward), not a log stand-in, closing what was the largest gap found.
+> Credential injection into `Sandbox` and real usage/budget metering are
+> both built too, all tracked, in order, in [`docs/PLAN.md`](docs/PLAN.md),
+> the active work queue — not silently deferred.
 
 ---
 
@@ -193,7 +194,7 @@ A reusable script builds the deployable rootfs image — see
   like **tessera**) inject secrets the sandbox can *use but never see*.
 - **Fabrica** is the neutral middle: it shapes and executes context, and
   emits the spans and audit events the other two consume — **real now, all
-  nine spans**: `fabrica.observability.Tracer`/`Span` are structural
+  ten spans**: `fabrica.observability.Tracer`/`Span` are structural
   Protocols matching `civitas.observability.tracer.Tracer`'s real, public
   shape exactly (a real finding: Civitas doesn't use OTEL's global
   provider registry, so this had to match its actual mechanism, not just

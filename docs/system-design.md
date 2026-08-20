@@ -217,7 +217,7 @@ something breaks. Six real decisions, one flagged as a real availability tradeof
 
 ## 7. Observability: spans this system emits
 
-**Implemented** -- all nine spans below are real (`src/fabrica/observability.py`,
+**Implemented** -- all ten spans below are real (`src/fabrica/observability.py`,
 `fabrica.observability.Tracer`/`Span`), not a design table waiting on
 implementation. Closes the largest gap found in
 [self-reflection-report.md §3.3](self-reflection-report.md): previously
@@ -226,14 +226,15 @@ of the nine.
 
 | Component | Span | Key attributes |
 |---|---|---|
-| `ToolManager` | `fabrica.tool.find` | query, kind, result_count, latency_ms |
+| `ToolManager` | `fabrica.tool.find` | query, kind, result_count, latency_ms, volume_bytes (real `Indexable.description` bytes returned -- the context-footprint dimension, added alongside `SkillManager`'s and `PromptManager`'s own) |
 | `ToolManager` | `fabrica.tool.code_mode.run` | agent_id, code_hash, duration_ms, tool_call_count |
-| `SkillManager` | `fabrica.skill.find` | query, result_count, latency_ms |
+| `SkillManager` | `fabrica.skill.find` | query, result_count, latency_ms, volume_bytes (same dimension as `ToolManager.find()`) |
 | `SkillManager` | `fabrica.skill.run` | agent_id, skill_name, duration_ms |
 | `SandboxPool` | `fabrica.sandbox.acquire` | tier, warm_hit, wait_ms |
 | `SandboxPool` | `fabrica.sandbox.run` | tier, duration_ms, cpu_seconds, exit_status |
 | `Retriever` | `fabrica.retriever.search` | backend, query, limit, top_rank |
 | `MemoryManager` | `fabrica.memory.write` / `fabrica.memory.search` | scope fields, backend, volume_bytes (real content byte length -- the usage/budget-metering dimension `civitas-presidium-integration.md` names) |
+| `PromptManager` | `fabrica.prompt.get` / `fabrica.prompt.put` | prompt_name, version, cache_hit (get only), volume_bytes (real content byte length -- the same dimension `MemoryManager` already emits; PromptManager previously emitted NOTHING at all, not just a missing attribute) |
 | `PresidiumClient` | `fabrica.presidium.check_grant` | decision, latency_ms |
 
 **A real, important finding while implementing this**: `civitas

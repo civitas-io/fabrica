@@ -8,6 +8,7 @@ from typing import Any
 
 import yaml
 
+from fabrica.observability import NullTracer, Tracer, traced
 from fabrica.prompts.errors import PromptParseError
 from fabrica.prompts.store import PromptStore
 from fabrica.prompts.types import PromptTemplate
@@ -28,18 +29,38 @@ class PromptManager:
     not an oversight.
     """
 
-    def __init__(self, store: PromptStore) -> None:
+    def __init__(self, store: PromptStore, *, tracer: Tracer | None = None) -> None:
         self._store = store
         self._cache: dict[tuple[str, int | None], PromptTemplate] = {}
+        # `tracer` emits `fabrica.prompt.get`/`fabrica.prompt.put` -- a real
+        # gap this class had until now (system-design.md §7's span table
+        # never listed PromptManager at all, unlike every other manager).
+        # Defaults to NullTracer(), a real no-op, matching the
+        # NullPresidiumClient/NullCompactor DI pattern used everywhere else.
+        self._tracer = tracer if tracer is not None else NullTracer()
 
     async def get(self, name: str, version: int | None = None) -> PromptTemplate | None:
-        key = (name, version)
-        if key in self._cache:
-            return self._cache[key]
-        template = await self._store.get(name, version)
-        if template is not None:
-            self._cache[key] = template
-        return template
+        # prompt_name, not name -- traced()'s own second positional
+        # parameter is itself called `name` (the span's own name), a real
+        # collision found immediately by mypy/a failing test, not assumed
+        # safe from the shared word alone.
+        with traced(self._tracer, "fabrica.prompt.get", prompt_name=name, version=version) as span:
+            key = (name, version)
+            cache_hit = key in self._cache
+            span.set_attribute("cache_hit", cache_hit)  # mirrors sandbox.acquire's warm_hit
+            template: PromptTemplate | None
+            if cache_hit:
+                template = self._cache[key]
+            else:
+                template = await self._store.get(name, version)
+                if template is not None:
+                    self._cache[key] = template
+            # Real context-footprint dimension (civitas-presidium-
+            # integration.md), same shape as MemoryManager.write()/
+            # search()'s volume_bytes -- content bytes of what a caller
+            # actually injects into a model's context, not an item count.
+            span.set_attribute("volume_bytes", len(template.content.encode()) if template else 0)
+            return template
 
     async def put(
         self,
@@ -50,16 +71,22 @@ class PromptManager:
         cacheable: bool = False,
         cache_boundary: int | None = None,
     ) -> PromptTemplate:
-        template = await self._store.put(
-            name,
-            content,
-            metadata=metadata,
-            cacheable=cacheable,
-            cache_boundary=cache_boundary,
-        )
-        self._cache.pop((name, None), None)  # "latest" just changed
-        self._cache[(name, template.version)] = template
-        return template
+        with traced(self._tracer, "fabrica.prompt.put", prompt_name=name) as span:
+            template = await self._store.put(
+                name,
+                content,
+                metadata=metadata,
+                cacheable=cacheable,
+                cache_boundary=cache_boundary,
+            )
+            self._cache.pop((name, None), None)  # "latest" just changed
+            self._cache[(name, template.version)] = template
+            span.set_attribute("version", template.version)
+            # Same dimension as get() -- a ledger rolling up prompt-storage
+            # consumption needs the actual content size, mirroring
+            # MemoryManager.write()'s identical reasoning.
+            span.set_attribute("volume_bytes", len(content.encode()))
+            return template
 
     async def list_versions(self, name: str) -> list[int]:
         return await self._store.list_versions(name)

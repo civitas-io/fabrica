@@ -70,8 +70,11 @@ servers) are both the opposite shape. Checked explicitly, not assumed — see
 
 Fabrica shapes and runs context. It does not run the process (Civitas) or decide
 permission (Presidium). It **emits** the spans and audit events those layers consume
-— **real now, all nine spans named in
-[system-design.md §7](system-design.md#7-observability-spans-this-system-emits)**,
+— **real now, all ten spans named in
+[system-design.md §7](system-design.md#7-observability-spans-this-system-emits)**
+(originally nine -- `PromptManager` gained its own `fabrica.prompt.get`/
+`fabrica.prompt.put` pair afterward, closing a gap where it emitted
+nothing at all, not just a missing attribute),
 closing what `self-reflection-report.md` §3.3 found was the largest gap
 between this doc's claim and the real code. Credential injection and real
 usage/budget metering remain unbuilt — see [`docs/PLAN.md`](PLAN.md).

@@ -106,6 +106,11 @@ async def test_tool_find_emits_a_nested_tool_find_and_retriever_search_span(
     assert find_span.attributes["query"] == "add two numbers"
     assert find_span.attributes["result_count"] == 1
     assert isinstance(find_span.attributes["latency_ms"], float)
+    # Real context-footprint dimension (civitas-presidium-integration.md) --
+    # same shape as memory.write()/search()'s volume_bytes, closing the
+    # gap this had until now: the real Indexable's description bytes, not
+    # just a result count.
+    assert find_span.attributes["volume_bytes"] == len(b"add two integers")
     assert find_span.ended is True
     # Real nesting, not two disconnected spans sharing a name prefix.
     assert search_span.trace_id == find_span.trace_id
@@ -289,5 +294,85 @@ async def test_memory_write_and_search_emit_real_spans_with_scope_attributes(
     assert write_span.attributes["volume_bytes"] == len(b"the sky is blue")
     assert search_span.attributes["result_count"] == 1
     assert search_span.attributes["volume_bytes"] == len(b"the sky is blue")
+
+    await fabrica.close()
+
+
+async def test_skill_find_emits_a_span_with_volume_bytes(
+    tracer: _RecordingTracer, tmp_path: Path
+) -> None:
+    # Same context-footprint dimension as tool.find -- see that test's own
+    # comment for the reasoning (description bytes, not a result count).
+    skill_dir = tmp_path / "greeter"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(
+        "---\nname: greeter\ndescription: greets someone\nscript: scripts/run.py\n---\n"
+    )
+    (skill_dir / "scripts").mkdir()
+    (skill_dir / "scripts" / "run.py").write_text("print('hi')")
+
+    fabrica = await CivitasBridge(allow_ungoverned=True, tracer=tracer).build()
+    await fabrica.skills.load(skill_dir)
+
+    await fabrica.skills.find("greet someone")
+
+    find_span = tracer.by_name("fabrica.skill.find")
+    assert find_span.attributes["result_count"] == 1
+    assert find_span.attributes["volume_bytes"] == len(b"greets someone")
+
+    await fabrica.close()
+
+
+async def test_prompt_get_and_put_emit_real_spans_with_volume_bytes(
+    tracer: _RecordingTracer,
+) -> None:
+    # The bigger gap this closes: PromptManager had NO span integration at
+    # all before this -- not just a missing attribute, the whole component
+    # emitted nothing (system-design.md §7's own table never listed it).
+    fabrica = await CivitasBridge(allow_ungoverned=True, tracer=tracer).build()
+
+    await fabrica.prompts.put("greeting", "Hello, friend!")
+    result = await fabrica.prompts.get("greeting")
+    assert result is not None
+
+    put_span = tracer.by_name("fabrica.prompt.put")
+    assert put_span.attributes["prompt_name"] == "greeting"
+    assert put_span.attributes["version"] == 1
+    assert put_span.attributes["volume_bytes"] == len(b"Hello, friend!")
+    assert put_span.ended is True
+
+    get_span = tracer.by_name("fabrica.prompt.get")
+    assert get_span.attributes["prompt_name"] == "greeting"
+    assert get_span.attributes["volume_bytes"] == len(b"Hello, friend!")
+    # A real, correct existing behavior, confirmed by this test failing
+    # first with the opposite assumption: put() only populates the
+    # SPECIFIC version's cache entry (name, 1), not (name, None)'s
+    # "latest" alias -- it explicitly POPS that key since "latest" just
+    # changed, rather than speculatively repopulating it. get(name) with
+    # no version is a real cache miss here, not a hit.
+    assert get_span.attributes["cache_hit"] is False
+    assert get_span.ended is True
+
+    # A second, IDENTICAL get() call must now genuinely hit -- the first
+    # call's own miss just populated this exact (name, version) key.
+    await fabrica.prompts.get("greeting")
+    second_get_span = tracer.spans[-1]
+    assert second_get_span.name == "fabrica.prompt.get"
+    assert second_get_span.attributes["cache_hit"] is True
+
+    await fabrica.close()
+
+
+async def test_prompt_get_reports_a_real_cache_miss_and_zero_volume_for_an_unknown_name(
+    tracer: _RecordingTracer,
+) -> None:
+    fabrica = await CivitasBridge(allow_ungoverned=True, tracer=tracer).build()
+
+    result = await fabrica.prompts.get("never-registered")
+    assert result is None
+
+    get_span = tracer.by_name("fabrica.prompt.get")
+    assert get_span.attributes["cache_hit"] is False
+    assert get_span.attributes["volume_bytes"] == 0
 
     await fabrica.close()

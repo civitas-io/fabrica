@@ -139,6 +139,13 @@ class SkillManager:
             )
             span.set_attribute("result_count", len(results))
             span.set_attribute("latency_ms", round((time.monotonic() - start) * 1000, 2))
+            # Same context-footprint dimension as ToolManager.find() --
+            # see its own comment for the reasoning (description-only,
+            # matching MemoryManager's precedent of measuring one
+            # designated content field, not a full serialized object).
+            span.set_attribute(
+                "volume_bytes", sum(len(m.item.description.encode()) for m in results)
+            )
             return results
 
     async def run(

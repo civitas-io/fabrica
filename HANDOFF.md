@@ -153,7 +153,10 @@ real code, not designs waiting on implementation:**
   now has a genuine Tier-2 answer to give it (`FirecrackerSandbox` via
   platform dispatch), not just an always-must-opt-out Tier-0-only world.
 - **Real, end-to-end observability** (`src/fabrica/observability.py`) —
-  all nine spans named in `system-design.md §7` are real, not the single
+  all ten spans named in `system-design.md §7` are real (originally nine
+  -- `PromptManager` gained its own `fabrica.prompt.get`/`fabrica.prompt
+  .put` pair afterward, closing a gap where it emitted nothing at all,
+  not just a missing attribute), not the single
   `logger.info` stand-in this project shipped with earlier. `Tracer`/
   `Span` are structural Protocols matching `civitas.observability.tracer
   .Tracer`'s real, public shape exactly — a real, load-bearing finding:

@@ -81,6 +81,16 @@ class ToolManager:
             )
             span.set_attribute("result_count", len(results))
             span.set_attribute("latency_ms", round((time.monotonic() - start) * 1000, 2))
+            # The context-footprint dimension civitas-presidium-integration.md
+            # names, closing the same gap MemoryManager.write()/search()
+            # already closed for memory content -- real bytes of
+            # `description`, Indexable's own "only field actually
+            # embedded/matched" (retriever/types.py), not a full
+            # serialized-object size that would overstate what a caller
+            # actually renders into a model's context.
+            span.set_attribute(
+                "volume_bytes", sum(len(m.item.description.encode()) for m in results)
+            )
             return results
 
     async def run_code(

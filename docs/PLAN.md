@@ -351,6 +351,50 @@ doc it's already named in — not repeated here.
 24. [ ] `TunnelProvider` concrete backends (Tailscale Funnel, Cloudflare
     Tunnel, ngrok) — Protocol designed, none implemented.
 
+### Added mid-session, not part of the original backlog -- costing/billing data
+
+User question after item 17 ("should we consider other costing
+parameters to track? This may help with billing and profit?") -- walked
+through directly rather than decided unilaterally, per this project's
+own established norm for market-positioning-relevant decisions. Landed
+scope: **Fabrica captures and emits real numbers; billing, pricing, and
+policy stay Presidium's job entirely** (`system-design.md §7`'s
+existing "Fabrica emits, Presidium/Civitas consumes" boundary,
+reaffirmed, not a new one invented for this).
+
+25. [x] Context-footprint metering (`civitas-presidium-integration.md`'s
+    usage/budget dimension) extended from `MemoryManager` (already real)
+    to `ToolManager.find()`/`SkillManager.find()` and `PromptManager`.
+    `fabrica.tool.find`/`fabrica.skill.find` gained `volume_bytes` (real
+    `Indexable.description` bytes returned -- the field `retriever
+    /types.py` itself calls "the only field actually embedded/matched",
+    not a full serialized object). `PromptManager` gained `tracer` DI
+    entirely -- a bigger gap than a missing attribute, since it emitted
+    NOTHING before this (`system-design.md §7`'s span table never listed
+    it at all): `fabrica.prompt.get`/`fabrica.prompt.put`, with
+    `volume_bytes`, a real `cache_hit` boolean (mirroring `SandboxPool
+    .acquire()`'s `warm_hit`), `prompt_name`, `version`.
+    **Two real things found while implementing, not assumed correct**:
+    (1) `traced()`'s own second positional parameter is itself called
+    `name` (the span's name) -- passing the prompt's `name` as a keyword
+    attribute collided with it, caught by mypy AND a failing test on the
+    first attempt, fixed by using `prompt_name` instead; (2) a genuinely
+    correct existing behavior, not a bug: `get(name)` right after
+    `put(name, ...)` is a real cache MISS, not a hit -- `put()` only
+    populates the specific version's cache entry, explicitly popping
+    `(name, None)`'s "latest" alias rather than repopulating it. Also
+    found and fixed: `CivitasBridge.build()` was wiring `tracer` through
+    to `MemoryManager` but NOT `PromptManager` -- fixed alongside this,
+    not a separate follow-up. 11 new tests across unit and integration
+    levels. **Deliberately NOT done in this pass, named as bigger,
+    separate work**: measuring `ToolNamespace.stubs()`'s own real context
+    footprint (needs a new `ToolManager` capability, not just an
+    instrumentation add -- `stubs()` isn't exposed through `ToolManager`
+    at all today); a real "tokens saved vs. a naive full-catalog dump"
+    number (needs a counterfactual baseline measurement in addition to
+    what's actually returned -- a real feature built on top of this,
+    not a rename of it).
+
 ### Blocked — not sequenced by complexity, simply not actionable right now
 
 - [ ] `PresidiumClient`'s real REST+mTLS client — no real Presidium HTTP
