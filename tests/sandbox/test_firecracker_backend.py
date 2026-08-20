@@ -267,6 +267,55 @@ async def test_execute_dns_resolution_also_has_no_path(backend: FirecrackerSandb
         await backend.terminate(handle)
 
 
+async def test_execute_reports_real_positive_cpu_seconds_for_a_cpu_bound_task(
+    backend: FirecrackerSandbox,
+) -> None:
+    """contracts/sandbox.md's own honestly-stated cpu_seconds=0.0 gap,
+    resolved: real, per-call CPU time measured from the host's own view
+    of the running firecracker process (/proc/<pid>/stat), not a
+    fabricated or copy-pasted number. A CPU-bound loop must show real,
+    non-trivial CPU time -- not just "greater than zero" (a rounding
+    artifact could satisfy that trivially), but close to the task's own
+    measured wall-clock duration, since a single-vCPU, single-threaded,
+    CPU-bound guest task should consume close to 1 CPU-second per
+    wall-clock second.
+    """
+    handle = await backend.boot_clean()
+    try:
+        code = "total = 0\nfor i in range(30_000_000):\n    total += i * i\nprint(total)\n"
+        result = await backend.execute(handle, code, on_tool_call=_no_tool_calls, timeout=30.0)
+
+        assert result.success is True, result.error_message
+        assert result.cpu_seconds > 0.5  # real hardware measured ~2.8s for this exact workload
+        # Within the same order of magnitude as wall-clock duration -- a
+        # single-vCPU CPU-bound task can't consume MORE CPU time than
+        # wall-clock time elapsed, with a little slack for measurement
+        # granularity (SC_CLK_TCK is commonly 100Hz, i.e. 10ms buckets).
+        assert result.cpu_seconds <= (result.duration_ms / 1000) + 0.5
+    finally:
+        await backend.terminate(handle)
+
+
+async def test_execute_reports_near_zero_cpu_seconds_for_a_trivial_task(
+    backend: FirecrackerSandbox,
+) -> None:
+    handle = await backend.boot_clean()
+    try:
+        result = await backend.execute(
+            handle, "print(1)", on_tool_call=_no_tool_calls, timeout=15.0
+        )
+
+        assert result.success is True, result.error_message
+        # Real hardware measured 0.000s for this exact workload -- a
+        # generous ceiling here, not a tight bound, since this is about
+        # proving "a trivial task doesn't report a large bogus number",
+        # not pinning an exact figure that real hardware variance could
+        # break.
+        assert result.cpu_seconds < 0.5
+    finally:
+        await backend.terminate(handle)
+
+
 async def test_boot_clean_raises_crashed_error_for_a_bad_kernel_path() -> None:
     backend = FirecrackerSandbox(
         firecracker_binary=_FC_BINARY,

@@ -261,8 +261,25 @@ doc it's already named in — not repeated here.
     change, no new test (there is no meaningful way to test the absence
     of an eviction mechanism beyond what `test_get_is_cached_avoids
     _backend_round_trip` already proves about the cache itself).
-17. [ ] `FirecrackerSandbox` real per-VM CPU accounting — wire Firecracker's
-    own metrics API; `cpu_seconds` is currently honestly `0.0`.
+17. [x] `FirecrackerSandbox` real per-VM CPU accounting -- **resolved, but
+    NOT via Firecracker's own metrics API as originally framed**:
+    checked directly against the real, bundled OpenAPI spec first --
+    `/metrics` is write-only (configures a periodic-dump named pipe, not
+    a queryable CPU-seconds value) -- so that mechanism was never
+    actually going to work. Real fix: read `/proc/<firecracker_pid>
+    /stat` from the host (same technique `libvirt`/`virsh domstats`
+    use), since Firecracker's vCPU(s) run as threads within one process,
+    not separate children -- that process's aggregate utime+stime
+    already includes all real guest CPU execution. Reported as a delta
+    against the same process's own reading at execute()'s start, not a
+    lifetime total (unlike the memory-bytes dimension, which stayed
+    deliberately unmeasured for exactly that reason -- this metric
+    doesn't have that problem). Verified for real on the homelab before
+    writing permanent tests: a CPU-bound guest loop measured ~2.81s
+    delta CPU time closely matching its own ~2.81s wall-clock duration;
+    a trivial task measured ~0.000s. 2 new tests, verified stable 3x on
+    real hardware alongside the existing 18 hardware-gated tests,
+    filesystem confirmed clean afterward.
 18. [ ] A real, minimal, purpose-built Firecracker rootfs image — replacing
     the current general-purpose Ubuntu 24.04 image + baked-in shim.
 

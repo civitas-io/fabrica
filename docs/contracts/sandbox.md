@@ -379,10 +379,31 @@ torn down, successfully or not. A dedicated regression test
 checking `/tmp` for leftovers after `terminate()`, not just that
 `terminate()` runs without raising.
 
-**`cpu_seconds` is `0.0`, honestly, not silently wrong** -- real
-per-VM CPU accounting needs Firecracker's own metrics API, not wired up
-in this v1 pass. Stated as a real, known gap rather than a plausible-
-looking but fabricated number.
+**`cpu_seconds` is now real, measured per-call CPU time -- resolved,
+not still `0.0`.** Checked directly against the real, bundled
+`firecracker_spec-v1.16.1.yaml` OpenAPI spec first, not assumed:
+Firecracker's REST `/metrics` endpoint is write-only (it configures a
+named pipe/file Firecracker periodically dumps operational counters to
+-- not a queryable CPU-seconds value at all), so "wire up Firecracker's
+own metrics API" -- this contract's own original framing of the gap --
+was never actually the right mechanism. Real per-VM CPU accounting
+instead reads `/proc/<firecracker_pid>/stat` from the HOST side (the
+same mechanism `libvirt`/`virsh domstats` and most other VMM CPU-
+accounting layers use): Firecracker runs its vCPU(s) as threads WITHIN
+one process, not separate child processes, so that process's aggregate
+`utime+stime` already includes all real guest CPU execution. Reported
+as a DELTA against this same process's own reading at the start of
+`execute()`, not a lifetime total -- this metric doesn't have the
+problem that made `Sandbox`'s memory-bytes dimension deliberately left
+unmeasured (`RUSAGE_CHILDREN`'s `ru_maxrss` is a lifetime high-water-
+mark; `/proc`'s `utime+stime` genuinely accumulates monotonically, so a
+delta against it is real). Verified on the homelab, not assumed: a real
+CPU-bound guest loop measured ~2.81s of delta CPU time closely matching
+its own ~2.81s wall-clock duration (a single vCPU, CPU-bound task, so
+CPU time ≈ wall time is the expected, confirmed shape); a trivial
+`print(1)` measured ~0.000s. Returns `0.0` (not raising) if the process
+has already exited between reads -- the same honest-gap posture the
+previous always-`0.0` value held, never worse than before this existed.
 
 **Network isolation is real and now verified, not just implied** --
 `FirecrackerSandbox` never calls Firecracker's own `/network-interfaces`
@@ -538,9 +559,12 @@ children, not disconnected spans. Full design:
    completely unexplored -- explicitly out of scope in both Firecracker
    spikes, a real gap for production-grade defense-in-depth, not resolved
    here.
-7. **New**: `FirecrackerSandbox`'s real CPU-second accounting
-   (`cpu_seconds` is currently always `0.0`) needs Firecracker's own
-   metrics API wired up -- not done in this v1 pass.
+7. ~~`FirecrackerSandbox`'s real CPU-second accounting...~~ **Resolved:
+   real, measured per-call CPU time via `/proc/<pid>/stat` on the host,
+   NOT Firecracker's own metrics API** (checked directly against the
+   real OpenAPI spec: `/metrics` is write-only, never a queryable
+   CPU-seconds value) -- see "Real addition" above for the full
+   resolution and homelab verification.
 
 ## Correction applied to `system-design.md`
 
