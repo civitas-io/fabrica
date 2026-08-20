@@ -268,10 +268,36 @@ doc it's already named in — not repeated here.
 
 ### Complex
 
-19. [ ] Tier 1 isolation backend (`gVisor`/`srt` on Linux) — the natural
-    next isolation milestone once `FabricaMCPServer(kind="http")` sees real
-    external traffic; not urgent otherwise since Tier 2 already clears the
-    bar Tier 1 would.
+19. [x] Tier 1 isolation backend — **done, via `srt`, not `gVisor`**
+    (`SrtSandbox`, e79f51e, done directly by the user in a parallel
+    session, reviewed and one real bug fixed afterward — see item 19a
+    below). Real, OS-level, default-deny network enforcement
+    (Seatbelt/bubblewrap+netns/WFP per platform), live-verified on macOS
+    (allowlisted domain reachable, non-allowlisted domain gets a real
+    proxy-level 403, `~/.ssh` read denied, guest-shim ZMQ bridge still
+    works through the restriction) — Linux/Windows untested, `srt`
+    documents support for both but neither exercised here, stated
+    honestly rather than assumed. One gVisor-shaped implementation
+    avoided entirely: `srt` also covers Linux (bubblewrap+netns), so a
+    second, separate Tier 1 backend for that platform is deferred until
+    `srt`'s own Linux support is verified, not built reflexively.
+19a. [x] Reviewed the SrtSandbox work end to end (user's own request,
+    "double check the srt work") and found one real, confirmed bug:
+    `SrtSandbox.__init__` allocates a `/tmp` directory shared across
+    every handle an instance ever produces, and `terminate()` (per-
+    handle) could never safely remove it — 460+ leaked directories
+    confirmed accumulated in `/tmp` from ordinary dev/test iteration
+    before the fix. Resolved: `Sandbox` gained a fourth lifecycle
+    method, `close()`, for backend-instance-level cleanup, documented on
+    the Protocol itself per the user's explicit request so future
+    backends pick up the rule by construction, not by rediscovering the
+    same leak. A second instance of the same bug class was found and
+    fixed across 7 more test call sites in the same pass
+    (`fabrica.close()` never called, harmless under Tier 0, a real leak
+    once dispatch could select `SrtSandbox`). Verified concretely: zero
+    leaked directories after 3 clean full-suite runs, where 460+ existed
+    before. Full detail: `docs/contracts/sandbox.md`'s own "Real
+    addition: `close()` on `Sandbox`" section, commit b11d484.
 20. [ ] `FirecrackerSandbox` snapshot/restore — combining an already-live
     `vsock` connection with snapshot restore is a genuinely unvalidated
     combination; needs its own spike before implementation.
