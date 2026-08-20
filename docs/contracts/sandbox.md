@@ -551,10 +551,23 @@ children, not disconnected spans. Full design:
 4. **New**: `FirecrackerSandbox`'s snapshot/restore support -- v1 always
    cold-boots; validating restore combined with an already-live vsock
    connection, then implementing it, is real, separate follow-on work.
-5. **New**: `FirecrackerSandbox` uses the existing, general-purpose Ubuntu
-   24.04 rootfs image (with the guest shim copied in) -- a real, minimal,
-   purpose-built rootfs/init (named as its own scope item since the very
-   first Firecracker spike) is still not built.
+5. ~~`FirecrackerSandbox` uses the existing, general-purpose Ubuntu
+   24.04 rootfs image...~~ **Resolved: a real, minimal, purpose-built
+   base image now exists** (`scripts/build_firecracker_minimal_base.sh`,
+   `scripts/firecracker-minimal-base.Dockerfile`) -- Ubuntu 24.04 +
+   `python3` only, no systemd, no other packages, built via a real
+   `docker build`/`export` + `mke2fs -t ext4 -d` (no new `sudo` scope
+   needed). Real, measured result on the homelab: apparent size 1.0G ->
+   300M, actual on-disk size 170M -> 60M, the per-instance rootfs copy
+   `boot_clean()` does for every sandbox instance dropped ~945ms ->
+   ~265ms (a real ~3.5x speedup, roughly proportional to file size).
+   Guest kernel boot time itself did not meaningfully change -- stated
+   honestly as a disk-footprint/copy-time win, not a boot-latency win.
+   Full detail, including a real dead end tried and rejected first (the
+   official `python:3.12-slim` Docker image installs Python at
+   `/usr/local/bin/`, not the fixed `/usr/bin/python3` this backend's
+   kernel boot args require -- confirmed via a real kernel panic on real
+   hardware, not assumed): `docs/deployment/firecracker-rootfs.md`.
 6. **New**: `jailer` (cgroups/namespaces/seccomp/chroot hardening) remains
    completely unexplored -- explicitly out of scope in both Firecracker
    spikes, a real gap for production-grade defense-in-depth, not resolved

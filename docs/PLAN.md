@@ -280,8 +280,50 @@ doc it's already named in — not repeated here.
     a trivial task measured ~0.000s. 2 new tests, verified stable 3x on
     real hardware alongside the existing 18 hardware-gated tests,
     filesystem confirmed clean afterward.
-18. [ ] A real, minimal, purpose-built Firecracker rootfs image — replacing
-    the current general-purpose Ubuntu 24.04 image + baked-in shim.
+18. [x] A real, minimal, purpose-built Firecracker rootfs image --
+    **done**, no new `sudo` scope needed. Ubuntu 24.04 + `python3` only
+    (no systemd, no other packages), built via a real `docker build`
+    /`export` + `mke2fs -t ext4 -d` (entirely userspace -- no mount, no
+    loop device, no root for the base-image-creation step itself; only
+    the existing, already-scoped mount/cp step for baking the guest
+    shim in afterward). New: `scripts/build_firecracker_minimal_base.sh`,
+    `scripts/firecracker-minimal-base.Dockerfile`.
+    **A real dead end tried and rejected first, not assumed correct**:
+    the obvious choice, the official `python:3.12-slim` Docker image,
+    installs Python at `/usr/local/bin/python3.12`, not the fixed
+    `/usr/bin/python3` `FirecrackerSandbox`'s kernel boot args require --
+    confirmed via a real kernel panic on real hardware (`Requested init
+    /usr/bin/python3 failed (error -2)`), not caught by inspection.
+    Plain `ubuntu:24.04` + `apt-get install python3` installs the
+    standard distro way instead, matching the fixed boot args with zero
+    code change.
+    **Real, measured result** (homelab, real KVM/Firecracker): apparent
+    image size 1.0G -> 300M; actual on-disk size 170M -> 60M; the
+    per-instance rootfs copy `boot_clean()` does for every sandbox
+    instance dropped from a consistent ~945-955ms to ~265-268ms (3 runs
+    each, same session/disk) -- ~3.5x faster, roughly proportional to
+    file size since `shutil.copyfile()` doesn't preserve sparseness.
+    End-to-end `boot_clean()` (fair back-to-back comparison, 3 runs
+    each): ~1910ms avg -> ~1205ms avg, a real ~37% reduction.
+    **Stated honestly, not oversold**: guest kernel BOOT TIME itself did
+    NOT meaningfully improve (dominated by kernel init/`devtmpfs`/Python
+    interpreter startup, not rootfs size) -- a real disk-footprint/copy-
+    time win, not a boot-latency win; the commonly-cited "~125ms boot"
+    figures likely need eliminating CPython's own interpreter-startup
+    cost as PID 1 entirely (a compiled/static init), separate, uncounted
+    work not done here.
+    Verified end to end on real hardware before any script/Dockerfile
+    existed: real stdlib imports (`re`/`hashlib`/`datetime`/`json`/
+    `base64`/`itertools`/`collections`/`math`/`random`/`uuid`/`urllib
+    .parse`), `/dev/null`/`/dev/urandom` both exist and are readable
+    (`devtmpfs` auto-mount, confirmed via console log, not assumed).
+    The full existing 16-test `test_firecracker_backend.py` suite (CPU
+    accounting, network isolation, timeout handling, the real tool-call
+    boundary crossing) then re-run against a base image built by the
+    FINAL script itself, not just the manual steps that found it first --
+    16/16 passed. Documented in `docs/deployment/firecracker-rootfs.md`
+    (new "Building a minimal base image" section with full numbers),
+    `docs/contracts/sandbox.md`, `docs/isolation.md`.
 
 ### Complex
 
