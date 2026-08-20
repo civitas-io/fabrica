@@ -14,7 +14,10 @@ by the command prefix wrapping the guest shim -- not two independently
 maintained copies. Tier 1 gVisor (Linux) remains not implemented
 separately; `srt`'s own Linux support (bubblewrap+netns) may cover that
 platform once verified, avoiding a second Tier 1 implementation
-entirely. · **Last updated:** 2026-08
+entirely. All three backends implement `close()` for backend-instance-
+level cleanup, distinct from `terminate()`'s per-handle scope -- see
+"Real addition: `close()` on `Sandbox`" below for the real, confirmed
+leak this closes. · **Last updated:** 2026-08
 **Supersedes:** the `Sandbox` sketch in [isolation.md](../isolation.md)
 **Depends on:** [system-design.md](../system-design.md) §1 (object model), §3
 (internal code-mode flow, the callback this contract implements), §6 (resilience
@@ -79,6 +82,12 @@ class Sandbox(Protocol):
         ...
 
     async def health_check(self) -> bool: ...
+
+    async def close(self) -> None:
+        """Tear down BACKEND-INSTANCE-level resources -- see "Real
+        addition: close() on Sandbox" below for the real leak this
+        exists to prevent and the rule for any new backend."""
+        ...
 ```
 
 ```python
@@ -374,6 +383,65 @@ checking `/tmp` for leftovers after `terminate()`, not just that
 per-VM CPU accounting needs Firecracker's own metrics API, not wired up
 in this v1 pass. Stated as a real, known gap rather than a plausible-
 looking but fabricated number.
+
+## Real addition: `close()` on `Sandbox` -- backend-instance-level cleanup, distinct from `terminate()`'s per-handle scope
+
+**A real, confirmed leak, found by reviewing `SrtSandbox` (Tier 1) after
+it was implemented, not a hypothetical one.** `SrtSandbox.__init__`
+allocates a directory under `/tmp` shared across every `SandboxHandle`
+that instance ever produces via `boot_clean()` (used to hold each
+handle's per-execution socket/settings files). `terminate()` correctly
+cleaned up the files inside it per handle -- but nothing anywhere ever
+removed the directory itself, since `SandboxPool.close()` at the time
+only called `terminate()` per warm handle. Confirmed by inspecting
+`/tmp` directly, not assumed: hundreds of empty, never-reclaimed
+directories had already accumulated purely from normal dev/test
+iteration before this was caught.
+
+**Why this couldn't be fixed inside `terminate()` itself**: the leaked
+directory is scoped to the BACKEND INSTANCE, not to any one handle --
+`SandboxPool` calls `boot_clean()` repeatedly against the same backend
+to refill its warm pool, so multiple live handles can share one
+instance's directory at any given time. Removing it inside `terminate()`
+(which runs per handle, on every `release()`, while sibling handles from
+the same instance may still be warm and in active use) would be unsafe.
+The directory's cleanup genuinely belongs at backend-INSTANCE lifecycle
+end -- which, before this fix, nothing in the `Sandbox` Protocol ever
+represented at all.
+
+**Resolved**: `Sandbox` gained a fourth lifecycle method, `close()`,
+called exactly once by `SandboxPool.close()`, AFTER every warm handle is
+already terminated -- so by the time it runs, no handle from that
+instance is still live. `SubprocessSandbox`/`FirecrackerSandbox` both
+implement it as a genuine no-op (verified, not assumed: neither
+allocates anything beyond a reference to a shared, externally-owned
+directory -- every real resource either one owns is already per-handle
+and already torn down by `terminate()`). `SrtSandbox.close()` is the
+real fix: `shutil.rmtree(self._socket_dir, ignore_errors=True)`.
+
+**The rule for any NEW `Sandbox` backend, stated here so it's picked up
+by construction, not rediscovered by the next leak**: if `__init__`
+allocates anything beyond reading configuration -- a directory, an open
+connection, a subprocess, a temp file -- that is not scoped to one
+`SandboxHandle`, that resource's teardown belongs in `close()`, not
+`terminate()`. `close()` must be safe to call even if the backend was
+constructed and closed without `boot_clean()`/`execute()` ever being
+called, and safe to call more than once.
+
+A second, related class of the same bug was found and fixed across the
+test suite while verifying this fix, not just in `SrtSandbox` itself:
+most of `CivitasBridge(...).build()`'s call sites in this project's own
+tests never called `fabrica.close()` at all, which was harmless by
+accident under Tier 0 (`SubprocessSandbox`, nothing instance-level to
+leak) but became a real leak the moment real platform dispatch could
+select `SrtSandbox` on a host that has `srt` on PATH -- confirmed
+directly (460+ leaked directories from ordinary dev/test iteration
+before any of these were fixed). Fixed by either pinning
+`sandbox_backend=SubprocessSandbox()` for tests that don't care about
+sandbox tier at all (matching a pattern this project's own `SrtSandbox`
+implementation had already established for exactly this class of test
+fragility), or adding a missing `fabrica.close()`/`backend.close()` call
+where real dispatch is genuinely the point of the test.
 
 ## Real addition: `tracer` DI and `trace_id`/`parent_span_id` on `acquire()`/`run()`
 

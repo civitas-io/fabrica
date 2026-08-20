@@ -26,6 +26,7 @@ class _FakeBackend:
     def __init__(self, tier: int = 0) -> None:
         self.boot_count = 0
         self.terminated: list[str] = []
+        self.closed = False
         self._tier = tier
         self.last_tool_call_timeout: float | None = None
 
@@ -54,6 +55,9 @@ class _FakeBackend:
 
     async def health_check(self) -> bool:
         return True
+
+    async def close(self) -> None:
+        self.closed = True
 
 
 async def _unused(tool: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -193,6 +197,23 @@ async def test_close_waits_for_an_in_flight_refill_before_draining() -> None:
     # terminated -- nothing left dangling because close() raced ahead of
     # the in-flight boot_clean().
     assert sorted(backend.terminated) == ["h1", "h2"]
+
+
+async def test_close_also_closes_the_backend() -> None:
+    # The real gap this closes: SandboxPool.close() used to only call
+    # terminate() per warm handle -- nothing ever released a backend's
+    # own instance-level resources (found against a real SrtSandbox,
+    # which allocates a directory in __init__ that terminate() never
+    # touches). backend.close() must run, and only AFTER every handle is
+    # already terminated.
+    backend = _FakeBackend()
+    pool = SandboxPool(backend, warm_size=2, max_concurrent=5)
+    await pool.prewarm()
+
+    await pool.close()
+
+    assert backend.closed is True
+    assert sorted(backend.terminated) == ["h1", "h2"]  # already drained before close() ran
 
 
 async def test_warm_count_reflects_prewarm_and_close() -> None:

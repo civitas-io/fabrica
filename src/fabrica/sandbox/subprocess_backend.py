@@ -82,3 +82,10 @@ class SubprocessSandbox:
 
     async def health_check(self) -> bool:
         return (Path(__file__).parent / "_guest_shim.py").exists()
+
+    async def close(self) -> None:
+        """A genuine no-op: __init__ allocates nothing beyond a reference
+        to a shared, externally-owned directory (self._socket_dir, which
+        defaults to plain "/tmp" itself) -- there is no instance-level
+        resource of this backend's own to release. See Sandbox.close()'s
+        own docstring for why this method exists at all."""

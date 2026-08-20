@@ -22,7 +22,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamable_http_client
 
-from fabrica.civitas_bridge import CivitasBridge
+from fabrica.civitas_bridge import CivitasBridge, Fabrica
 from fabrica.mcp.server import FabricaMCPServer, ServerTransportConfig, _to_content
 
 _SERVER_ARGS = ["-m", "tests.mcp.fixtures.fabrica_stdio_server"]
@@ -170,7 +170,15 @@ class TestConstruction:
         assert server is not None
 
     async def test_weak_isolation_allowed_with_explicit_opt_in(self) -> None:
-        fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        from fabrica.sandbox import SubprocessSandbox
+
+        # Pinned explicitly -- this test's whole point is proving the
+        # opt-in bypasses the check regardless of tier, not exercising
+        # real dispatch (which would otherwise construct, and leak absent
+        # a close(), whatever backend this host's real dispatch picks).
+        fabrica = await CivitasBridge(
+            allow_ungoverned=True, sandbox_backend=SubprocessSandbox()
+        ).build()
         # Must not raise.
         FabricaMCPServer(
             fabrica,
@@ -219,16 +227,26 @@ class _RunningHttpServer:
     def __init__(self) -> None:
         self._server: FabricaMCPServer | None = None
         self._task: asyncio.Task[None] | None = None
+        self._fabrica: Fabrica | None = None
 
     async def __aenter__(self) -> FabricaMCPServer:
-        fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        from fabrica.sandbox import SubprocessSandbox
+
+        # Pinned explicitly, not real dispatch -- what's under test here
+        # is the HTTP transport/auth flow, not sandbox tier; real dispatch
+        # would otherwise construct (and leak, absent a fabrica.close()
+        # this fixture didn't used to call at all) whatever backend this
+        # host picks, e.g. a real SrtSandbox.
+        fabrica = await CivitasBridge(
+            allow_ungoverned=True, sandbox_backend=SubprocessSandbox()
+        ).build()
+        self._fabrica = fabrica
         transport = ServerTransportConfig(
             kind="http", host=_HTTP_HOST, port=_HTTP_PORT, authenticator=_FixedTokenAuthenticator()
         )
         # allow_weak_isolation_for_external_callers=True: honest, not a
-        # workaround -- CivitasBridge.build() only ever constructs a
-        # SubprocessSandbox (Tier 0) today, and this fixture genuinely IS
-        # exposing it to an external caller over real HTTP.
+        # workaround -- this fixture genuinely IS exposing a Tier 0
+        # backend to an external caller over real HTTP.
         self._server = FabricaMCPServer(
             fabrica, transport, allow_weak_isolation_for_external_callers=True
         )
@@ -237,9 +255,10 @@ class _RunningHttpServer:
         return self._server
 
     async def __aexit__(self, *exc: object) -> None:
-        assert self._server is not None and self._task is not None
+        assert self._server is not None and self._task is not None and self._fabrica is not None
         await self._server.stop()
         await self._task
+        await self._fabrica.close()
 
 
 def _http_client(token: str | None) -> httpx2.AsyncClient:

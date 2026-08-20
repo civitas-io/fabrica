@@ -152,3 +152,15 @@ class SrtSandbox:
 
     async def health_check(self) -> bool:
         return srt_available() and (Path(__file__).parent / "_guest_shim.py").exists()
+
+    async def close(self) -> None:
+        """Removes self._socket_dir -- the one real instance-level
+        resource this backend allocates in __init__, shared across every
+        handle boot_clean() has ever produced from this instance.
+        terminate() only ever cleaned up per-handle files inside this
+        directory, never the directory itself; ignore_errors=True makes
+        this safe to call even if the directory was already removed, or
+        never populated (a backend constructed and closed without ever
+        being used) -- see Sandbox.close()'s own docstring for the real,
+        confirmed leak this fixes."""
+        shutil.rmtree(self._socket_dir, ignore_errors=True)

@@ -63,9 +63,49 @@ class Sandbox(Protocol):
         ...
 
     async def terminate(self, handle: SandboxHandle) -> None:
-        """Tear down an instance permanently. Called by SandboxPool on
-        every release() -- never on a path that reuses the handle.
+        """Tear down a single SandboxHandle permanently. Called by
+        SandboxPool on every release() -- never on a path that reuses the
+        handle.
         """
         ...
 
     async def health_check(self) -> bool: ...
+
+    async def close(self) -> None:
+        """Tear down BACKEND-INSTANCE-level resources -- anything this
+        object allocated once, in `__init__` or lazily on first use, and
+        shares across every handle it has ever produced via `boot_clean()`.
+        Distinct from `terminate()`, which is scoped to a single handle:
+        `terminate()` runs on every `release()` while OTHER handles from
+        the same backend instance may still be warm and in active use, so
+        it is the wrong place to tear down anything shared. `close()` runs
+        exactly once, at deployment shutdown, called by SandboxPool.close()
+        after every warm handle has already been drained and terminated --
+        by the time this runs, no handle from this instance is still live.
+
+        A real, confirmed bug this exists to prevent, not a hypothetical:
+        an early SrtSandbox (Tier 1) implementation created a fresh
+        directory under `/tmp` per BACKEND INSTANCE (`__init__`), used to
+        hold every handle's per-execution socket/settings files, and
+        implemented `terminate()` to clean up only those per-handle files
+        -- correct for `terminate()`'s own scope, but nothing anywhere
+        ever removed the instance-level directory itself, since
+        `SandboxPool.close()` at the time only called `terminate()` per
+        handle. Confirmed by inspecting `/tmp` directly: hundreds of
+        empty, never-reclaimed directories had already accumulated purely
+        from normal dev/test iteration -- a real, silently-growing leak,
+        not a theoretical one.
+
+        Most backends have nothing instance-level to release and should
+        implement this as a genuine no-op (`SubprocessSandbox`,
+        `FirecrackerSandbox` -- both write directly into a shared,
+        externally-owned directory rather than allocating one of their
+        own). The rule for any NEW backend: if `__init__` allocates
+        anything beyond reading configuration (a directory, an open
+        connection, a subprocess, a temp file) that is not scoped to one
+        `SandboxHandle`, that resource's teardown belongs here, not in
+        `terminate()` -- and it must be safe to call even if no handle was
+        ever produced (a backend constructed and then closed without ever
+        being used).
+        """
+        ...

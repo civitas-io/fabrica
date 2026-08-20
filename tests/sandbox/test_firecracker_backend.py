@@ -61,6 +61,12 @@ async def test_health_check_true_when_artifacts_present(backend: FirecrackerSand
     assert await backend.health_check() is True
 
 
+async def test_close_is_a_safe_no_op(backend: FirecrackerSandbox) -> None:
+    # Tier 2 allocates no instance-level resource of its own -- every real
+    # resource is per-instance-id and already torn down by terminate().
+    await backend.close()  # must not raise
+
+
 async def test_health_check_false_when_kernel_missing() -> None:
     backend = FirecrackerSandbox(
         firecracker_binary=_FC_BINARY,

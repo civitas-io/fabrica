@@ -27,6 +27,7 @@ from fabrica.memory.types import MemoryItem
 from fabrica.memory.types import Message as FabricaMessage
 from fabrica.presidium import GrantResult
 from fabrica.prompts import PromptManager
+from fabrica.sandbox import SubprocessSandbox
 from fabrica.scope import Scope
 
 
@@ -122,7 +123,16 @@ class TestSandboxDispatch:
         # meaningful if run on a real Firecracker-capable machine.
         from fabrica.sandbox import select_sandbox_backend
 
-        assert fabrica.tools.tier == select_sandbox_backend().tier
+        reference_backend = select_sandbox_backend()
+        try:
+            assert fabrica.tools.tier == reference_backend.tier
+        finally:
+            # This second backend is real (e.g. a real SrtSandbox, which
+            # allocates a real instance-level directory in __init__) and
+            # exists only for this comparison -- must close() it, not just
+            # read .tier and discard it.
+            await reference_backend.close()
+            await fabrica.close()
 
     async def test_explicit_sandbox_backend_override_is_used_verbatim(self) -> None:
         from fabrica.sandbox import RunResult, SandboxHandle, ToolCallCallback
@@ -149,6 +159,9 @@ class TestSandboxDispatch:
             async def health_check(self) -> bool:
                 return True
 
+            async def close(self) -> None:
+                return None
+
         bridge = CivitasBridge(allow_ungoverned=True, sandbox_backend=_FakeTier2Backend())
         fabrica = await bridge.build()
 
@@ -158,7 +171,7 @@ class TestSandboxDispatch:
 
 class TestBuild:
     async def test_returns_fabrica_with_all_four_managers(self) -> None:
-        bridge = CivitasBridge(allow_ungoverned=True)
+        bridge = CivitasBridge(allow_ungoverned=True, sandbox_backend=SubprocessSandbox())
         fabrica = await bridge.build()
         assert isinstance(fabrica, Fabrica)
         assert isinstance(fabrica.tools, ToolManager)
@@ -182,7 +195,12 @@ class TestBuild:
         assert fabrica.sandbox_pool.warm_count == 0
 
     async def test_no_summarizer_wires_null_compactor(self) -> None:
-        fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        # Explicit Tier 0: this test doesn't exercise the sandbox at all --
+        # avoids constructing (and leaking, absent an explicit close()) a
+        # real backend (e.g. SrtSandbox) purely as a side effect of build().
+        fabrica = await CivitasBridge(
+            allow_ungoverned=True, sandbox_backend=SubprocessSandbox()
+        ).build()
         # NullCompactor raises on the first real compact() call --
         # RecencyCompactor would not, proving which one got wired in
         # without reaching into MemoryManager's private state.
@@ -192,7 +210,11 @@ class TestBuild:
             await fabrica.memory.compact([], budget_tokens=100)
 
     async def test_summarizer_wires_recency_compactor(self) -> None:
-        bridge = CivitasBridge(allow_ungoverned=True, summarizer=_FakeSummarizer())
+        bridge = CivitasBridge(
+            allow_ungoverned=True,
+            summarizer=_FakeSummarizer(),
+            sandbox_backend=SubprocessSandbox(),
+        )
         fabrica = await bridge.build()
         result = await fabrica.memory.compact([], budget_tokens=100)
         # RecencyCompactor handles the empty-history case without raising --
@@ -200,7 +222,9 @@ class TestBuild:
         assert result is not None
 
     async def test_no_presidium_client_wires_null_presidium_client_that_allows(self) -> None:
-        fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        fabrica = await CivitasBridge(
+            allow_ungoverned=True, sandbox_backend=SubprocessSandbox()
+        ).build()
         code = "result = 1 + 1"
         run_result = await fabrica.tools.run_code(
             code, agent_id="agent-1", scope=Scope(agent_id="agent-1")
@@ -213,7 +237,9 @@ class TestBuild:
     async def test_real_presidium_client_that_denies_blocks_run_code(self) -> None:
         from fabrica.managers import GrantDeniedError
 
-        fabrica = await CivitasBridge(presidium_client=_DenyingPresidiumClient()).build()
+        fabrica = await CivitasBridge(
+            presidium_client=_DenyingPresidiumClient(), sandbox_backend=SubprocessSandbox()
+        ).build()
         with pytest.raises(GrantDeniedError):
             await fabrica.tools.run_code(
                 "result = 1", agent_id="agent-1", scope=Scope(agent_id="agent-1")
@@ -227,7 +253,7 @@ class TestBuild:
         # earlier version of this test that documented the opposite as
         # "the actual current behavior" back when this was genuinely
         # undecided.
-        bridge = CivitasBridge(allow_ungoverned=True)
+        bridge = CivitasBridge(allow_ungoverned=True, sandbox_backend=SubprocessSandbox())
         first = await bridge.build()
         second = await bridge.build()
         assert first is second
@@ -251,6 +277,12 @@ class TestServiceModePersistence:
             civitas_runtime=runtime,
             civitas_state_store=state_store,
             dynamic_supervisor_name="dyn",
+            # Tier is irrelevant to what this class tests (state
+            # persistence) -- pinned explicitly so build() doesn't
+            # construct (and leak, absent a close()) a real backend like
+            # SrtSandbox purely as a side effect neither test here cares
+            # about.
+            sandbox_backend=SubprocessSandbox(),
         )
 
     async def test_memory_written_in_one_build_survives_a_second_build_over_the_same_store(
@@ -294,10 +326,14 @@ class TestServiceModePersistence:
     async def test_library_mode_never_persists_across_separate_builds(self) -> None:
         # Contrast case -- proves library mode's in-memory defaults are
         # NOT accidentally shared/persisted anywhere, unlike service mode.
-        first_fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        first_fabrica = await CivitasBridge(
+            allow_ungoverned=True, sandbox_backend=SubprocessSandbox()
+        ).build()
         await first_fabrica.memory.write(Scope(agent_id="a1"), MemoryItem(id=None, content="x"))
 
-        second_fabrica = await CivitasBridge(allow_ungoverned=True).build()
+        second_fabrica = await CivitasBridge(
+            allow_ungoverned=True, sandbox_backend=SubprocessSandbox()
+        ).build()
         results = await second_fabrica.memory.search(Scope(agent_id="a1"), "x")
         assert results == []
 

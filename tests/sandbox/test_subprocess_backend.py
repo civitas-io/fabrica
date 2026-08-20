@@ -204,3 +204,9 @@ async def test_terminate_is_safe_to_call(backend: SubprocessSandbox) -> None:
 
 async def test_health_check_true_when_shim_present(backend: SubprocessSandbox) -> None:
     assert await backend.health_check() is True
+
+
+async def test_close_is_a_safe_no_op(backend: SubprocessSandbox) -> None:
+    # Tier 0 allocates no instance-level resource of its own -- must not
+    # raise, and must not touch the shared socket directory it doesn't own.
+    await backend.close()  # must not raise

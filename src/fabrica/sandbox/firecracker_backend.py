@@ -424,3 +424,11 @@ class FirecrackerSandbox:
             and Path(self._kernel_image_path).exists()
             and Path(self._base_rootfs_path).exists()
         )
+
+    async def close(self) -> None:
+        """A genuine no-op: __init__ allocates nothing beyond a reference
+        to a shared, externally-owned directory (self._socket_dir, which
+        defaults to plain "/tmp" itself) -- every real resource this
+        backend owns (rootfs copy, sockets, console log, the running
+        process) is per-instance-id and already torn down by terminate().
+        See Sandbox.close()'s own docstring for why this method exists."""

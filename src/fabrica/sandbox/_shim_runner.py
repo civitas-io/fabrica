@@ -178,9 +178,7 @@ async def run_shimmed_subprocess(
 
     end_cpu = resource.getrusage(resource.RUSAGE_CHILDREN)
     duration_ms = (time.monotonic() - start_time) * 1000
-    cpu_seconds = (end_cpu.ru_utime - start_cpu.ru_utime) + (
-        end_cpu.ru_stime - start_cpu.ru_stime
-    )
+    cpu_seconds = (end_cpu.ru_utime - start_cpu.ru_utime) + (end_cpu.ru_stime - start_cpu.ru_stime)
 
     trailer = _parse_trailer(stderr_bytes)
     if trailer is None:

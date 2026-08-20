@@ -23,8 +23,9 @@ import mcp.types as types
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
-from fabrica.civitas_bridge import CivitasBridge
+from fabrica.civitas_bridge import CivitasBridge, Fabrica
 from fabrica.mcp.server import FabricaMCPServer, ServerTransportConfig
+from fabrica.sandbox import SubprocessSandbox
 
 _HTTP_HOST = "127.0.0.1"
 _HTTP_PORT = 8932  # distinct from test_server.py's 8931 -- avoids any port reuse race
@@ -55,11 +56,23 @@ class _RunningHttpServer:
         self._port = port
         self._server: FabricaMCPServer | None = None
         self._task: asyncio.Task[None] | None = None
+        self._fabrica: Fabrica | None = None
 
     async def __aenter__(self) -> FabricaMCPServer:
+        # Pinned explicitly, not real dispatch -- this file's own module
+        # docstring claims "REAL SubprocessSandbox executions", which real
+        # dispatch alone no longer guarantees now that SrtSandbox (Tier 1)
+        # exists and this host has srt on PATH; pinning makes that claim
+        # true again, and avoids leaking a real backend (e.g. SrtSandbox's
+        # own instance-level directory) that a missing fabrica.close()
+        # never released either.
         fabrica = await CivitasBridge(
-            allow_ungoverned=True, warm_size=self._warm_size, max_concurrent=self._max_concurrent
+            allow_ungoverned=True,
+            warm_size=self._warm_size,
+            max_concurrent=self._max_concurrent,
+            sandbox_backend=SubprocessSandbox(),
         ).build()
+        self._fabrica = fabrica
         transport = ServerTransportConfig(
             kind="http",
             host=_HTTP_HOST,
@@ -74,9 +87,10 @@ class _RunningHttpServer:
         return self._server
 
     async def __aexit__(self, *exc: object) -> None:
-        assert self._server is not None and self._task is not None
+        assert self._server is not None and self._task is not None and self._fabrica is not None
         await self._server.stop()
         await self._task
+        await self._fabrica.close()
 
 
 async def _call_tool_as_agent(

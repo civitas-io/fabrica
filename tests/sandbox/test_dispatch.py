@@ -53,7 +53,7 @@ def test_defaults_to_subprocess_sandbox_when_env_vars_absent_and_no_srt(
     assert isinstance(backend, SubprocessSandbox)
 
 
-def test_selects_srt_sandbox_on_macos_when_srt_available(
+async def test_selects_srt_sandbox_on_macos_when_srt_available(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _clear_fc_env(monkeypatch)
@@ -61,8 +61,13 @@ def test_selects_srt_sandbox_on_macos_when_srt_available(
     monkeypatch.setattr(platform, "system", lambda: "Darwin")
 
     backend = select_sandbox_backend()
-
-    assert isinstance(backend, SrtSandbox)
+    try:
+        assert isinstance(backend, SrtSandbox)
+    finally:
+        # A real SrtSandbox allocates a real instance-level directory in
+        # __init__ -- must close() it, not just isinstance()-check it and
+        # walk away, matching Sandbox.close()'s own real leak history.
+        await backend.close()
 
 
 def test_defaults_to_subprocess_sandbox_on_macos_even_with_full_env(

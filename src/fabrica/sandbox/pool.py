@@ -224,15 +224,22 @@ class SandboxPool:
                 await self._backend.terminate(fresh)
 
     async def close(self) -> None:
-        """Terminate every instance still resident in the warm pool.
-        Must be called once at deployment shutdown -- see
-        docs/contracts/sandbox.md for the real gap this closes (found by
-        inspecting the filesystem after real FirecrackerSandbox test
-        runs: warm-pool instances were never terminated at all).
+        """Terminate every instance still resident in the warm pool, THEN
+        close the backend itself. Must be called once at deployment
+        shutdown -- see docs/contracts/sandbox.md for the real gaps this
+        closes: warm-pool instances used to never be terminated at all
+        (found by inspecting the filesystem after real FirecrackerSandbox
+        test runs), and backend-instance-level resources (e.g.
+        SrtSandbox's own per-instance tmp directory) used to never be
+        released at all, since nothing called anything beyond
+        terminate() per handle (found the same way, against SrtSandbox).
 
         Waits for any in-flight background refill task FIRST, so a
         refill that completes mid-close doesn't add one more instance
-        to the warm list after it's already been drained.
+        to the warm list after it's already been drained. backend.close()
+        runs LAST, after every handle from this backend is confirmed
+        terminated -- matches Sandbox.close()'s own contract that no
+        handle from the instance may still be live when it runs.
         """
         pending = list(self._refill_tasks)
         if pending:
@@ -243,3 +250,5 @@ class SandboxPool:
 
         for handle in handles:
             await self._backend.terminate(handle)
+
+        await self._backend.close()
