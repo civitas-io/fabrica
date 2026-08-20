@@ -384,6 +384,30 @@ per-VM CPU accounting needs Firecracker's own metrics API, not wired up
 in this v1 pass. Stated as a real, known gap rather than a plausible-
 looking but fabricated number.
 
+**Network isolation is real and now verified, not just implied** --
+`FirecrackerSandbox` never calls Firecracker's own `/network-interfaces`
+API (confirmed by inspecting `boot_clean()`'s actual REST calls: only
+`/boot-source`, `/drives/rootfs`, `/machine-config`, `/actions`), so the
+guest boots with NO network device at all -- not a policy-filtered one,
+a genuinely absent one. This was always the design intent
+(`isolation.md`: `vsock` "without exposing IP networking"), but until
+verified for real on the homelab (`kodiak@darkenergy`, real KVM), it was
+an implication of the code's omissions, not a tested guarantee --
+exactly the gap named when `SrtSandbox`'s own network denial was
+reviewed and found to have real tests where this had none.
+
+Verified two ways, both against a real booted microVM, not assumed:
+a raw `socket.create_connection` to `8.8.8.8:53` fails immediately with
+`OSError: [Errno 101] Network is unreachable`; `socket.gethostbyname
+('example.com')` fails immediately with `socket.gaierror: [Errno -3]
+Temporary failure in name resolution`. Both fail structurally
+differently from `SrtSandbox`'s own network denial: `srt` still has a
+real interface to route through and denies at the firewall/proxy layer,
+which is why its own equivalent test needs a live connection attempt
+that gets rejected; here there is no interface to route through at
+all, so the failure is immediate and at the socket/DNS layer itself,
+not a policy decision that could in principle be misconfigured away.
+
 ## Real addition: `close()` on `Sandbox` -- backend-instance-level cleanup, distinct from `terminate()`'s per-handle scope
 
 **A real, confirmed leak, found by reviewing `SrtSandbox` (Tier 1) after

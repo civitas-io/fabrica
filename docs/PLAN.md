@@ -298,6 +298,25 @@ doc it's already named in — not repeated here.
     leaked directories after 3 clean full-suite runs, where 460+ existed
     before. Full detail: `docs/contracts/sandbox.md`'s own "Real
     addition: `close()` on `Sandbox`" section, commit b11d484.
+19b. [x] `FirecrackerSandbox` network isolation -- **verified for real,
+    not just implied.** User's own question ("does the sandbox
+    implementations also have network isolation?") surfaced a real gap:
+    `FirecrackerSandbox` never calls Firecracker's `/network-interfaces`
+    API, so the guest boots with no network device at all -- always the
+    design intent (`isolation.md`'s vsock rationale), but never actually
+    tested the way `SrtSandbox`'s network denial was. Tested for real on
+    the homelab (`kodiak@darkenergy`): a raw socket connect fails
+    immediately with `OSError: [Errno 101] Network is unreachable`; DNS
+    resolution fails immediately with `socket.gaierror: [Errno -3]
+    Temporary failure in name resolution`. Structurally stronger than
+    `SrtSandbox`'s policy-based allow-only enforcement -- no interface to
+    misconfigure at all, not a firewall rule to bypass. 2 new tests
+    (`test_execute_has_no_network_path_at_all`,
+    `test_execute_dns_resolution_also_has_no_path`), verified 3x stable
+    on real hardware alongside the existing 16 hardware-gated tests,
+    filesystem confirmed clean afterward (no leftover `/tmp/fc-*` files).
+    Documented in `docs/contracts/sandbox.md` and `docs/isolation.md`'s
+    tier table.
 20. [ ] `FirecrackerSandbox` snapshot/restore — combining an already-live
     `vsock` connection with snapshot restore is a genuinely unvalidated
     combination; needs its own spike before implementation.

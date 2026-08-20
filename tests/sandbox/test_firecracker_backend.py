@@ -206,6 +206,67 @@ async def test_terminate_removes_every_file_it_created(backend: FirecrackerSandb
     assert leftover == [], f"terminate() left files behind: {leftover}"
 
 
+async def test_execute_has_no_network_path_at_all(backend: FirecrackerSandbox) -> None:
+    """The real proof behind isolation.md's design claim (vsock "without
+    exposing IP networking") -- FirecrackerSandbox never calls
+    Firecracker's own `/network-interfaces` API, so the guest boots with
+    NO network device at all, not a policy-filtered one. This is
+    structurally stronger than SrtSandbox's allow-only enforcement (there
+    is nothing to misconfigure, no policy to bypass), but until this
+    test, it had never actually been verified end to end -- only implied
+    by the absence of code, matching the honest gap named in
+    contracts/sandbox.md.
+
+    A guest with no network device fails a connection attempt
+    immediately (ENETUNREACH / no route), not by timing out -- unlike
+    srt's own OS-level policy enforcement, which still has an interface
+    to route through and denies at the firewall/proxy layer instead.
+    """
+    handle = await backend.boot_clean()
+    try:
+        code = (
+            "import socket\n"
+            "try:\n"
+            "    s = socket.create_connection(('8.8.8.8', 53), timeout=5)\n"
+            "    s.close()\n"
+            "    print('REACHED')\n"
+            "except Exception as exc:\n"
+            "    print('BLOCKED', type(exc).__name__, str(exc))\n"
+        )
+        result = await backend.execute(handle, code, on_tool_call=_no_tool_calls, timeout=15.0)
+
+        assert result.success is True, result.error_message
+        assert "REACHED" not in result.stdout
+        assert "BLOCKED" in result.stdout
+    finally:
+        await backend.terminate(handle)
+
+
+async def test_execute_dns_resolution_also_has_no_path(backend: FirecrackerSandbox) -> None:
+    """Same proof, at the DNS layer specifically -- a guest that could
+    somehow still resolve names (e.g. via a cached /etc/hosts trick) but
+    not connect would be a different, narrower claim than "no network
+    path at all". Both must fail the same way: no route, immediately.
+    """
+    handle = await backend.boot_clean()
+    try:
+        code = (
+            "import socket\n"
+            "try:\n"
+            "    socket.gethostbyname('example.com')\n"
+            "    print('RESOLVED')\n"
+            "except Exception as exc:\n"
+            "    print('BLOCKED', type(exc).__name__, str(exc))\n"
+        )
+        result = await backend.execute(handle, code, on_tool_call=_no_tool_calls, timeout=15.0)
+
+        assert result.success is True, result.error_message
+        assert "RESOLVED" not in result.stdout
+        assert "BLOCKED" in result.stdout
+    finally:
+        await backend.terminate(handle)
+
+
 async def test_boot_clean_raises_crashed_error_for_a_bad_kernel_path() -> None:
     backend = FirecrackerSandbox(
         firecracker_binary=_FC_BINARY,
