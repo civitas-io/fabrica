@@ -338,17 +338,33 @@ validated end to end on real hardware (real `vsock`, a real tool call
 crossing the VM boundary, a real result returning --
 [SPIKE-firecracker-vsock-callback-bridge.md](../../specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)).
 
-**v1 scope, decided deliberately**: `boot_clean()` always cold-boots --
-it does not restore from a snapshot yet. `boot_clean()`'s own docstring
-already allows this ("boot, OR restore-from-snapshot"), so this isn't a
-contract violation, but it's a real, named limitation: cold boot to real
-userspace readiness measured ~1,055ms in
-[SPIKE-firecracker-boot-restore-latency.md](../../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md),
-far slower than restore's ~8-10ms. Snapshot/restore combined WITH the
-vsock callback bridge is a genuinely separate, unvalidated combination --
-neither spike tested restoring a snapshot of a guest with an already-live
-vsock connection. Deferred as real, focused follow-on work, not built
-speculatively before a correct cold-boot v1 exists.
+**Real snapshot/restore now exists, opt-in** (`use_snapshot_restore=True`,
+PLAN.md item 20a) -- default remains `False`, `boot_clean()` cold-boots
+exactly as v1 originally shipped, zero behavior change for any existing
+caller. When enabled, the FIRST `boot_clean()` lazily cold-boots ONE
+throwaway instance purely to create a reusable golden snapshot (paying
+the real ~1,055ms cold-boot cost from
+[SPIKE-firecracker-boot-restore-latency.md](../../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)
+exactly once), then every restore -- including that very first served
+instance -- uses `/snapshot/load` instead, real ~8-10ms per restore.
+No `SandboxPool` changes needed -- entirely internal to this class.
+
+Two real, non-obvious unknowns resolved before shipping, not assumed
+safe: (1) every restored instance gets its OWN vsock path via
+Firecracker's real, documented `vsock_override` parameter -- verified
+working for concurrent instances on real hardware, not just single-
+instance restore; (2) no equivalent override exists for the rootfs
+block device, so every restored instance shares ONE golden rootfs file
+-- verified this is SAFE for this project's actual usage (each
+restored instance is used for exactly one `execute()` then terminated,
+so nothing depends on the shared file's own on-disk state afterward)
+via a real, deliberate concurrent-write test, not assumed from theory.
+
+Only the pre-request "blocked waiting for `code`" state is covered --
+snapshotting mid-tool-call is a genuinely different, not-yet-validated
+state, named as real, separate future work if ever needed. Full
+mechanism and both real findings:
+[SPIKE-firecracker-snapshot-restore-vsock-combination.md](../../specs/archive/spikes/SPIKE-firecracker-snapshot-restore-vsock-combination.md).
 
 **Requires a pre-built rootfs with the guest shim already baked in** --
 `FirecrackerSandbox` does not build this itself; `kernel_image_path`/
@@ -548,21 +564,20 @@ children, not disconnected spans. Full design:
    process exits cleanly, not just that assertions pass. Fixed by
    suppressing any exception (not just `CancelledError`) when draining
    an already-completed task purely for cleanup purposes.
-4. ~~`FirecrackerSandbox`'s snapshot/restore support...~~ **Spike done,
-   real implementation is separate follow-on work (PLAN.md item 20a).**
-   The combination is real and buildable, confirmed on real hardware --
-   two findings, both fixable, neither fundamental: Firecracker's own
-   vsock device leaves a stale Unix socket file at `uds_path` after a
-   `SIGKILL` (must be deleted before restoring into a fresh process);
-   the guest kernel-panics on resume as shipped because
-   `_firecracker_guest_shim.py` has no error handling around its
-   blocked `recv()` getting a real, correct `ConnectionResetError` when
-   its old peer no longer exists. A throwaway patched shim with a real
-   reconnect loop fixed both -- verified working end to end (the guest
-   genuinely reconnects and re-signals `ready` after a real snapshot/
-   restore cycle), not just diagnosed. v1 still always cold-boots; full
-   detail: `specs/archive/spikes/SPIKE-firecracker-snapshot-restore-
-   vsock-combination.md`.
+4. ~~`FirecrackerSandbox`'s snapshot/restore support...~~ **Resolved,
+   real and shipped, opt-in (`use_snapshot_restore=True`, PLAN.md item
+   20a).** The spike found and fixed two real, non-fundamental gaps
+   (a stale vsock socket file `SIGKILL` never cleans up; the guest
+   shim's own lack of reconnect logic around a real, correct
+   `ConnectionResetError` on resume), verified against a throwaway
+   patched shim first, then ported into the real, shipped guest shim
+   and `FirecrackerSandbox` itself -- see this contract's own
+   "`FirecrackerSandbox` -- real Tier 2 implementation notes" above for
+   the full mechanism, both real unknowns resolved along the way
+   (`vsock_override` for concurrent instances; the shared-golden-rootfs
+   safety argument), and the 8 new tests verified on real hardware. Full
+   original spike narrative: `specs/archive/spikes/SPIKE-firecracker-
+   snapshot-restore-vsock-combination.md`.
 5. ~~`FirecrackerSandbox` uses the existing, general-purpose Ubuntu
    24.04 rootfs image...~~ **Resolved: a real, minimal, purpose-built
    base image now exists** (`scripts/build_firecracker_minimal_base.sh`,

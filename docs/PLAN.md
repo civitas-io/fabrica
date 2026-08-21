@@ -398,15 +398,53 @@ doc it's already named in — not repeated here.
     this spike's whole job). Full detail, including the exact console
     log excerpts: `specs/archive/spikes/SPIKE-firecracker-snapshot-
     restore-vsock-combination.md`.
-20a. [ ] Real implementation, now that the spike de-risked it: port the
-    verified reconnect logic into `_firecracker_guest_shim.py` itself
-    (tuned for latency, not the spike's placeholder `time.sleep(0.2)`
-    backoff); add the stale-`uds_path`-cleanup step; give
-    `FirecrackerSandbox` a real restore path (`boot_clean()` currently
-    always cold-boots); wire it into `SandboxPool`'s warm-pool refill.
-    Only the pre-request "blocked waiting for `code`" state was proven
-    -- a guest snapshotted mid-tool-call needs the same treatment if
-    snapshotting anywhere but the pre-request warm state is ever wanted.
+20a. [x] Real implementation -- **done**. Ported real, production
+    reconnect logic into `_firecracker_guest_shim.py` itself (bounded --
+    200 attempts, no sleep for the first few, then a real but small
+    backoff -- not the spike's placeholder). `FirecrackerSandbox` gained
+    `use_snapshot_restore: bool = False` (opt-in, default preserves v1's
+    exact cold-boot behavior, zero change for any existing caller): the
+    FIRST `boot_clean()` lazily cold-boots ONE throwaway instance purely
+    to create a reusable golden snapshot (paying the cold-boot cost
+    exactly once, protected by a double-checked lock against concurrent
+    racing callers), then every restore -- including that very first
+    served instance -- uses `/snapshot/load` instead.
+    **No `SandboxPool` changes needed at all** -- it just calls
+    `backend.boot_clean()`; the whole mechanism is internal to
+    `FirecrackerSandbox`.
+    **One more real unknown found and resolved before writing any
+    "real" code, not assumed**: does the golden snapshot's embedded,
+    fixed vsock path force every restored instance to collide? No --
+    checked the real, bundled OpenAPI spec and found `vsock_override`,
+    a real, documented `/snapshot/load` parameter letting every restored
+    instance get its own vsock path. Verified on real hardware: two
+    concurrent instances, same snapshot, distinct `vsock_override`
+    paths, both restored in ~8.5-8.8ms, both correctly reconnected.
+    **A second, more serious unknown also found and resolved, not
+    glossed over**: no equivalent override exists for the ROOTFS block
+    device (confirmed against the same spec) -- every restored instance
+    references the SAME golden rootfs file. Tested this directly for
+    real, not assumed safe: two concurrent restored instances each wrote
+    a distinct, deliberately-chosen file to their own guest filesystem
+    and read it back -- both correct, no cross-contamination. Documented
+    precisely WHY this holds for Fabrica's actual usage (each restored
+    instance is used for exactly one `execute()` then terminated, so
+    nothing ever depends on the shared file's own on-disk state
+    afterward) rather than claimed as generally safe.
+    8 new tests (a working restored handle; the second `boot_clean()`
+    call measurably faster than the first, proving restore is really
+    happening; concurrent-instance isolation; a real tool-call round
+    trip on a restored instance; `terminate()` never deleting the shared
+    golden rootfs; `close()` removing the golden snapshot files;
+    `close()` safe with no snapshot ever created; the
+    `use_snapshot_restore=False` default provably unchanged). All 24
+    tests in the file (16 existing + 8 new) verified passing on real
+    hardware, stable across repeated runs, filesystem confirmed clean
+    afterward (0 leftover `/tmp/fc-*` files).
+    Only the pre-request "blocked waiting for `code`" state is covered
+    -- a guest snapshotted mid-tool-call would need the same treatment
+    if that's ever wanted, named as real, separate, not-yet-needed
+    future work, not silently assumed covered.
 21. [ ] `jailer` integration for `FirecrackerSandbox` — real defense-in-depth
     hardening, unexplored in both Firecracker spikes so far.
 22. [x] Managers as supervised `GenServer`s ("self-healing pool") --

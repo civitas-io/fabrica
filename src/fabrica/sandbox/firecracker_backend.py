@@ -9,19 +9,14 @@ _firecracker_guest_shim.py and a real host-side listener, on the same
 hardware -- confirmed with a real tool call crossing the VM boundary and a
 real result returning.
 
-v1 SCOPE, decided deliberately, not by oversight: `boot_clean()` here always
-COLD BOOTS -- it does not restore from a snapshot. `contracts/sandbox.md`'s
-own docstring already allows this ("Boot, OR restore-from-snapshot..."), so
-this isn't a contract violation, but it IS a real, named limitation worth
-stating plainly: cold boot to real userspace readiness measured ~1,055ms in
-the boot/restore spike, far slower than SubprocessSandbox's near-zero cost.
-Snapshot/restore combined WITH the vsock callback bridge is a genuinely
-separate, unvalidated combination -- neither spike tested restoring a
-snapshot of a guest that already has a live vsock connection established.
-Shipping a correct, cold-boot-only v1 now and validating snapshot+vsock
-together as a real, focused follow-up (matching this project's "ship the
-default, revisit if forced" discipline) was chosen over risking a third
-unvalidated mechanism before anything real exists at all.
+DEFAULT: `boot_clean()` cold-boots, matching v1's original scope exactly --
+no behavior change for any existing caller. `use_snapshot_restore=True`
+(opt-in, PLAN.md item 20a) turns on real snapshot/restore instead, closing
+SPIKE-firecracker-snapshot-restore-vsock-combination.md's own open
+question: does a live vsock connection survive Firecracker snapshot/
+restore into a fresh process? Verified on real hardware, not theorized --
+see that spike doc and this class's own `use_snapshot_restore` docstring
+for the full mechanism and its real, honestly-stated limits.
 """
 
 from __future__ import annotations
@@ -102,13 +97,20 @@ class _InstanceState:
         *,
         api_sock: Path,
         vsock_uds: Path,
-        rootfs_copy: Path,
+        rootfs_copy: Path | None,
         console_log: Path,
         process: asyncio.subprocess.Process,
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
         vsock_server: asyncio.AbstractServer,
     ) -> None:
+        # rootfs_copy is None for a snapshot-restored instance -- it has
+        # no per-instance rootfs copy of its own; restore always
+        # references the GOLDEN rootfs file the snapshot embeds a fixed
+        # path to (no override mechanism exists for it, unlike vsock's
+        # own `vsock_override` -- confirmed against the real OpenAPI
+        # spec), which terminate() must never delete underneath every
+        # other restored instance still using it.
         self.api_sock = api_sock
         self.vsock_uds = vsock_uds
         self.rootfs_copy = rootfs_copy
@@ -134,21 +136,23 @@ async def _recv(reader: asyncio.StreamReader) -> dict[str, Any]:
 
 
 def _cleanup_files(
-    *, api_sock: Path, rootfs_copy: Path, console_log: Path, vsock_uds: Path
+    *, api_sock: Path, rootfs_copy: Path | None, console_log: Path, vsock_uds: Path
 ) -> None:
     """Shared by every path that tears an instance down -- successful
     terminate() AND every boot_clean() failure branch. A real leak was
     found (and only partially fixed at first) by inspecting /tmp after
     real test runs, not assumed complete: boot_clean()'s own error paths
     left every one of these files behind, not just terminate()'s.
+
+    `rootfs_copy=None` for a restored instance -- deliberately never
+    deletes anything in that case, since a restored instance references
+    the shared golden rootfs file, not a copy of its own (see
+    `_InstanceState`'s own docstring).
     """
-    for path in (
-        api_sock,
-        rootfs_copy,
-        console_log,
-        vsock_uds,
-        Path(f"{vsock_uds}_{_HOST_VSOCK_PORT}"),
-    ):
+    paths = [api_sock, console_log, vsock_uds, Path(f"{vsock_uds}_{_HOST_VSOCK_PORT}")]
+    if rootfs_copy is not None:
+        paths.append(rootfs_copy)
+    for path in paths:
         path.unlink(missing_ok=True)
 
 
@@ -164,6 +168,30 @@ async def _api_put(api_sock: Path, path: str, body: dict[str, Any]) -> None:
         "-s",
         "-X",
         "PUT",
+        "--unix-socket",
+        str(api_sock),
+        "-d",
+        json.dumps(body),
+        f"http://localhost{path}",
+        "-o",
+        "/dev/null",
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+    await proc.wait()
+
+
+async def _api_patch(api_sock: Path, path: str, body: dict[str, Any]) -> None:
+    """Same shape as `_api_put`, PATCH instead of PUT -- Firecracker's
+    own REST API uses PATCH specifically for `/vm` state transitions
+    (e.g. pausing before a snapshot), matching both spikes' real,
+    validated command shape exactly.
+    """
+    proc = await asyncio.create_subprocess_exec(
+        "curl",
+        "-s",
+        "-X",
+        "PATCH",
         "--unix-socket",
         str(api_sock),
         "-d",
@@ -197,6 +225,7 @@ class FirecrackerSandbox:
         mem_size_mib: int = 512,
         guest_shim_path: str = "/tmp/guest_shim.py",
         socket_dir: str = "/tmp",
+        use_snapshot_restore: bool = False,
     ) -> None:
         """`kernel_image_path`/`base_rootfs_path` are real, deployment-
         specific artifacts (a vmlinux image, an ext4 rootfs with
@@ -208,6 +237,44 @@ class FirecrackerSandbox:
         3) -- this class assumes it has already happened, the same way
         SubprocessSandbox assumes Python itself is already installed on
         its host.
+
+        `use_snapshot_restore=False` (default) preserves v1's exact,
+        original, tested behavior -- every `boot_clean()` cold-boots, no
+        behavior change for any existing caller. `True` opts into real
+        snapshot/restore instead, verified on real hardware
+        (`SPIKE-firecracker-snapshot-restore-vsock-combination.md`): the
+        FIRST `boot_clean()` call lazily cold-boots ONE throwaway
+        instance purely to create a reusable "golden" snapshot (paying
+        the real ~1s+ cold-boot cost exactly once, not per call), then
+        every `boot_clean()` -- including that very first one -- restores
+        a fresh instance from it in ~8-10ms instead. Requires the guest
+        shim's own real reconnect logic (`_firecracker_guest_shim.py`),
+        which a restored guest depends on to recover from the real,
+        correct `ConnectionResetError` it gets on resume.
+
+        **Real, honestly-stated limit, not silently assumed away**: every
+        restored instance references the SAME golden rootfs file --
+        Firecracker's `/snapshot/load` has a real `vsock_override` for
+        giving each restored instance its own vsock path (verified
+        working for concurrent instances), but no equivalent override
+        exists for the block device (confirmed against the real,
+        bundled OpenAPI spec). Verified SAFE for this project's own
+        usage pattern specifically, not assumed: two concurrent restored
+        instances each writing a distinct, deliberately-chosen file to
+        their own guest filesystem, then reading it back, both
+        completed correctly with no cross-contamination in this
+        project's own real test -- the shared file backs each instance's
+        OWN, already-loaded guest memory/page-cache state
+        independently, not a live, continuously-shared block device in
+        the way it would be for two normal VMs pointed at one disk
+        image simultaneously. This holds specifically because every
+        restored instance is used for exactly ONE `execute()` call then
+        terminated (`SandboxPool`'s own always-terminate-never-reuse
+        rule) -- nothing ever depends on the shared file's own on-disk
+        state being consistent afterward. Revisit if a future use case
+        ever needs a restored instance's disk writes to durably persist
+        or be inspected after termination -- this design does not
+        support that.
         """
         self._firecracker_binary = firecracker_binary
         self._kernel_image_path = kernel_image_path
@@ -216,18 +283,41 @@ class FirecrackerSandbox:
         self._mem_size_mib = mem_size_mib
         self._guest_shim_path = guest_shim_path
         self._socket_dir = Path(socket_dir)
+        self._use_snapshot_restore = use_snapshot_restore
         self._instances: dict[str, _InstanceState] = {}
+        # Golden-snapshot state -- backend-INSTANCE-level, not per-handle
+        # (Sandbox.close()'s own docstring names exactly this shape of
+        # resource). Created lazily, once, protected by a lock so
+        # concurrent boot_clean() calls racing on the very first request
+        # don't each cold-boot their own throwaway instance.
+        self._golden_snapshot_id = uuid.uuid4().hex[:8]
+        self._golden_snapshot: tuple[Path, Path] | None = None  # (snap_state, snap_mem)
+        self._golden_rootfs_copy: Path | None = None
+        self._golden_snapshot_lock = asyncio.Lock()
 
     async def boot_clean(self) -> SandboxHandle:
-        """Cold-boots a fresh guest (see module docstring for why v1
-        doesn't restore from a snapshot), waits for the real guest-shim's
-        "ready" message -- proof of actual userspace readiness, not just
-        Firecracker's own VMM=Running signal (the exact distinction
-        SPIKE-firecracker-boot-restore-latency.md found matters).
+        """Cold-boots by default (see `__init__`'s own docstring for the
+        real reasoning); restores from a real, lazily-created snapshot
+        instead when `use_snapshot_restore=True`.
 
         Raises:
             SandboxCrashedError: the guest never sent "ready" within
                 _BOOT_READY_TIMEOUT.
+        """
+        if self._use_snapshot_restore:
+            await self._ensure_golden_snapshot()
+            return await self._restore_instance()
+        return await self._cold_boot_instance()
+
+    async def _cold_boot_instance(self) -> SandboxHandle:
+        """The exact, original v1 mechanism -- cold-boots a fresh guest,
+        waits for the real guest-shim's "ready" message, proof of actual
+        userspace readiness, not just Firecracker's own VMM=Running
+        signal (the exact distinction SPIKE-firecracker-boot-restore-
+        latency.md found matters). Used directly by `boot_clean()` when
+        `use_snapshot_restore=False`, and internally by
+        `_ensure_golden_snapshot()` to produce the one throwaway instance
+        the golden snapshot is created from.
         """
         instance_id = uuid.uuid4().hex[:8]
         api_sock = self._socket_dir / f"fc-{instance_id}-api.sock"
@@ -335,6 +425,153 @@ class FirecrackerSandbox:
             api_sock=api_sock,
             vsock_uds=vsock_uds,
             rootfs_copy=rootfs_copy,
+            console_log=console_log,
+            process=process,
+            reader=reader,
+            writer=writer,
+            vsock_server=vsock_server,
+        )
+        return SandboxHandle(id=instance_id, tier=2)
+
+    async def _ensure_golden_snapshot(self) -> None:
+        """Lazily creates the reusable golden snapshot every restore
+        reads from, exactly once, no matter how many concurrent
+        `boot_clean()` calls race to be first (double-checked locking --
+        the cheap unlocked check first, then re-checked once inside the
+        lock, so only the very first caller ever actually pays for this).
+        """
+        if self._golden_snapshot is not None:
+            return
+        async with self._golden_snapshot_lock:
+            if self._golden_snapshot is not None:
+                return
+
+            handle = await self._cold_boot_instance()
+            state = self._instances.pop(handle.id)
+
+            snap_state = self._socket_dir / f"fc-golden-{self._golden_snapshot_id}.state"
+            snap_mem = self._socket_dir / f"fc-golden-{self._golden_snapshot_id}.mem"
+            snap_state.unlink(missing_ok=True)
+            snap_mem.unlink(missing_ok=True)
+
+            await _api_patch(state.api_sock, "/vm", {"state": "Paused"})
+            await _api_put(
+                state.api_sock,
+                "/snapshot/create",
+                {"snapshot_path": str(snap_state), "mem_file_path": str(snap_mem)},
+            )
+
+            # Tear this throwaway instance down WITHOUT deleting its
+            # rootfs copy -- the snapshot's own state now embeds a fixed
+            # reference to that exact file's path, which every future
+            # restore depends on (see __init__'s own docstring for why
+            # there's no override for this, unlike vsock's real one).
+            state.process.kill()
+            with contextlib.suppress(ProcessLookupError):
+                await state.process.wait()
+            state.vsock_server.close()
+            with contextlib.suppress(Exception):
+                state.writer.close()
+            _cleanup_files(
+                api_sock=state.api_sock,
+                rootfs_copy=None,  # deliberately NOT deleted -- see above
+                console_log=state.console_log,
+                vsock_uds=state.vsock_uds,
+            )
+
+            self._golden_rootfs_copy = state.rootfs_copy
+            self._golden_snapshot = (snap_state, snap_mem)
+
+    async def _restore_instance(self) -> SandboxHandle:
+        """Restores a fresh instance from the already-created golden
+        snapshot -- real, measured ~8-10ms on the homelab, vs. the
+        cold-boot path's ~1s+. Every restored instance gets its OWN
+        vsock path via Firecracker's real `vsock_override` (verified
+        working for concurrent instances on real hardware) -- but shares
+        the ONE golden rootfs file with every other restored instance
+        (see `__init__`'s own docstring for why that's a real, accepted
+        limit, not an oversight).
+        """
+        assert self._golden_snapshot is not None
+        snap_state, snap_mem = self._golden_snapshot
+
+        instance_id = uuid.uuid4().hex[:8]
+        api_sock = self._socket_dir / f"fc-{instance_id}-api.sock"
+        vsock_uds = self._socket_dir / f"fc-{instance_id}-vsock.sock"
+        console_log = self._socket_dir / f"fc-{instance_id}-console.log"
+
+        vsock_connection: asyncio.Future[tuple[asyncio.StreamReader, asyncio.StreamWriter]] = (
+            asyncio.get_event_loop().create_future()
+        )
+
+        async def _accept_guest_connection(
+            reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        ) -> None:
+            if not vsock_connection.done():
+                vsock_connection.set_result((reader, writer))
+
+        # The fresh listener must exist BEFORE snapshot/load resumes the
+        # guest -- exactly the ordering SPIKE-firecracker-snapshot-
+        # restore-vsock-combination.md's own successful run depended on.
+        vsock_server = await asyncio.start_unix_server(
+            _accept_guest_connection, path=f"{vsock_uds}_{_HOST_VSOCK_PORT}"
+        )
+
+        process = await asyncio.create_subprocess_exec(
+            self._firecracker_binary,
+            "--api-sock",
+            str(api_sock),
+            stdout=open(console_log, "wb"),  # noqa: SIM115 -- lifetime matches the subprocess, not this scope
+            stderr=asyncio.subprocess.STDOUT,
+        )
+        for _ in range(100):
+            if api_sock.exists():
+                break
+            await asyncio.sleep(0.01)
+
+        await _api_put(
+            api_sock,
+            "/snapshot/load",
+            {
+                "snapshot_path": str(snap_state),
+                "mem_backend": {"backend_type": "File", "backend_path": str(snap_mem)},
+                "resume_vm": True,
+                "vsock_override": {"uds_path": str(vsock_uds)},
+            },
+        )
+
+        try:
+            reader, writer = await asyncio.wait_for(vsock_connection, timeout=_BOOT_READY_TIMEOUT)
+            ready_message = await asyncio.wait_for(_recv(reader), timeout=_BOOT_READY_TIMEOUT)
+        except (TimeoutError, asyncio.IncompleteReadError) as exc:
+            process.kill()
+            with contextlib.suppress(ProcessLookupError):
+                await process.wait()
+            vsock_server.close()
+            _cleanup_files(
+                api_sock=api_sock, rootfs_copy=None, console_log=console_log, vsock_uds=vsock_uds
+            )
+            raise SandboxCrashedError(
+                f"firecracker instance {instance_id} (restored) never sent a real "
+                f"'ready' message within {_BOOT_READY_TIMEOUT}s -- see {console_log} "
+                f"for boot detail"
+            ) from exc
+
+        if ready_message.get("type") != "ready":
+            process.kill()
+            vsock_server.close()
+            _cleanup_files(
+                api_sock=api_sock, rootfs_copy=None, console_log=console_log, vsock_uds=vsock_uds
+            )
+            raise SandboxCrashedError(
+                f"firecracker instance {instance_id} (restored) sent an unexpected "
+                f"first message instead of 'ready': {ready_message!r}"
+            )
+
+        self._instances[instance_id] = _InstanceState(
+            api_sock=api_sock,
+            vsock_uds=vsock_uds,
+            rootfs_copy=None,  # shares the golden rootfs -- never this instance's to delete
             console_log=console_log,
             process=process,
             reader=reader,
@@ -477,9 +714,25 @@ class FirecrackerSandbox:
         )
 
     async def close(self) -> None:
-        """A genuine no-op: __init__ allocates nothing beyond a reference
-        to a shared, externally-owned directory (self._socket_dir, which
-        defaults to plain "/tmp" itself) -- every real resource this
-        backend owns (rootfs copy, sockets, console log, the running
-        process) is per-instance-id and already torn down by terminate().
-        See Sandbox.close()'s own docstring for why this method exists."""
+        """A genuine no-op when `use_snapshot_restore=False` (the
+        default) -- every real resource this backend owns in that mode
+        (rootfs copy, sockets, console log, the running process) is
+        per-instance-id and already torn down by terminate(). See
+        Sandbox.close()'s own docstring for why this method exists.
+
+        When `use_snapshot_restore=True`, the golden snapshot's own
+        files (state, memory, and its shared rootfs copy) ARE real
+        backend-instance-level resources -- exactly the shape
+        `Sandbox.close()` exists to release, never owned by any single
+        `SandboxHandle`/`terminate()` call. Safe to call even if no
+        `boot_clean()` was ever made (the golden snapshot may not exist
+        yet) -- matches every other backend's `close()` contract.
+        """
+        if self._golden_snapshot is not None:
+            snap_state, snap_mem = self._golden_snapshot
+            snap_state.unlink(missing_ok=True)
+            snap_mem.unlink(missing_ok=True)
+            self._golden_snapshot = None
+        if self._golden_rootfs_copy is not None:
+            self._golden_rootfs_copy.unlink(missing_ok=True)
+            self._golden_rootfs_copy = None

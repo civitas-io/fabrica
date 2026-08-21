@@ -21,6 +21,21 @@ at boot, carrying a small sequence of length-prefixed JSON messages:
 Length-prefixed (4-byte big-endian length + JSON body) rather than
 newline-delimited -- code/output can legitimately contain literal
 newlines; a length prefix has no such ambiguity.
+
+Real reconnect logic around the initial connect/ready/wait-for-code
+sequence, closing SPIKE-firecracker-snapshot-restore-vsock-
+combination.md's own finding: a guest resumed from a snapshot while
+blocked in this exact sequence gets a real, correct `ConnectionResetError`
+(its old peer genuinely no longer exists once restored into a fresh
+process) -- verified on real hardware that catching it and reconnecting
+with a fresh `AF_VSOCK` socket against whatever's now listening works,
+not theorized. Without this, an unhandled exception here kills this
+process -- which is PID 1 (`init=`) -- and Linux panics rather than
+allow PID 1 to exit. Only THIS sequence needs it: it's the only point
+where a real deployment snapshots (see `FirecrackerSandbox`'s own
+`use_snapshot_restore` docstring) -- once code starts running, a restore
+mid-tool-call is a genuinely different, not-yet-validated state (named
+as real, separate future work, not silently assumed to be covered).
 """
 
 from __future__ import annotations
@@ -62,17 +77,50 @@ def _recv_exact(sock: socket.socket, n: int) -> bytes:
     return b"".join(chunks)
 
 
-def main() -> None:
-    # AF_VSOCK is Linux-only -- this shim only ever runs inside a real
-    # Firecracker guest (Linux), never on the host doing local type
-    # checking (which may be macOS, per this project's own dev
-    # environment) -- socket.AF_VSOCK is genuinely absent from typeshed's
-    # non-Linux stubs, not a real bug this ignore is hiding.
-    sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)  # type: ignore[attr-defined]
-    sock.connect((_HOST_CID, _HOST_PORT))
+_MAX_RECONNECT_ATTEMPTS = 200
+"""Bounded, not infinite -- a genuine misconfiguration (nothing ever
+listening) must eventually surface as a real crash, not hang silently
+forever pretending to retry. At ~5ms between attempts (see below),
+200 attempts is ~1s of real budget -- generous relative to the restore
+spike's own measured ~9ms snapshot-load time, but not unbounded."""
 
-    _send(sock, {"type": "ready"})
-    code_message = _recv(sock)
+
+def _connect_send_ready_and_wait_for_code() -> tuple[socket.socket, dict[str, Any]]:
+    """Real reconnect loop -- see module docstring for the exact failure
+    this closes and why only this sequence needs it. A fresh `AF_VSOCK`
+    socket is opened on every attempt, not reused -- the whole point is
+    that the OLD one is genuinely dead once a restore has happened.
+    """
+    attempt = 0
+    while True:
+        attempt += 1
+        # AF_VSOCK is Linux-only -- this shim only ever runs inside a real
+        # Firecracker guest (Linux), never on the host doing local type
+        # checking (which may be macOS, per this project's own dev
+        # environment) -- socket.AF_VSOCK is genuinely absent from
+        # typeshed's non-Linux stubs, not a real bug this ignore is hiding.
+        sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)  # type: ignore[attr-defined]
+        try:
+            sock.connect((_HOST_CID, _HOST_PORT))
+            _send(sock, {"type": "ready"})
+            code_message = _recv(sock)
+            return sock, code_message
+        except OSError:
+            with contextlib.suppress(Exception):
+                sock.close()
+            if attempt >= _MAX_RECONNECT_ATTEMPTS:
+                raise
+            # No sleep on purpose for the first several attempts -- a real
+            # restore's fresh listener is already up BEFORE resume_vm is
+            # requested (FirecrackerSandbox's own ordering), so the very
+            # next attempt usually succeeds immediately; a small backoff
+            # only matters if it doesn't, avoiding a tight spin loop.
+            if attempt > 3:
+                time.sleep(0.005)
+
+
+def main() -> None:
+    sock, code_message = _connect_send_ready_and_wait_for_code()
     code = code_message["code"]
 
     tool_call_count = 0

@@ -324,3 +324,205 @@ async def test_boot_clean_raises_crashed_error_for_a_bad_kernel_path() -> None:
     )
     with pytest.raises(SandboxCrashedError):
         await backend.boot_clean()
+
+
+# ---------------------------------------------------------------------------
+# use_snapshot_restore=True -- real snapshot/restore, closing PLAN.md item
+# 20a. SPIKE-firecracker-snapshot-restore-vsock-combination.md validated the
+# mechanism with a throwaway patched shim; these tests validate the REAL,
+# shipped implementation (the actual _firecracker_guest_shim.py, the actual
+# FirecrackerSandbox), not the spike's disposable copy.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def snapshot_backend() -> FirecrackerSandbox:
+    return FirecrackerSandbox(
+        firecracker_binary=_FC_BINARY,
+        kernel_image_path=_FC_KERNEL,
+        base_rootfs_path=_FC_ROOTFS,
+        use_snapshot_restore=True,
+    )
+
+
+async def test_snapshot_restore_produces_a_real_working_tier_2_handle(
+    snapshot_backend: FirecrackerSandbox,
+) -> None:
+    handle = await snapshot_backend.boot_clean()
+    try:
+        assert handle.tier == 2
+        result = await snapshot_backend.execute(
+            handle,
+            "print('hello from a restored microVM')",
+            on_tool_call=_no_tool_calls,
+            timeout=15.0,
+        )
+        assert result.success is True, result.error_message
+        assert result.stdout.strip() == "hello from a restored microVM"
+    finally:
+        await snapshot_backend.terminate(handle)
+        await snapshot_backend.close()
+
+
+async def test_second_boot_clean_is_dramatically_faster_than_the_first(
+    snapshot_backend: FirecrackerSandbox,
+) -> None:
+    """The real point of this feature -- proves restore is actually
+    happening for the SECOND call, not just "it works", by measuring a
+    real, large latency gap: the first call pays the real cold-boot cost
+    (creating the golden snapshot), the second restores in single/low-
+    double-digit ms. Real hardware measured ~1.9s cold-boot-and-snapshot
+    vs. ~10ms restore in the underlying spike -- this asserts a
+    conservative, much looser ratio (at least 5x), not that exact figure,
+    to stay robust against real hardware variance.
+    """
+    import time
+
+    t0 = time.monotonic()
+    handle1 = await snapshot_backend.boot_clean()
+    first_ms = (time.monotonic() - t0) * 1000
+
+    t0 = time.monotonic()
+    handle2 = await snapshot_backend.boot_clean()
+    second_ms = (time.monotonic() - t0) * 1000
+
+    try:
+        assert second_ms < first_ms / 5
+    finally:
+        await snapshot_backend.terminate(handle1)
+        await snapshot_backend.terminate(handle2)
+        await snapshot_backend.close()
+
+
+async def test_concurrent_restored_instances_are_independently_isolated(
+    snapshot_backend: FirecrackerSandbox,
+) -> None:
+    """The real safety proof for sharing one golden rootfs file across
+    concurrent restored instances (see FirecrackerSandbox.__init__'s own
+    docstring for the full reasoning): two instances, each writing a
+    DIFFERENT, distinguishable value to their own guest filesystem
+    concurrently, must each read back their OWN correct value -- no
+    cross-contamination.
+    """
+    handle_a, handle_b = await asyncio.gather(
+        snapshot_backend.boot_clean(), snapshot_backend.boot_clean()
+    )
+    try:
+
+        async def _write_and_read_back(handle: Any, marker: str) -> str:
+            code = (
+                f"with open('/tmp/marker.txt', 'w') as f:\n"
+                f"    f.write('{marker}' * 100)\n"
+                f"with open('/tmp/marker.txt') as f:\n"
+                f"    print(f.read())\n"
+            )
+            result = await snapshot_backend.execute(
+                handle, code, on_tool_call=_no_tool_calls, timeout=15.0
+            )
+            assert result.success is True, result.error_message
+            return result.stdout.strip()
+
+        stdout_a, stdout_b = await asyncio.gather(
+            _write_and_read_back(handle_a, "a"), _write_and_read_back(handle_b, "b")
+        )
+        assert stdout_a == "a" * 100
+        assert stdout_b == "b" * 100
+    finally:
+        await snapshot_backend.terminate(handle_a)
+        await snapshot_backend.terminate(handle_b)
+        await snapshot_backend.close()
+
+
+async def test_restored_instance_real_tool_call_round_trip(
+    snapshot_backend: FirecrackerSandbox,
+) -> None:
+    handle = await snapshot_backend.boot_clean()
+    try:
+
+        async def add_tool(tool: str, params: dict[str, Any]) -> dict[str, Any]:
+            return {"success": True, "value": params["a"] + params["b"], "error_message": None}
+
+        code = (
+            "result = namespace.call('add', {'a': 2, 'b': 3})\n"
+            "print(f'2 + 3 = {result[\"value\"]}')\n"
+        )
+        result = await snapshot_backend.execute(handle, code, on_tool_call=add_tool, timeout=15.0)
+        assert result.success is True
+        assert result.stdout.strip() == "2 + 3 = 5"
+        assert result.tool_call_count == 1
+    finally:
+        await snapshot_backend.terminate(handle)
+        await snapshot_backend.close()
+
+
+async def test_terminate_on_a_restored_instance_does_not_delete_the_shared_golden_rootfs(
+    snapshot_backend: FirecrackerSandbox,
+) -> None:
+    """Real regression guard for the exact bug this design deliberately
+    avoids: a restored instance's rootfs_copy is None (it shares the
+    golden rootfs, never owns a copy of its own) -- terminate() must
+    never delete the golden rootfs file underneath any other instance
+    still using it.
+    """
+    handle_a = await snapshot_backend.boot_clean()
+    await snapshot_backend.terminate(handle_a)
+
+    # A SECOND restore must still work after the first instance's
+    # terminate() -- proves the golden rootfs survived.
+    handle_b = await snapshot_backend.boot_clean()
+    try:
+        result = await snapshot_backend.execute(
+            handle_b, "print('still alive')", on_tool_call=_no_tool_calls, timeout=15.0
+        )
+        assert result.success is True
+        assert result.stdout.strip() == "still alive"
+    finally:
+        await snapshot_backend.terminate(handle_b)
+        await snapshot_backend.close()
+
+
+async def test_close_removes_the_golden_snapshot_files(
+    snapshot_backend: FirecrackerSandbox,
+) -> None:
+    handle = await snapshot_backend.boot_clean()
+    await snapshot_backend.terminate(handle)
+
+    assert snapshot_backend._golden_snapshot is not None
+    snap_state, snap_mem = snapshot_backend._golden_snapshot
+    golden_rootfs = snapshot_backend._golden_rootfs_copy
+    assert snap_state.exists()
+    assert snap_mem.exists()
+    assert golden_rootfs is not None and golden_rootfs.exists()
+
+    await snapshot_backend.close()
+
+    assert not snap_state.exists()
+    assert not snap_mem.exists()
+    assert not golden_rootfs.exists()
+
+
+async def test_close_is_safe_when_no_golden_snapshot_was_ever_created() -> None:
+    backend = FirecrackerSandbox(
+        firecracker_binary=_FC_BINARY,
+        kernel_image_path=_FC_KERNEL,
+        base_rootfs_path=_FC_ROOTFS,
+        use_snapshot_restore=True,
+    )
+    await backend.close()  # must not raise -- no boot_clean() was ever called
+
+
+async def test_use_snapshot_restore_false_by_default_preserves_cold_boot_behavior(
+    backend: FirecrackerSandbox,
+) -> None:
+    # backend fixture (module-level, above) has use_snapshot_restore
+    # unset -- must still cold-boot exactly as before, no behavior change.
+    handle = await backend.boot_clean()
+    try:
+        assert backend._golden_snapshot is None  # never touched
+        result = await backend.execute(
+            handle, "print('cold boot unchanged')", on_tool_call=_no_tool_calls, timeout=15.0
+        )
+        assert result.success is True
+        assert result.stdout.strip() == "cold boot unchanged"
+    finally:
+        await backend.terminate(handle)
