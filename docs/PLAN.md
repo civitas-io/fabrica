@@ -445,8 +445,45 @@ doc it's already named in — not repeated here.
     -- a guest snapshotted mid-tool-call would need the same treatment
     if that's ever wanted, named as real, separate, not-yet-needed
     future work, not silently assumed covered.
-21. [ ] `jailer` integration for `FirecrackerSandbox` — real defense-in-depth
-    hardening, unexplored in both Firecracker spikes so far.
+21. [~] `jailer` integration for `FirecrackerSandbox` -- **IN PROGRESS,
+    not done.** Decided directly with the user: cold-boot only, not
+    combined with snapshot/restore ("security over optimization").
+    Real infra already set up on the homelab and validated: a dedicated
+    `fc-jail` user/group (uid=gid=61000), `/srv/jailer` chroot base, and
+    THREE real, scoped sudoers rules (start/terminate/stage), installed
+    via a real, idempotent bootstrap script
+    (`scripts/setup_firecracker_jailer.sh`).
+    **The hard problem -- vsock inside a directory jailer locks to
+    `700 fc-jail:fc-jail` -- is SOLVED and validated end to end on real
+    hardware, with a real guest booting through the real jail boundary**:
+    bind+listen the vsock socket as the invoking user BEFORE jailer
+    runs (while the directory is still writable), explicitly
+    `chmod(0o777)` it (Python's default socket creation leaves "other"
+    without write access, which is what every earlier attempt actually
+    failed on -- confirmed via a real, precise traceback, not
+    theorized), then rely on the already-open file descriptor surviving
+    jailer's subsequent lockdown (a standard Unix property: permission
+    checks happen at bind()/connect() time, not on every later
+    operation via an fd already held open). No new sudo rule was needed
+    for this.
+    **A second problem (the API socket, bound by firecracker itself as
+    fc-jail, not by the invoker -- the "bind before lockdown" trick
+    doesn't apply) has a real, promising fix found via research
+    (Firecracker's own `--config-file`, confirmed present on the real
+    installed binary) but NOT YET validated empirically** -- the exact
+    JSON schema for this installed version still needs confirming.
+    **Full research trail, every empirical finding, and the exact
+    remaining implementation steps**:
+    `specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md`
+    -- read that before continuing, do not re-derive any of this.
+    Two scripts exist (`scripts/setup_firecracker_jailer.sh`,
+    `scripts/stage_jailer_resources.sh`) but the staging script needs a
+    real, not-yet-made code change before use (see the spike doc and
+    the script's own header comment) -- its existing sudoers grant
+    already covers the fixed version's exact command shape, so no new
+    privilege ask is needed to make that fix.
+    `FirecrackerSandbox` itself has NOT been touched yet -- no
+    `use_jailer` support exists in the real code.
 22. [x] Managers as supervised `GenServer`s ("self-healing pool") --
     **walked through directly with the user (Civitas's own maintainer),
     resolved as a documented finding, not built.** Confirmed the

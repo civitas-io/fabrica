@@ -10,12 +10,29 @@ queue** — everything from a self-reflection audit
 point-in-time check of the real code/docs against the founding vision) plus
 the full remaining backlog, sorted easiest first, most complex last.
 
-**Status as of this update: Phase 1 (all 6 reflection fixes) and Phase 2's
-Easy tier (items 7–12) are BOTH fully complete.** Next up is Phase 2's
-Medium tier, starting at item 13 (`Retriever`'s eager-cache invalidation) --
-see "Immediate next action" below and `PLAN.md` directly for the exact list.
-Do not re-run the self-reflection audit or re-derive the plan -- both are
-current and were the actual output of real investigation, not guesses.
+**Status as of this update: Phase 1, Phase 2's Easy tier, and Phase 2's
+Medium tier are ALL fully complete.** Phase 2's Complex tier: items 19
+(Tier 1 via `SrtSandbox`), 20/20a (snapshot/restore, spiked AND
+implemented), 22 (managers-as-GenServers, resolved as a documented
+finding) are done. Item 25 (context-footprint metering, added
+mid-session) is done.
+
+**RIGHT NOW: item 21 (`jailer` integration) is IN PROGRESS, mid-
+implementation, NOT done.** This is the single most important thing to
+read before doing anything else: **[`specs/archive/spikes/SPIKE-
+firecracker-jailer-vsock-integration.md`](specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md)
+has the full research trail, every empirical finding, and the exact
+remaining implementation steps, in order.** A genuinely hard problem
+(vsock inside a directory `jailer` locks down to `700 fc-jail`) was
+found, researched against Firecracker's own official docs, and SOLVED
+-- validated end to end on real hardware, a real guest booting through
+the real jail boundary. Real infrastructure (a dedicated `fc-jail`
+user, three scoped sudoers rules, a real idempotent bootstrap script)
+is already set up and working on the homelab. **Do not re-derive any of
+this or re-run the empirical tests already done** -- read the spike
+doc, then continue from its own "Exact next steps" section. Items 23/24
+(managed-provider adapters, `TunnelProvider` backends) remain untouched
+after item 21 wraps up.
 
 ---
 
