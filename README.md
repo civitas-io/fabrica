@@ -59,7 +59,7 @@ hardware, not simulated. Full detail: [`docs/isolation.md`](https://github.com/c
 
 ## Status
 
-Pre-alpha, substantially real. Nine contracts, fifteen spikes (all real
+Alpha, real and tested, not just designed. Nine contracts, fifteen spikes (all real
 hardware/API evidence — [`specs/archive/spikes/`](https://github.com/civitas-io/fabrica/tree/main/specs/archive/spikes/)),
 every object-model component built and tested, not just designed:
 `Retriever`, `Sandbox`/`SandboxPool` (all three tiers implemented), `ToolManager`,
