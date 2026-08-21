@@ -1,6 +1,6 @@
-# Spike (RESOLVED): real `jailer` integration for `FirecrackerSandbox` — the vsock-inside-a-locked-chroot problem
+# Spike (RESOLVED, AND IMPLEMENTED): real `jailer` integration for `FirecrackerSandbox` — the vsock-inside-a-locked-chroot problem
 
-**Status: fully solved and validated end to end on real hardware, including the previously-open API-socket problem.** A complete cold-boot-through-jailer sequence (stage -> bind vsock before lockdown -> boot via `--config-file`, no runtime API calls at all -> guest connects and sends its real `ready` message) has been run successfully on the homelab. Implementation into `FirecrackerSandbox` itself is the only remaining step -- see "Exact next steps" at the bottom, now much shorter than before.
+**Status: fully solved, validated end to end on real hardware, AND implemented in real, shipped code (`FirecrackerSandbox(use_jailer=True, ...)`, PLAN.md item 21).** A complete cold-boot-through-jailer sequence (stage -> bind vsock before lockdown -> boot via `--config-file`, no runtime API calls at all -> guest connects and sends its real `ready` message) was proven on the homelab first via a throwaway test script, then ported into the real `src/fabrica/sandbox/firecracker_backend.py` (`_boot_jailed_instance`, `_terminate_jailed_instance`). 10 new tests (5 hardware-gated in `tests/sandbox/test_firecracker_backend.py`, 5 pure in the new `tests/sandbox/test_firecracker_jailer_config.py`), verified 3x stable on real hardware with zero leaked processes or files. See `docs/contracts/sandbox.md`'s own "real Tier 2 implementation notes" and `docs/PLAN.md` item 21 for the shipped-code summary -- this doc remains the full research trail and is not superseded, just no longer the place to look for "what's left."
 
 ---
 

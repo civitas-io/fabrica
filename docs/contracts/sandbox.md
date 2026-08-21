@@ -382,6 +382,63 @@ point, plus a `cp *.py`-scoped rule, not blanket root access) in
 This is what makes a SECOND deployer able to actually produce a working
 image, not just re-read a spike's transcript of one machine's history.
 
+**Real `jailer` defense-in-depth hardening now exists, opt-in**
+(`use_jailer=True`, PLAN.md item 21) -- chroot, cgroups, uid/gid drop on
+top of the existing KVM boundary, via Firecracker's own `jailer` binary.
+**Cold-boot only, by direct decision**: combining `use_jailer` with
+`use_snapshot_restore` raises `SandboxConfigurationError` at
+construction time -- a real, separate, harder combination deliberately
+never attempted ("security over optimization"; snapshot+jailer would be
+a third unvalidated combination on top of two already-separately-proven
+ones). Full, empirically-validated mechanism, including every real
+blocker found and how each was resolved (not theorized):
+[SPIKE-firecracker-jailer-vsock-integration.md](../../specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md).
+Summary of what makes this genuinely hard, not just "pass a flag":
+
+- `jailer` locks its jail's `root/` directory to `700 fc-jail:fc-jail`
+  as part of its own setup -- but the vsock host socket living inside
+  it must stay usable by this (unprivileged) process. Solved by binding
+  + `chmod(0o777)`-ing that socket BEFORE invoking `jailer` (while
+  `root/` is still writable), then relying on the already-open file
+  descriptor surviving the subsequent lockdown -- a real, confirmed
+  Unix property (permission checks happen at bind()/connect() time, not
+  on every later operation via an already-open fd), not a weakening of
+  the jail. No new sudo grant was needed for this specifically.
+- Boot configuration goes through Firecracker's own `--config-file`
+  mechanism (a static JSON document, schema confirmed directly against
+  Firecracker v1.16.1's own source), not the runtime REST API the
+  non-jailed paths use -- the API socket is bound by `firecracker`
+  itself as `fc-jail`, not by this process, so the vsock "bind before
+  lockdown" trick does not apply to it. This was confirmed to eliminate
+  the need for a fourth sudo rule that would otherwise have been needed
+  for runtime API calls.
+- Termination and cleanup use two SEPARATE, narrowly-scoped sudo rules,
+  not `process.kill()`: `jailer`'s own process tree forks (the process
+  this class invokes stays root-owned as a monitor; the real
+  `firecracker` process is a separate child that fully drops to the
+  jailed uid/gid -- killing the monitor does not kill that child,
+  confirmed on real hardware), and the whole jail directory is
+  `fc-jail`-owned by the time an instance is done, not this process's
+  own to remove directly.
+
+Requires real infrastructure already set up on the host (a dedicated
+low-privilege user, a chroot base directory, and four narrowly-scoped
+sudoers rules -- start, terminate, stage, cleanup) via
+[`scripts/setup_firecracker_jailer.sh`](../../scripts/setup_firecracker_jailer.sh)
+(idempotent, requires real interactive root, run once by a human --
+not something application code triggers itself) and
+[`scripts/stage_jailer_resources.sh`](../../scripts/stage_jailer_resources.sh)
+(invoked by `FirecrackerSandbox` itself at boot time, via the
+already-approved sudo rule).
+
+**One real, pre-existing, named limitation, not introduced by this
+work**: all jails currently share ONE `fc-jail` uid/gid, for simplicity
+-- Firecracker's own `prod-host-setup.md` recommends per-instance
+unique uid/gid pairs specifically so a broken-out-of jail can't touch
+another jail's resources. A known, accepted tradeoff of this project's
+simplicity choice, not fixed here -- worth revisiting if this ever
+needs to harden further (a uid pool, one per concurrent instance).
+
 **Two real resource leaks found and fixed by inspecting the filesystem
 after real test runs, not assumed clean**: `terminate()` was cleaning up
 the `{vsock_uds}_{port}` guest-connection proxy socket but not
@@ -595,10 +652,17 @@ children, not disconnected spans. Full design:
    `/usr/local/bin/`, not the fixed `/usr/bin/python3` this backend's
    kernel boot args require -- confirmed via a real kernel panic on real
    hardware, not assumed): `docs/deployment/firecracker-rootfs.md`.
-6. **New**: `jailer` (cgroups/namespaces/seccomp/chroot hardening) remains
-   completely unexplored -- explicitly out of scope in both Firecracker
-   spikes, a real gap for production-grade defense-in-depth, not resolved
-   here.
+6. ~~`jailer` (cgroups/namespaces/seccomp/chroot hardening) remains
+   completely unexplored...~~ **Resolved: real, shipped, opt-in
+   (`use_jailer=True`, PLAN.md item 21), cold-boot only.** See this
+   contract's own "`FirecrackerSandbox` -- real Tier 2 implementation
+   notes" above for the full mechanism -- the vsock-inside-a-locked-
+   chroot problem, the `--config-file` boot mechanism, and the four
+   narrowly-scoped sudoers rules involved. Full research trail and every
+   empirical finding:
+   `specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md`.
+   5 new tests verified on real hardware (3 stable runs, zero leaked
+   processes or files each time).
 7. ~~`FirecrackerSandbox`'s real CPU-second accounting...~~ **Resolved:
    real, measured per-call CPU time via `/proc/<pid>/stat` on the host,
    NOT Firecracker's own metrics API** (checked directly against the

@@ -115,8 +115,15 @@ can reference (this is how code mode reaches ~99% token reduction).
 
 Architecture Fabrica must orchestrate (self-hosted Tier 2):
 
-- **`jailer`** — wraps every Firecracker process in cgroups + namespaces + seccomp +
-  chroot *before* boot. Always used for untrusted code (defence-in-depth).
+- **`jailer`** — wraps a Firecracker process in cgroups + namespaces + seccomp +
+  chroot *before* boot, defense-in-depth on top of the KVM boundary. **Real,
+  shipped, opt-in** (`FirecrackerSandbox(use_jailer=True, ...)`, PLAN.md item 21,
+  cold-boot only — not combined with snapshot/restore, a deliberately
+  unvalidated combination). Not the default (`use_jailer=False` preserves the
+  original cold-boot behavior for any existing caller) — full mechanism,
+  including the real vsock-inside-a-locked-chroot problem this required
+  solving, in `specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md`
+  and `docs/contracts/sandbox.md`.
 - **REST API over a Unix socket** — control plane to configure vCPU/memory, block
   devices, network, and lifecycle. Off the VM fast path.
 - **`vsock`** — host↔guest communication over `AF_VSOCK`↔`AF_UNIX`; how Fabrica ships

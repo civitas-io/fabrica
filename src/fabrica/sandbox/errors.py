@@ -38,6 +38,19 @@ class SandboxCrashedError(SandboxError):
     """
 
 
+class SandboxConfigurationError(SandboxError):
+    """An invalid combination of constructor arguments was given -- raised
+    at construction time, before any real resource (process, socket,
+    file) is ever touched. First real use: FirecrackerSandbox rejects
+    `use_jailer=True` combined with `use_snapshot_restore=True` --
+    deliberately never validated (a real, separate, harder combination on
+    top of two already-separately-validated ones), per direct user
+    decision ("security over optimization", cold-boot only for jailer
+    support) -- see specs/archive/spikes/
+    SPIKE-firecracker-jailer-vsock-integration.md.
+    """
+
+
 class SandboxPoolExhaustedError(SandboxError):
     """acquire() found no handle within acquire_timeout -- both the warm
     pool and cold-start-up-to-max_concurrent were unavailable. Structured

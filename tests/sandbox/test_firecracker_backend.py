@@ -526,3 +526,129 @@ async def test_use_snapshot_restore_false_by_default_preserves_cold_boot_behavio
         assert result.stdout.strip() == "cold boot unchanged"
     finally:
         await backend.terminate(handle)
+
+
+# ---------------------------------------------------------------------------
+# use_jailer=True -- real defense-in-depth hardening, PLAN.md item 21.
+# Fully validated on the homelab in
+# specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md before
+# this real implementation was written -- see that doc for the full,
+# empirically-confirmed mechanism (config-file schema, bind-before-lockdown
+# vsock trick, the three narrowly-scoped sudoers rules) these tests exercise
+# against the actual shipped code, not a throwaway spike script.
+# ---------------------------------------------------------------------------
+
+_JAILER_BINARY = os.environ.get("FABRICA_FC_JAILER", "")
+_STAGE_SCRIPT = os.environ.get("FABRICA_FC_STAGE_SCRIPT", "")
+_CHROOT_BASE_DIR = os.environ.get("FABRICA_FC_CHROOT_BASE_DIR", "/srv/jailer")
+_JAIL_UID = int(os.environ.get("FABRICA_FC_JAIL_UID", "0") or "0")
+_JAIL_GID = int(os.environ.get("FABRICA_FC_JAIL_GID", "0") or "0")
+
+_JAILER_ENV_AVAILABLE = (
+    _REAL_ENV_AVAILABLE
+    and bool(_JAILER_BINARY)
+    and (shutil.which(_JAILER_BINARY) is not None or Path(_JAILER_BINARY).exists())
+    and bool(_STAGE_SCRIPT)
+    and Path(_STAGE_SCRIPT).exists()
+    and _JAIL_UID > 0
+    and _JAIL_GID > 0
+)
+
+jailer_skip = pytest.mark.skipif(
+    not _JAILER_ENV_AVAILABLE,
+    reason=(
+        "requires real jailer infra + FABRICA_FC_JAILER/_STAGE_SCRIPT/"
+        "_JAIL_UID/_JAIL_GID env vars (Linux only)"
+    ),
+)
+
+
+@pytest.fixture
+def jailed_backend() -> FirecrackerSandbox:
+    return FirecrackerSandbox(
+        firecracker_binary=_FC_BINARY,
+        kernel_image_path=_FC_KERNEL,
+        base_rootfs_path=_FC_ROOTFS,
+        use_jailer=True,
+        jailer_binary=_JAILER_BINARY,
+        jail_uid=_JAIL_UID,
+        jail_gid=_JAIL_GID,
+        chroot_base_dir=_CHROOT_BASE_DIR,
+        stage_script=_STAGE_SCRIPT,
+    )
+
+
+@jailer_skip
+async def test_jailer_health_check_true_when_artifacts_present(
+    jailed_backend: FirecrackerSandbox,
+) -> None:
+    assert await jailed_backend.health_check() is True
+
+
+@jailer_skip
+async def test_boot_jailed_produces_a_real_working_tier_2_handle(
+    jailed_backend: FirecrackerSandbox,
+) -> None:
+    handle = await jailed_backend.boot_clean()
+    try:
+        assert handle.tier == 2
+        result = await jailed_backend.execute(
+            handle,
+            "print('hello from a jailed microVM')",
+            on_tool_call=_no_tool_calls,
+            timeout=15.0,
+        )
+        assert result.success is True, result.error_message
+        assert result.stdout.strip() == "hello from a jailed microVM"
+    finally:
+        await jailed_backend.terminate(handle)
+
+
+@jailer_skip
+async def test_jailed_instance_real_tool_call_round_trip(
+    jailed_backend: FirecrackerSandbox,
+) -> None:
+    handle = await jailed_backend.boot_clean()
+    try:
+
+        async def add_tool(tool: str, params: dict[str, Any]) -> dict[str, Any]:
+            return {"success": True, "value": params["a"] + params["b"], "error_message": None}
+
+        code = (
+            "result = namespace.call('add', {'a': 4, 'b': 5})\n"
+            "print(f'4 + 5 = {result[\"value\"]}')\n"
+        )
+        result = await jailed_backend.execute(handle, code, on_tool_call=add_tool, timeout=15.0)
+        assert result.success is True
+        assert result.stdout.strip() == "4 + 5 = 9"
+        assert result.tool_call_count == 1
+    finally:
+        await jailed_backend.terminate(handle)
+
+
+@jailer_skip
+async def test_terminate_jailed_instance_removes_the_jail_directory(
+    jailed_backend: FirecrackerSandbox,
+) -> None:
+    handle = await jailed_backend.boot_clean()
+    state = jailed_backend._instances[handle.id]
+    jail_dir = state.jail_dir
+    assert jail_dir is not None
+    await jailed_backend.terminate(handle)
+    # The whole jail directory (kernel + rootfs copy + config + sockets,
+    # fc-jail-owned by this point) must be gone -- the scoped
+    # fabrica-jailer-cleanup sudoers rule this depends on. Checking
+    # non-existence works fine even though this process can't LIST the
+    # parent directory (711, traverse-only) -- a nonexistent path's own
+    # stat() just returns ENOENT, no permission barrier involved.
+    assert not jail_dir.exists()
+
+
+@jailer_skip
+async def test_close_is_a_safe_no_op_for_jailed_backend(
+    jailed_backend: FirecrackerSandbox,
+) -> None:
+    # use_jailer=True allocates no backend-instance-level resource of its
+    # own (unlike use_snapshot_restore's golden snapshot) -- every real
+    # resource is per-instance-id and already torn down by terminate().
+    await jailed_backend.close()  # must not raise

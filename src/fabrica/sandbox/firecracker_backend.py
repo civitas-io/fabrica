@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from fabrica.sandbox.errors import (
+    SandboxConfigurationError,
     SandboxCrashedError,
     SandboxTimeoutError,
     SandboxToolCallTimeoutError,
@@ -103,6 +104,7 @@ class _InstanceState:
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
         vsock_server: asyncio.AbstractServer,
+        jail_dir: Path | None = None,
     ) -> None:
         # rootfs_copy is None for a snapshot-restored instance -- it has
         # no per-instance rootfs copy of its own; restore always
@@ -119,6 +121,18 @@ class _InstanceState:
         self.reader = reader
         self.writer = writer
         self.vsock_server = vsock_server
+        # jail_dir is None for every non-jailed instance (cold-boot or
+        # restored) -- set only for a real `use_jailer=True` instance,
+        # to the exact per-jail directory
+        # (<chroot_base_dir>/<exec_basename>/<instance_id>) the scoped
+        # `fabrica-jailer-cleanup` sudoers rule permits removing.
+        # terminate() dispatches on this field to decide which real
+        # teardown path an instance needs -- a jailed process is a
+        # separate, unprivileged child jailer detached from (killing the
+        # sudo-invoked jailer monitor does NOT kill it, confirmed on real
+        # hardware), and its on-disk footprint is fc-jail-owned by the
+        # time it's done, not this process's own to delete directly.
+        self.jail_dir = jail_dir
 
 
 async def _send(writer: asyncio.StreamWriter, message: dict[str, Any]) -> None:
@@ -154,6 +168,67 @@ def _cleanup_files(
         paths.append(rootfs_copy)
     for path in paths:
         path.unlink(missing_ok=True)
+
+
+async def _terminate_jailed_instance(
+    *, instance_id: str, jail_dir: Path, console_log: Path | None = None
+) -> None:
+    """Real teardown for a `use_jailer=True` instance -- deliberately NOT
+    `process.kill()` + `_cleanup_files()`, the non-jailed path's shape.
+    Two real, confirmed-on-hardware findings drive this:
+
+    1. `jailer`'s own process tree forks -- the process this backend
+       invokes via `sudo` stays root-owned as a monitor, while the
+       actual `firecracker` process is a SEPARATE child that fully drops
+       to the jailed uid/gid. Killing the monitor does NOT kill that
+       child (confirmed directly: it is orphaned instead). A scoped
+       `pkill -u fc-jail -f` rule, bounded to the dedicated single-
+       purpose `fc-jail` account and a real, stable substring of
+       Firecracker's own argv shape, is required instead.
+    2. By the time an instance is done, its whole jail directory is
+       `fc-jail`-owned -- this process has no permission to remove it
+       directly. A separate, narrowly-scoped `rm -rf` rule (matched via
+       32 repetitions of the `[0-9a-f]` character class against
+       `instance_id`, never a raw `*` wildcard, which sudoers' fnmatch-
+       style globbing would treat as path-traversal-permissive) handles
+       this.
+
+    Both `sudo` calls are fire-and-forget from this method's own
+    perspective on failure (best-effort, matching `_cleanup_files`'s own
+    posture of never raising from a teardown path) -- a failed cleanup
+    here is a real, but non-fatal, resource leak, not a correctness
+    issue for the caller.
+    """
+    pkill = await asyncio.create_subprocess_exec(
+        "sudo",
+        "-n",
+        "pkill",
+        "-9",
+        "-u",
+        "fc-jail",
+        "-f",
+        "--",
+        f"--id {instance_id} --start-time-us",
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+    await pkill.wait()
+    # Give the killed process a brief moment to actually exit before
+    # removing its jail directory out from under it -- mirrors the
+    # non-jailed path's own `await process.wait()` after kill().
+    await asyncio.sleep(0.1)
+    rm = await asyncio.create_subprocess_exec(
+        "sudo",
+        "-n",
+        "rm",
+        "-rf",
+        str(jail_dir),
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+    await rm.wait()
+    if console_log is not None:
+        console_log.unlink(missing_ok=True)
 
 
 async def _api_put(api_sock: Path, path: str, body: dict[str, Any]) -> None:
@@ -226,6 +301,12 @@ class FirecrackerSandbox:
         guest_shim_path: str = "/tmp/guest_shim.py",
         socket_dir: str = "/tmp",
         use_snapshot_restore: bool = False,
+        use_jailer: bool = False,
+        jailer_binary: str = "",
+        jail_uid: int = 0,
+        jail_gid: int = 0,
+        chroot_base_dir: str = "/srv/jailer",
+        stage_script: str = "",
     ) -> None:
         """`kernel_image_path`/`base_rootfs_path` are real, deployment-
         specific artifacts (a vmlinux image, an ext4 rootfs with
@@ -275,6 +356,57 @@ class FirecrackerSandbox:
         ever needs a restored instance's disk writes to durably persist
         or be inspected after termination -- this design does not
         support that.
+
+        `use_jailer=True` (default False, PLAN.md item 21) turns on real
+        defense-in-depth hardening via Firecracker's own `jailer` binary
+        -- chroot, cgroups, uid/gid drop -- on top of the existing KVM
+        boundary. **Cold-boot only, by direct decision**: combining
+        `use_jailer` with `use_snapshot_restore` raises
+        `SandboxConfigurationError` at construction time -- a real,
+        separate, harder combination deliberately never validated
+        ("security over optimization"). Requires `jailer_binary`,
+        `chroot_base_dir`, and `stage_script` to all be given together
+        when `use_jailer=True` -- real, deployment-specific values this
+        class receives, never derives itself. See
+        `specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md`
+        for the full, empirically-validated mechanism -- summarized here
+        only where it affects this class's own behavior:
+
+        - Kernel + a fresh per-instance rootfs copy are staged into the
+          jail by `stage_script`, invoked via `sudo -n` against a real,
+          narrowly-scoped sudoers rule -- not built by this class
+          directly, since the jail's `root/` directory does not exist,
+          and is not writable by this process, until the script
+          (running as root) creates it.
+        - The real hard problem this mechanism solves: `jailer` locks
+          `root/` to `700 fc-jail:fc-jail` as part of its own setup, but
+          the vsock host socket living inside it must stay usable by
+          this (unprivileged) process. Fixed by binding +
+          `chmod(0o777)`-ing that socket BEFORE invoking `jailer` (while
+          `root/` is still writable), then relying on the already-open
+          file descriptor surviving the subsequent lockdown -- a real,
+          confirmed Unix property (permission checks happen at
+          bind()/connect() time, not on every later operation via an
+          already-open fd), not a weakening of the jail.
+        - Boot configuration goes through Firecracker's own
+          `--config-file` mechanism (a static JSON document written
+          directly by this process before `jailer` runs), not the
+          runtime REST API the non-jailed paths use -- the API socket is
+          bound by `firecracker` itself, running as `fc-jail`, not by
+          this process, so the vsock "bind before lockdown" trick does
+          not apply to it. Confirmed this eliminates the need for any
+          further sudo grant.
+        - Termination uses a separate, scoped `pkill` rule, not
+          `process.kill()`: `jailer`'s own process tree forks -- the
+          process this class invokes via `sudo` stays root-owned as a
+          monitor, while the actual `firecracker` process is a separate
+          child that fully drops to the jailed uid/gid; killing the
+          monitor does not kill that child (confirmed on real hardware --
+          it is orphaned instead). Cleanup of the jail's on-disk
+          footprint (potentially 1GB+ per instance) uses a third,
+          separate, narrowly-scoped `rm` rule for the same reason -- by
+          the time an instance is done, its whole jail directory is
+          `fc-jail`-owned, not this process's own to delete directly.
         """
         self._firecracker_binary = firecracker_binary
         self._kernel_image_path = kernel_image_path
@@ -284,6 +416,24 @@ class FirecrackerSandbox:
         self._guest_shim_path = guest_shim_path
         self._socket_dir = Path(socket_dir)
         self._use_snapshot_restore = use_snapshot_restore
+        self._use_jailer = use_jailer
+        self._jailer_binary = jailer_binary
+        self._jail_uid = jail_uid
+        self._jail_gid = jail_gid
+        self._chroot_base_dir = chroot_base_dir
+        self._stage_script = stage_script
+        if use_jailer and use_snapshot_restore:
+            raise SandboxConfigurationError(
+                "use_jailer=True and use_snapshot_restore=True cannot be combined -- "
+                "this combination has deliberately never been validated (see "
+                "specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md); "
+                "jailer support is cold-boot only"
+            )
+        if use_jailer and not (jailer_binary and chroot_base_dir and stage_script):
+            raise SandboxConfigurationError(
+                "use_jailer=True requires jailer_binary, chroot_base_dir, and "
+                "stage_script to all be given"
+            )
         self._instances: dict[str, _InstanceState] = {}
         # Golden-snapshot state -- backend-INSTANCE-level, not per-handle
         # (Sandbox.close()'s own docstring names exactly this shape of
@@ -304,6 +454,8 @@ class FirecrackerSandbox:
             SandboxCrashedError: the guest never sent "ready" within
                 _BOOT_READY_TIMEOUT.
         """
+        if self._use_jailer:
+            return await self._boot_jailed_instance()
         if self._use_snapshot_restore:
             await self._ensure_golden_snapshot()
             return await self._restore_instance()
@@ -430,6 +582,183 @@ class FirecrackerSandbox:
             reader=reader,
             writer=writer,
             vsock_server=vsock_server,
+        )
+        return SandboxHandle(id=instance_id, tier=2)
+
+    async def _boot_jailed_instance(self) -> SandboxHandle:
+        """Real `jailer`-hardened cold boot -- see `__init__`'s own
+        docstring and
+        `specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md`
+        for the full, empirically-validated mechanism. Every step here
+        mirrors a specific, real finding from that investigation; see
+        inline comments for which.
+
+        Uses the FULL 32-character `uuid4().hex` for `instance_id`, not
+        the 8-character truncation the non-jailed paths use -- the real,
+        already-installed `fabrica-jailer-cleanup` sudoers rule is
+        pattern-matched against exactly 32 `[0-9a-f]` characters, and a
+        shorter id would simply never match that grant.
+        """
+        instance_id = uuid.uuid4().hex
+        exec_basename = Path(self._firecracker_binary).name
+        jail_dir = Path(self._chroot_base_dir) / exec_basename / instance_id
+        jail_root = jail_dir / "root"
+        console_log = self._socket_dir / f"fc-{instance_id}-console.log"
+
+        # 1. Stage kernel + a fresh per-instance rootfs copy into the
+        #    jail -- must happen via the scoped script, running as root,
+        #    since jail_root does not exist (and this process cannot
+        #    create it) until this runs.
+        stage_proc = await asyncio.create_subprocess_exec(
+            "sudo",
+            "-n",
+            self._stage_script,
+            self._chroot_base_dir,
+            exec_basename,
+            instance_id,
+            self._kernel_image_path,
+            self._base_rootfs_path,
+            str(self._jail_uid),
+            str(self._jail_gid),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+        stage_output, _ = await stage_proc.communicate()
+        if stage_proc.returncode != 0:
+            raise SandboxCrashedError(
+                f"jailer staging failed for instance {instance_id}: "
+                f"{stage_output.decode(errors='replace')}"
+            )
+
+        # 2. Write the boot configuration directly -- a plain,
+        #    unprivileged file write. jail_root is still owned by this
+        #    process at this point (the staging script deliberately
+        #    leaves it that way, see stage_jailer_resources.sh's own
+        #    header), so no privileged script is needed for this file.
+        #    Real schema, confirmed against Firecracker v1.16.1's own
+        #    source (src/vmm/src/resources.rs's VmmConfig struct) and
+        #    empirically validated end to end, not assumed. boot_args
+        #    must match the non-jailed paths' exact value -- omitting
+        #    the init= override silently boots the rootfs's own default
+        #    init instead of the guest shim, with no error signal at all
+        #    (a real mistake made and caught during validation).
+        boot_args = (
+            f"console=ttyS0 reboot=k panic=1 init=/usr/bin/python3 -- {self._guest_shim_path}"
+        )
+        vm_config = {
+            "boot-source": {"kernel_image_path": "/kernel", "boot_args": boot_args},
+            "drives": [
+                {
+                    "drive_id": "rootfs",
+                    "path_on_host": "/rootfs.ext4",
+                    "is_root_device": True,
+                    "is_read_only": False,
+                }
+            ],
+            "machine-config": {
+                "vcpu_count": self._vcpu_count,
+                "mem_size_mib": self._mem_size_mib,
+            },
+            "vsock": {"guest_cid": 3, "uds_path": "/vsock.sock"},
+        }
+        (jail_root / "vm-config.json").write_text(json.dumps(vm_config))
+
+        # 3. Bind + listen the vsock socket INSIDE jail_root, BEFORE
+        #    jailer runs, while jail_root is still writable by this
+        #    process -- the real fix for the hard problem this whole
+        #    mechanism exists to solve (see __init__'s own docstring).
+        #    Explicit chmod(0o777): Python's default socket.bind() 
+        #    leaves "other" without write access, and fc-jail (once
+        #    jailer locks jail_root down) is evaluated as "other" for
+        #    this file -- confirmed to be the actual, only real bug
+        #    behind every earlier vsock failure, not a fundamental wall.
+        vsock_uds = jail_root / "vsock.sock"
+        vsock_sock_path = f"{vsock_uds}_{_HOST_VSOCK_PORT}"
+
+        vsock_connection: asyncio.Future[tuple[asyncio.StreamReader, asyncio.StreamWriter]] = (
+            asyncio.get_event_loop().create_future()
+        )
+
+        async def _accept_guest_connection(
+            reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        ) -> None:
+            if not vsock_connection.done():
+                vsock_connection.set_result((reader, writer))
+
+        vsock_server = await asyncio.start_unix_server(
+            _accept_guest_connection, path=vsock_sock_path
+        )
+        os.chmod(vsock_sock_path, 0o777)
+
+        # 4. Invoke jailer -- root/ locks down to fc-jail:fc-jail from
+        #    this point on. No --daemonize: it would have to appear
+        #    BEFORE the trailing `--`, which would break the exact,
+        #    already-approved sudoers pattern match; not needed anyway,
+        #    since without it jailer just exec()s straight into
+        #    firecracker in the foreground (same PID) -- a non-blocking
+        #    process handle achieves the same effect. Boot goes entirely
+        #    through --config-file, no runtime API calls -- the API
+        #    socket is unreachable to this process once root/ is locked
+        #    (bound by firecracker itself as fc-jail, not by this
+        #    process, so the vsock "bind before lockdown" trick does not
+        #    apply to it -- confirmed --config-file avoids needing it at
+        #    all).
+        process = await asyncio.create_subprocess_exec(
+            "sudo",
+            "-n",
+            self._jailer_binary,
+            "--id",
+            instance_id,
+            "--exec-file",
+            self._firecracker_binary,
+            "--uid",
+            str(self._jail_uid),
+            "--gid",
+            str(self._jail_gid),
+            "--chroot-base-dir",
+            self._chroot_base_dir,
+            "--",
+            "--config-file",
+            "/vm-config.json",
+            "--no-api",
+            stdout=open(console_log, "wb"),  # noqa: SIM115 -- lifetime matches the subprocess, not this scope
+            stderr=asyncio.subprocess.STDOUT,
+        )
+
+        try:
+            reader, writer = await asyncio.wait_for(vsock_connection, timeout=_BOOT_READY_TIMEOUT)
+            ready_message = await asyncio.wait_for(_recv(reader), timeout=_BOOT_READY_TIMEOUT)
+        except (TimeoutError, asyncio.IncompleteReadError) as exc:
+            vsock_server.close()
+            await _terminate_jailed_instance(
+                instance_id=instance_id, jail_dir=jail_dir, console_log=console_log
+            )
+            raise SandboxCrashedError(
+                f"jailed firecracker instance {instance_id} never sent a real "
+                f"'ready' message within {_BOOT_READY_TIMEOUT}s -- see {console_log} "
+                f"for boot detail"
+            ) from exc
+
+        if ready_message.get("type") != "ready":
+            vsock_server.close()
+            await _terminate_jailed_instance(
+                instance_id=instance_id, jail_dir=jail_dir, console_log=console_log
+            )
+            raise SandboxCrashedError(
+                f"jailed firecracker instance {instance_id} sent an unexpected first "
+                f"message instead of 'ready': {ready_message!r}"
+            )
+
+        self._instances[instance_id] = _InstanceState(
+            api_sock=Path(""),  # no API socket in --no-api jailed mode -- never used
+            vsock_uds=vsock_uds,
+            rootfs_copy=None,  # lives inside jail_dir, removed by _terminate_jailed_instance
+            console_log=console_log,
+            process=process,
+            reader=reader,
+            writer=writer,
+            vsock_server=vsock_server,
+            jail_dir=jail_dir,
         )
         return SandboxHandle(id=instance_id, tier=2)
 
@@ -682,16 +1011,30 @@ class FirecrackerSandbox:
         """Always terminates -- SandboxPool's own always-terminate-never-
         reuse rule, applied here exactly as it is for SubprocessSandbox:
         kills the real firecracker process, closes the vsock listener,
-        and removes this instance's rootfs copy + socket files."""
+        and removes this instance's rootfs copy + socket files.
+
+        Dispatches on `state.jail_dir` -- a jailed instance's real
+        `firecracker` process is a separate child `jailer`'s own process
+        tree forks off, fully dropped to an unprivileged uid/gid;
+        `process.kill()` here would only kill the root-owned `sudo`/
+        `jailer` monitor, leaving that child orphaned (confirmed on real
+        hardware) -- see `_terminate_jailed_instance`'s own docstring for
+        the full, real reasoning.
+        """
         state = self._instances.pop(handle.id, None)
         if state is None:
+            return
+        state.vsock_server.close()
+        with contextlib.suppress(Exception):
+            state.writer.close()
+        if state.jail_dir is not None:
+            await _terminate_jailed_instance(
+                instance_id=handle.id, jail_dir=state.jail_dir, console_log=state.console_log
+            )
             return
         with contextlib.suppress(ProcessLookupError):
             state.process.kill()
             await state.process.wait()
-        state.vsock_server.close()
-        with contextlib.suppress(Exception):
-            state.writer.close()
         _cleanup_files(
             api_sock=state.api_sock,
             rootfs_copy=state.rootfs_copy,
@@ -703,14 +1046,26 @@ class FirecrackerSandbox:
         """A lightweight is-alive check, matching SubprocessSandbox's own
         intent for this method -- confirms the real binary/kernel/rootfs
         artifacts this backend depends on actually exist, never boots a
-        real VM to check."""
-        return (
+        real VM to check. Also confirms `jailer_binary`/`stage_script`
+        exist when `use_jailer=True` -- the same real artifacts
+        `_boot_jailed_instance` depends on."""
+        base_ok = (
             (
                 shutil.which(self._firecracker_binary) is not None
                 or Path(self._firecracker_binary).exists()
             )
             and Path(self._kernel_image_path).exists()
             and Path(self._base_rootfs_path).exists()
+        )
+        if not self._use_jailer:
+            return base_ok
+        return (
+            base_ok
+            and (
+                shutil.which(self._jailer_binary) is not None
+                or Path(self._jailer_binary).exists()
+            )
+            and Path(self._stage_script).exists()
         )
 
     async def close(self) -> None:

@@ -13,26 +13,31 @@ the full remaining backlog, sorted easiest first, most complex last.
 **Status as of this update: Phase 1, Phase 2's Easy tier, and Phase 2's
 Medium tier are ALL fully complete.** Phase 2's Complex tier: items 19
 (Tier 1 via `SrtSandbox`), 20/20a (snapshot/restore, spiked AND
-implemented), 22 (managers-as-GenServers, resolved as a documented
-finding) are done. Item 25 (context-footprint metering, added
-mid-session) is done.
+implemented), 21 (`jailer` integration, spiked AND implemented), 22
+(managers-as-GenServers, resolved as a documented finding) are done.
+Item 25 (context-footprint metering, added mid-session) is done.
 
-**RIGHT NOW: item 21 (`jailer` integration) is IN PROGRESS, mid-
-implementation, NOT done.** This is the single most important thing to
-read before doing anything else: **[`specs/archive/spikes/SPIKE-
+**Item 21 (`jailer` integration) is now DONE, real, shipped, opt-in
+(`use_jailer=True`), cold-boot only.** A genuinely hard problem (vsock
+inside a directory `jailer` locks down to `700 fc-jail`) was found,
+researched against Firecracker's own official docs, and solved --
+validated end to end on real hardware, a real guest booting through the
+real jail boundary. A second problem (the API socket) was resolved via
+Firecracker's own `--config-file` mechanism, schema confirmed directly
+against Firecracker's own source. Real infrastructure (a dedicated
+`fc-jail` user, FOUR scoped sudoers rules, a real idempotent bootstrap
+script) is set up and validated on the homelab. Implemented in
+`src/fabrica/sandbox/firecracker_backend.py`, 10 new tests (5 hardware-
+gated, 5 pure), verified 3x stable on real hardware with zero leaked
+processes or files. Full research trail, every empirical finding, and
+the real mechanism: [`specs/archive/spikes/SPIKE-
 firecracker-jailer-vsock-integration.md`](specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md)
-has the full research trail, every empirical finding, and the exact
-remaining implementation steps, in order.** A genuinely hard problem
-(vsock inside a directory `jailer` locks down to `700 fc-jail`) was
-found, researched against Firecracker's own official docs, and SOLVED
--- validated end to end on real hardware, a real guest booting through
-the real jail boundary. Real infrastructure (a dedicated `fc-jail`
-user, three scoped sudoers rules, a real idempotent bootstrap script)
-is already set up and working on the homelab. **Do not re-derive any of
-this or re-run the empirical tests already done** -- read the spike
-doc, then continue from its own "Exact next steps" section. Items 23/24
-(managed-provider adapters, `TunnelProvider` backends) remain untouched
-after item 21 wraps up.
+and `docs/contracts/sandbox.md`'s own "real Tier 2 implementation
+notes" section.
+
+**Next up: items 23/24** (managed-provider adapters -- blocked on
+credentials; `TunnelProvider` concrete backends) are the only remaining
+open Complex-tier items -- see `docs/PLAN.md` directly.
 
 ---
 
@@ -71,7 +76,7 @@ and points at where the reasoning actually lives, not a retelling.
 ### Design phase: complete
 
 Full discovery→define→design→validate→critique→architecture→system-design→contracts
-arc. Fourteen spikes, all real hardware/API evidence, in `specs/archive/spikes/`
+arc. Fifteen spikes, all real hardware/API evidence, in `specs/archive/spikes/`
 (twelve from the original arc, plus
 [SPIKE-tessera-credential-integration.md](specs/archive/spikes/SPIKE-tessera-credential-integration.md)).
 Nine contracts (`Retriever`, `Sandbox`, `managers.md`, `memory.md`,
