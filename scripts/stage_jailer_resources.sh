@@ -1,19 +1,16 @@
 #!/bin/bash
-# STATUS: written and manually validated for the kernel/rootfs staging
-# step specifically, but NOT YET the final design -- see
-# specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md
-# for the full, real reason: this script's current `chown -R` on the
-# WHOLE per-jail directory tree (below) conflicts with the vsock design
-# also validated in that spike, which needs `root/` itself to stay
-# writable by the INVOKING user until AFTER it binds the vsock socket,
-# not immediately locked to fc-jail by this script. Real fix needed
-# before this is used in real FirecrackerSandbox code: chown ONLY the
-# kernel/rootfs files to fc-jail, leave `root/` itself invoker-owned
-# (jailer will correctly chown `root/` itself on its own, non-
-# recursively, when it runs -- confirmed empirically in that spike).
-# This script's ALREADY-INSTALLED sudoers rule covers this exact
-# command shape either way, so fixing the internals here needs no new
-# privilege grant, just a real code change, not yet made.
+# STATUS: real, final design -- fixed after the vsock investigation in
+# specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md.
+# root/ itself is chowned back to the INVOKING user (via $SUDO_USER),
+# not fc-jail -- only the kernel/rootfs files are chowned to the jail
+# uid/gid. This is required so the invoking user can still bind+chmod
+# the vsock socket inside root/ AFTER this script returns but BEFORE
+# jailer runs and locks root/ down. jailer itself still correctly
+# chowns root/ to fc-jail on its own, non-recursively, when it runs --
+# confirmed empirically in that spike (pre-existing files/sockets keep
+# their original ownership, jailer's own chown pass never touches
+# them). No new sudoers grant was needed for this fix -- the exact
+# positional-argument command shape this script accepts is unchanged.
 #
 # ONE narrow, audited operation, invoked via sudo by FirecrackerSandbox
 # itself (real jailer support, cold-boot only -- PLAN.md item 21):
@@ -99,8 +96,25 @@ if [ -e "$JAIL_ROOT" ]; then
 fi
 
 mkdir -p "$JAIL_ROOT"
+# Same reasoning as the chroot base dir itself (see
+# setup_firecracker_jailer.sh) -- this exec-basename-level directory is
+# shared across every jail of this binary, created fresh by mkdir -p
+# above on first use, and its default mode depends on root's umask
+# (not something to rely on for a security-relevant property). Force
+# it explicitly: traverse-only for everyone, matching the chroot base
+# dir's own 711.
+chmod 711 "$CHROOT_BASE_DIR/$EXEC_BASENAME"
 cp "$KERNEL_PATH" "$JAIL_ROOT/kernel"
 cp "$ROOTFS_PATH" "$JAIL_ROOT/rootfs.ext4"
-chown -R "$JAIL_UID:$JAIL_GID" "$CHROOT_BASE_DIR/$EXEC_BASENAME/$JAIL_ID"
 
-echo "staged: $JAIL_ROOT/kernel, $JAIL_ROOT/rootfs.ext4"
+# Only the two staged files become fc-jail-owned -- firecracker (once
+# jailer drops it to that uid/gid) needs read access to the kernel and
+# read/write access to the rootfs. root/ itself is deliberately left
+# owned by the invoking user (real finding: sudo sets $SUDO_USER to the
+# original caller's name; falls back to the current user if somehow
+# unset, e.g. a direct root invocation during manual testing).
+chown "$JAIL_UID:$JAIL_GID" "$JAIL_ROOT/kernel" "$JAIL_ROOT/rootfs.ext4"
+chown "${SUDO_USER:-$(id -un)}:${SUDO_USER:-$(id -un)}" "$JAIL_ROOT"
+chmod 770 "$JAIL_ROOT"
+
+echo "staged: $JAIL_ROOT/kernel, $JAIL_ROOT/rootfs.ext4 (root/ left writable by ${SUDO_USER:-$(id -un)} for vsock binding)"

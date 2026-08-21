@@ -1,6 +1,6 @@
-# Spike (IN PROGRESS): real `jailer` integration for `FirecrackerSandbox` — the vsock-inside-a-locked-chroot problem
+# Spike (RESOLVED): real `jailer` integration for `FirecrackerSandbox` — the vsock-inside-a-locked-chroot problem
 
-**Status:** Research + empirical validation complete for the core mechanism. Implementation NOT YET STARTED. This doc exists so the next session can resume without re-deriving any of this — see "Exact next steps" at the bottom.
+**Status: fully solved and validated end to end on real hardware, including the previously-open API-socket problem.** A complete cold-boot-through-jailer sequence (stage -> bind vsock before lockdown -> boot via `--config-file`, no runtime API calls at all -> guest connects and sends its real `ready` message) has been run successfully on the homelab. Implementation into `FirecrackerSandbox` itself is the only remaining step -- see "Exact next steps" at the bottom, now much shorter than before.
 
 ---
 
@@ -62,26 +62,47 @@ This looked like it would need a **4th sudo rule** (scoped `curl -X PUT --unix-s
 
 **If this works as documented, it eliminates the need for a 4th sudo rule entirely**: the staging script (already privileged, already approved, already runs before `jailer`) can write this config file directly into `root/` at the same time it places the kernel/rootfs — no runtime API calls needed at all. Readiness detection then just reuses the SAME vsock "ready" message already relied on for the non-jailed and cold-boot paths — no need to poll for `api.sock`'s existence (which `kodiac` can't do anyway once `root/` is locked).
 
-**What is NOT yet verified, and is the actual next step**: the real, exact JSON schema `--config-file` expects on THIS installed v1.16.1 binary. The bundled OpenAPI spec (`firecracker_spec-v1.16.1.yaml`) was grepped for `config-file`/`config_file` and returned nothing — the config-file schema is likely a separate Rust struct not exposed in the HTTP API's own OpenAPI spec, so it needs to be found a different way (check `firecracker --help` more fully, check for a bundled JSON schema file, or just empirically test a real minimal config file and see what error messages reveal about required fields).
+**RESOLVED.** The bundled OpenAPI spec doesn't cover it (it's a separate Rust struct, not part of the HTTP API surface) -- found the real schema directly in Firecracker's own source at the pinned `v1.16.1` tag: `src/vmm/src/resources.rs`'s `VmmConfig` struct, `#[serde(rename_all = "kebab-case")]` at the TOP LEVEL only (`boot-source`, `drives`, `machine-config`, `vsock`, `logger`, etc.) -- nested structs (`BootSourceConfig`, `BlockDeviceConfig`, `VsockDeviceConfig`, `MachineConfig`, confirmed directly from `vmm_config/boot_source.rs`/`drive.rs`/`vsock.rs`/`machine_config.rs`) keep their own plain snake_case field names verbatim, matching the same field names the PUT-based API uses. **Confirmed empirically working end to end**, not just schema-plausible:
+
+```json
+{
+  "boot-source": {
+    "kernel_image_path": "/kernel",
+    "boot_args": "console=ttyS0 reboot=k panic=1 init=/usr/bin/python3 -- /tmp/guest_shim.py"
+  },
+  "drives": [
+    {"drive_id": "rootfs", "path_on_host": "/rootfs.ext4", "is_root_device": true, "is_read_only": false}
+  ],
+  "machine-config": {"vcpu_count": 1, "mem_size_mib": 256},
+  "vsock": {"guest_cid": 3, "uds_path": "/vsock.sock"}
+}
+```
+
+(`boot_args` must exactly match `FirecrackerSandbox`'s own real cold-boot value -- `init=/usr/bin/python3 -- {guest_shim_path}` -- a first attempt without the `init=` override silently booted the rootfs's default init instead of the guest shim, no error, no crash, just nothing ever connecting on vsock; this cost real debugging time and is worth flagging explicitly so it isn't repeated.)
+
+**The full sequence was run successfully together, once, live, on the homelab**: stage (via the real, now-fixed `stage_jailer_resources.sh`) -> write `vm-config.json` directly (kodiak, unprivileged, since `root/` is still writable at this point -- no privileged script needed for this file at all) -> bind+listen+`chmod(0o777)` the vsock socket (same trick as before) -> invoke `jailer` with `--config-file /vm-config.json --no-api` after the trailing `--` (no runtime API calls made or needed) -> guest boots, connects out over vsock, sends the real `{"type": "ready"}` message, received by the pre-bound listener. **No 4th sudo rule needed, confirmed, not just theorized.**
+
+**Two real, load-bearing fixes found along the way, both now applied**:
+1. `--daemonize` must NOT be used with the sudoers-approved invocation shape -- it has to appear BEFORE the trailing `--`, which breaks the exact fixed-string sudoers match (`--chroot-base-dir <dir> -- *`). Not needed anyway: without it, `jailer` just `exec()`s straight into `firecracker` in the foreground (same PID), so launching via a non-blocking `Popen` instead of a blocking `run()` achieves the same effect with zero sudoers changes.
+2. **A second, previously-unanticipated permission wall, found only once actually testing this for real**: `/srv/jailer` itself (the chroot base directory, created `700 root:root` by the original bootstrap script) blocks the invoking user from traversing down to a jail's `root/` directory at all, regardless of `root/`'s own ownership -- `root/` being kodiak-writable is irrelevant if you can't reach it. **Fixed in both scripts, already deployed and re-validated on the real homelab**: `setup_firecracker_jailer.sh` now sets `/srv/jailer` to `711` (traverse-only, no listing/read/write) instead of `700`; `stage_jailer_resources.sh` now also explicitly `chmod 711`s the exec-basename-level directory it creates (`$CHROOT_BASE_DIR/$EXEC_BASENAME`), rather than relying on `mkdir -p`'s umask-dependent default. Neither change touches the real security boundary at all -- that stays exactly at `jailer`'s own per-jail `700 fc-jail:fc-jail` lockdown of `root/`, confirmed unchanged. This DID require the user to re-run the (idempotent) bootstrap script once, for the `/srv/jailer` permission change specifically -- done, confirmed via `stat` afterward (`711 root:root`).
 
 ## Exact next steps, in order
 
-1. **Find the real `--config-file` JSON schema for firecracker v1.16.1** — check `firecracker --help` in full (only a fragment was captured before compaction), search for a bundled schema/example file in the release directory or firecracker's own source docs, or just empirically iterate (start with the illustrative shape from research, real error messages will reveal missing/misnamed fields).
-2. **Redesign `scripts/stage_jailer_resources.sh`** (real code change needed, not yet done):
-   - Currently does `mkdir -p "$JAIL_ROOT"` then `cp` kernel+rootfs then `chown -R "$JAIL_UID:$JAIL_GID"` on the WHOLE per-jail tree — this last step would lock `kodiak` out of `root/` before it gets a chance to bind the vsock socket. **Must change to**: chown `root/` itself to the INVOKING user (so it stays writable), and chown ONLY the kernel+rootfs files (not the whole tree) to `fc-jail`. `jailer` itself will still correctly chown `root/` to `fc-jail` on its own when it runs (confirmed non-recursive, per finding #2 above) — the staging script doesn't need to do that part.
-   - Add writing the `vm-config.json` file (once the schema is confirmed) into `root/`, with all paths relative to the chroot (`/kernel`, `/rootfs.ext4`, vsock `uds_path: "/vsock.sock"`).
-3. **Implement `FirecrackerSandbox`'s jailed boot path** (`_boot_jailed_instance()` or similar, new method, mirroring `_cold_boot_instance()`/`_restore_instance()`'s existing shape):
+1. ~~Find the real `--config-file` JSON schema~~ **DONE** -- confirmed against real Firecracker source (`resources.rs`'s `VmmConfig`), empirically validated end to end on the homelab. See above.
+2. ~~Redesign `scripts/stage_jailer_resources.sh`~~ **DONE, deployed, re-validated** -- `root/` stays invoker-writable after staging; only kernel/rootfs get chowned to `fc-jail`. `vm-config.json` is written directly by the unprivileged caller after staging returns (no privileged script involvement needed for it at all). Also fixed and re-validated: `/srv/jailer`'s own traversal permission (`700` -> `711` in `setup_firecracker_jailer.sh`) -- this required one real user-run re-invocation of the idempotent bootstrap script, already done.
+3. **Implement `FirecrackerSandbox`'s jailed boot path** (`_boot_jailed_instance()` or similar, new method, mirroring `_cold_boot_instance()`/`_restore_instance()`'s existing shape) -- the only remaining step, no more open unknowns:
    - New constructor params: `use_jailer: bool = False`, `jailer_binary: str = ""`, `jail_uid: int`, `jail_gid: int`, `chroot_base_dir: str = "/srv/jailer"`, `stage_script: str = ""`.
    - **Guard**: reject `use_jailer=True` + `use_snapshot_restore=True` together at construction time with a clear error — this combination was deliberately never validated (a real, separate, harder combination on top of two already-separately-validated ones), matching the user's own explicit "security over optimization, cold-boot only for now" decision.
    - Compute `jail_root = f"{chroot_base_dir}/{Path(firecracker_binary).name}/{instance_id}/root"`.
    - Invoke the staging script via `sudo -n` with the real per-instance rootfs copy path (or have staging copy directly from `base_rootfs_path` — reconsider whether an intermediate temp copy is needed at all, given staging already does one real copy).
-   - Bind + `os.chmod(0o777)` the vsock socket at `{jail_root}/vsock.sock_5555` (or whatever `_HOST_VSOCK_PORT` is) as `kodiak`, BEFORE invoking jailer.
-   - Invoke jailer via `sudo -n {jailer_binary} --id {id} --exec-file {firecracker_binary} --uid {jail_uid} --gid {jail_gid} --chroot-base-dir {chroot_base_dir} -- --api-sock /api.sock --config-file /vm-config.json` (exact flag name/shape to confirm in step 1).
-   - Wait on the SAME vsock "ready" future already used elsewhere — no `api.sock` existence polling (kodiak can't stat inside `root/` once locked).
+   - Write `vm-config.json` directly (plain unprivileged file write, confirmed working) with the confirmed real schema, using `guest_shim_path`'s exact existing `boot_args` format (`init=/usr/bin/python3 -- {guest_shim_path}` -- do NOT omit the `init=` override, confirmed this silently boots the wrong init with zero error signal).
+   - Bind + `os.chmod(0o777)` the vsock socket at `{jail_root}/vsock.sock_{HOST_VSOCK_PORT}` as the invoking user, BEFORE invoking jailer.
+   - Invoke jailer via `sudo -n {jailer_binary} --id {id} --exec-file {firecracker_binary} --uid {jail_uid} --gid {jail_gid} --chroot-base-dir {chroot_base_dir} -- --config-file /vm-config.json --no-api` (confirmed exact working shape; use a non-blocking launch (`asyncio.create_subprocess_exec`, matching the codebase's existing async style) rather than a blocking one -- do NOT add `--daemonize`, it breaks the sudoers pattern match and isn't needed).
+   - Wait on the SAME vsock "ready" future already used elsewhere — no `api.sock` existence polling (kodiak can't stat inside `root/` once locked, and `--no-api` means there's no `api.sock` to poll for anyway).
    - `terminate()` for a jailed instance: use the validated `sudo -n pkill -9 -u fc-jail -f -- "--id {id} --start-time-us"` pattern (already-approved rule #2).
 4. **Real tests on the homelab**, matching the existing `test_firecracker_backend.py` density and discipline (real boot, real tool-call round trip, real termination, filesystem-clean verification, `use_jailer=False` default provably unchanged).
 5. **Docs**: `docs/contracts/sandbox.md` (new "real jailer implementation notes" section, mirroring the existing FirecrackerSandbox/snapshot-restore ones), `docs/isolation.md`, `PLAN.md` item 21 (currently still `[ ]` — mark done only once implemented and tested, not just researched).
-6. **Commit the two bootstrap/staging scripts** (`scripts/setup_firecracker_jailer.sh`, `scripts/stage_jailer_resources.sh`) — confirm via `git status` on resume whether these were ever actually committed; based on the session's own flow they were written and validated manually but the redesign in step 2 must land before committing, so the committed version matches what's actually used.
+6. **Commit the two bootstrap/staging scripts, plus their step-2 fixes** -- they were committed once already mid-investigation (before the redesign); the redesign itself, and the config-file schema confirmation, still need a follow-up commit.
 
 ## Real homelab state to be aware of on resume
 

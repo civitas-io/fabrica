@@ -1,9 +1,10 @@
 #!/bin/bash
 # One-time, idempotent bootstrap for real jailer integration
 # (PLAN.md item 21) -- creates the dedicated low-privilege user jailed
-# Firecracker instances run as, the chroot base directory, and the two
+# Firecracker instances run as, the chroot base directory, and the FOUR
 # narrowly-scoped sudoers rules FirecrackerSandbox's jailer support
-# needs at runtime. Different in kind from build_firecracker_rootfs.sh/
+# needs at runtime (start, terminate, stage, cleanup). Different in
+# kind from build_firecracker_rootfs.sh/
 # build_firecracker_minimal_base.sh: those run as a normal user and only
 # ever use ALREADY-approved, narrow sudo rules -- this script is the
 # thing that CREATES those rules, so it genuinely needs to run once, as
@@ -34,6 +35,18 @@
 # a fixed script path, not a raw `cp`/`mkdir` capability -- the
 # sudoers grant's real scope IS that script's own body, auditable in
 # full, not a general filesystem primitive.
+#
+# A FOURTH rule, found necessary only once real end-to-end validation
+# was run (not anticipated in the original design): cleaning up a
+# terminated jail's on-disk footprint (kernel + per-instance rootfs
+# copy, potentially ~1GB+) needs its own rm capability, since by then
+# the whole per-jail tree is fc-jail-owned, not the invoking user's.
+# Scoped via a 32-times-repeated [0-9a-f] character class rather than a
+# trailing `*` wildcard -- FirecrackerSandbox always names jails via
+# uuid4().hex (exactly 32 lowercase hex characters), and this shape
+# makes path traversal (e.g. `../../etc`) structurally impossible: every
+# position is independently constrained to one hex digit, with no
+# length flexibility to exploit.
 #
 # COLD-BOOT ONLY, deliberately, not a limitation of this script: jailer
 # + snapshot/restore together is a real, separate, unvalidated
@@ -114,7 +127,16 @@ fi
 
 echo "==> ensuring chroot base directory $CHROOT_BASE_DIR exists"
 mkdir -p "$CHROOT_BASE_DIR"
-chmod 700 "$CHROOT_BASE_DIR"
+# 711, not 700: real finding from the vsock-in-jailer investigation
+# (specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md)
+# -- the invoking user needs to TRAVERSE down into a per-jail root/
+# directory to bind the vsock socket there before jailer locks that
+# specific directory down to fc-jail. 711 grants traverse-only (no
+# listing, no read/write) to everyone -- the real security boundary
+# stays exactly where it always was: jailer's own 700 fc-jail:fc-jail
+# lockdown on each individual root/ directory, which this change does
+# not touch or weaken at all.
+chmod 711 "$CHROOT_BASE_DIR"
 
 echo "==> writing scoped sudoers rule for starting jailed instances"
 JAILER_RULE_FILE="/etc/sudoers.d/fabrica-jailer"
@@ -158,6 +180,36 @@ fi
 mv "${STAGE_RULE_FILE}.tmp" "$STAGE_RULE_FILE"
 chmod 440 "$STAGE_RULE_FILE"
 echo "    installed: $STAGE_RULE_FILE"
+
+echo "==> writing scoped sudoers rule for removing a terminated jail's directory"
+# Real gap found during validation, not anticipated up front: cleaning
+# up a jailed instance's on-disk footprint after termination needs its
+# own rm capability, since the whole per-jail tree is fc-jail-owned by
+# the time it's done being used. A trailing `*` wildcard here would be
+# unsafe (sudoers' fnmatch-style globbing doesn't understand path
+# semantics -- `*` can match `../../etc` just as validly as a real jail
+# id). Instead: FirecrackerSandbox always names jails via uuid4().hex,
+# exactly 32 lowercase hex characters -- so the pattern below uses 32
+# repetitions of the [0-9a-f] character class, one per position. This
+# makes it structurally impossible to embed a `/` or `..` anywhere in
+# the matched id segment: every position is independently constrained
+# to a single hex digit, there is no length flexibility to exploit.
+HEX32_PATTERN=""
+for _ in $(seq 1 32); do
+    HEX32_PATTERN="${HEX32_PATTERN}[0-9a-f]"
+done
+CLEANUP_RULE_FILE="/etc/sudoers.d/fabrica-jailer-cleanup"
+cat > "${CLEANUP_RULE_FILE}.tmp" << EOF
+$INVOKING_USER ALL=(root) NOPASSWD: /usr/bin/rm -rf $CHROOT_BASE_DIR/firecracker/$HEX32_PATTERN
+EOF
+if ! visudo -c -f "${CLEANUP_RULE_FILE}.tmp" >/dev/null; then
+    echo "error: generated sudoers rule failed visudo validation -- not installed" >&2
+    rm -f "${CLEANUP_RULE_FILE}.tmp"
+    exit 1
+fi
+mv "${CLEANUP_RULE_FILE}.tmp" "$CLEANUP_RULE_FILE"
+chmod 440 "$CLEANUP_RULE_FILE"
+echo "    installed: $CLEANUP_RULE_FILE"
 
 echo "==> done. Verify general sudo still requires a password for anything else:"
 echo "    sudo -k && sudo whoami   # as $INVOKING_USER, should prompt"
