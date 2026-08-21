@@ -19,13 +19,14 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
-          python-version: "3.12"
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[dev]"
-      - run: python -m ruff check src/ tests/
-      - run: python -m mypy --strict src/
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync --extra dev
+      - run: uv run ruff check src/ tests/
+      - run: uv run mypy --strict src/
 
   test:
     needs: [lint]
@@ -33,11 +34,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
-          python-version: "3.12"
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[dev]"
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync --extra dev
       # Deliberately excludes tests/tunnel/: real network calls against
       # Cloudflare's own account-less quick-tunnel service, which
       # Cloudflare itself documents as having "no uptime guarantee" --
@@ -74,7 +76,7 @@ jobs:
       # matching the exact reasoning already applied to tests/tunnel/.
       - name: Run tests with coverage
         run: |
-          python -m pytest tests/ --ignore=tests/tunnel \
+          uv run pytest tests/ --ignore=tests/tunnel \
             --deselect tests/sandbox/test_srt_backend.py::test_execute_allows_network_to_allowlisted_domain \
             --deselect "tests/mcp/test_server_stress.py::TestConcurrentSandboxContention::test_n_agents_exceed_max_concurrent_and_all_still_succeed_correctly" \
             --cov=fabrica --cov-report=term-missing --cov-report=xml -q
@@ -89,15 +91,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
-          python-version: "3.12"
-      - run: python -m pip install --upgrade pip build
-      - run: python -m build --wheel --sdist
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv build
       - name: Verify the wheel installs cleanly and imports
         run: |
-          python -m venv /tmp/verify-install
-          /tmp/verify-install/bin/pip install --quiet dist/*.whl
+          uv venv /tmp/verify-install
+          uv pip install --python /tmp/verify-install/bin/python --quiet dist/*.whl
           /tmp/verify-install/bin/python -c "import fabrica; print('fabrica', fabrica.__version__)"
           /tmp/verify-install/bin/python -c "from fabrica.sandbox import SandboxPool, FirecrackerSandbox"
           /tmp/verify-install/bin/python -c "from fabrica.tunnel import TailscaleTunnelProvider, CloudflareTunnelProvider"
@@ -113,19 +116,14 @@ jobs:
     permissions:
       contents: read
     steps:
-      # Deliberately NOT wired to a real PyPI publish yet -- three real
-      # decisions are still pending, per direct discussion, not an
-      # oversight: (1) which PyPI account/org to publish under, (2)
-      # TestPyPI dry run first or straight to production, (3) the real
-      # version to publish as (0.1.0.dev0 is a genuine PEP 440 dev
-      # release -- `pip install fabrica-context` won't install it by
-      # default without --pre). Once decided, replace this step with
-      # pypa/gh-action-pypi-publish using PyPI's own Trusted Publishing
-      # (no long-lived API token needed) -- see
-      # https://docs.pypi.org/trusted-publishers/ -- configured against
-      # THIS exact workflow file and job name once a real PyPI project
-      # exists to link it to.
-      - name: PyPI publish placeholder
+      # PyPI publish itself lives in publish.yml, tag-triggered
+      # (push: tags: v*.*.*) -- mirrors the exact, real, already-working
+      # pattern from the sibling civitas-io/python-civitas repo (uv
+      # build, a real CycloneDX SBOM, PyPI Trusted Publishing via OIDC,
+      # no long-lived API token anywhere). This job stays a lightweight
+      # confirmation step on ordinary merges to main -- publishing only
+      # happens on a deliberate, explicit version tag, never
+      # automatically on every push.
+      - name: Note
         run: |
-          echo "PyPI publish intentionally not automated yet -- pending real decisions."
-          echo "See HANDOFF.md for the exact open questions before wiring this."
+          echo "Merged to main. PyPI publish happens on a real vX.Y.Z tag push -- see publish.yml."
