@@ -19,6 +19,8 @@ venv/
 # Coverage
 .coverage
 htmlcov/
+coverage.xml
+coverage.json
 
 # OS
 .DS_Store

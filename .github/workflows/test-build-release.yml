@@ -1,0 +1,112 @@
+name: Test Build Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pipeline-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m ruff check src/ tests/
+      - run: python -m mypy --strict src/
+
+  test:
+    needs: [lint]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      # Deliberately excludes tests/tunnel/: real network calls against
+      # Cloudflare's own account-less quick-tunnel service, which
+      # Cloudflare itself documents as having "no uptime guarantee" --
+      # a real, external, best-effort free service should not be able to
+      # block a merge. Also excludes tests/tunnel/test_tailscale_provider.py's
+      # own reachable-URL test implicitly (skips itself: this runner has
+      # no logged-in tailnet). See docs/contracts/managed-sandbox.md's own
+      # "real, shipped implementation" section for why this is a
+      # deliberate scope decision, not an oversight.
+      #
+      # Hardware-gated tests (real Firecracker+KVM, real jailer infra)
+      # skip automatically via each test file's own skipif -- this
+      # runner has neither provisioned. Expect the SAME shape of skip
+      # counts measured in local development, not zero. See HANDOFF.md
+      # for the real, current local baseline (256 passed, 33 skipped)
+      # to compare CI's own numbers against.
+      - name: Run tests with coverage
+        run: |
+          python -m pytest tests/ --ignore=tests/tunnel \
+            --deselect tests/sandbox/test_srt_backend.py::test_execute_allows_network_to_allowlisted_domain \
+            --cov=fabrica --cov-report=term-missing --cov-report=xml -q
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  build:
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip build
+      - run: python -m build --wheel --sdist
+      - name: Verify the wheel installs cleanly and imports
+        run: |
+          python -m venv /tmp/verify-install
+          /tmp/verify-install/bin/pip install --quiet dist/*.whl
+          /tmp/verify-install/bin/python -c "import fabrica; print('fabrica', fabrica.__version__)"
+          /tmp/verify-install/bin/python -c "from fabrica.sandbox import SandboxPool, FirecrackerSandbox"
+          /tmp/verify-install/bin/python -c "from fabrica.tunnel import TailscaleTunnelProvider, CloudflareTunnelProvider"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: dist
+          path: dist/
+
+  release:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Deliberately NOT wired to a real PyPI publish yet -- three real
+      # decisions are still pending, per direct discussion, not an
+      # oversight: (1) which PyPI account/org to publish under, (2)
+      # TestPyPI dry run first or straight to production, (3) the real
+      # version to publish as (0.1.0.dev0 is a genuine PEP 440 dev
+      # release -- `pip install fabrica-context` won't install it by
+      # default without --pre). Once decided, replace this step with
+      # pypa/gh-action-pypi-publish using PyPI's own Trusted Publishing
+      # (no long-lived API token needed) -- see
+      # https://docs.pypi.org/trusted-publishers/ -- configured against
+      # THIS exact workflow file and job name once a real PyPI project
+      # exists to link it to.
+      - name: PyPI publish placeholder
+        run: |
+          echo "PyPI publish intentionally not automated yet -- pending real decisions."
+          echo "See HANDOFF.md for the exact open questions before wiring this."

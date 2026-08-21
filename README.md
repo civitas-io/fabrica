@@ -7,13 +7,13 @@ Distributed as `fabrica-context` (`pip install fabrica-context`) — `fabrica`
 itself is already taken on PyPI by an unrelated project; the project and repo
 keep the "Fabrica" name, only the package name differs.
 
-> **Resuming after a break or a context compaction? Read [`HANDOFF.md`](HANDOFF.md)
+> **Resuming after a break or a context compaction? Read [`HANDOFF.md`](https://github.com/civitas-io/fabrica/blob/main/HANDOFF.md)
 > first** — it leads with the current state (what's done, what's genuinely
 > open, what's next), then the full reasoning trail behind every decision.
 
 > **Status:** Pre-alpha, but substantially real. Full discovery-through-contracts
 > design arc (nine contracts, fourteen spikes in
-> [`specs/archive/spikes/`](specs/archive/spikes/) against real hardware and real
+> [`specs/archive/spikes/`](https://github.com/civitas-io/fabrica/tree/main/specs/archive/spikes/) against real hardware and real
 > API calls, not simulated) has produced actual working code, not just designs.
 > **All six object-model contracts are built and tested** — `Retriever`,
 > `Sandbox`/`SandboxPool`, `ToolManager`, `SkillManager`, `MemoryManager` (all
@@ -26,12 +26,12 @@ keep the "Fabrica" name, only the package name differs.
 > a real microVM boundary over `vsock` — and is reachable through real,
 > automatic platform dispatch (14 additional tests that only run on real
 > Linux+KVM+Firecracker, skipped elsewhere). A reusable deployment script exists
-> ([`scripts/build_firecracker_rootfs.sh`](scripts/build_firecracker_rootfs.sh))
+> ([`scripts/build_firecracker_rootfs.sh`](https://github.com/civitas-io/fabrica/blob/main/scripts/build_firecracker_rootfs.sh))
 > so a second person can actually produce a working image, not just read a
 > spike transcript.
 >
 > **Honest gaps, not hidden**: a self-reflection pass
-> ([`docs/self-reflection-report.md`](docs/self-reflection-report.md)) found
+> ([`docs/self-reflection-report.md`](https://github.com/civitas-io/fabrica/blob/main/docs/self-reflection-report.md)) found
 > real drift between the original design and what shipped — the planned
 > `fabrica`/`fabrica-contrib` package split was never built (this package
 > currently ships everything, including `mcp`/`uvicorn`, as required
@@ -41,7 +41,7 @@ keep the "Fabrica" name, only the package name differs.
 > nine -- `PromptManager` gained `fabrica.prompt.get`/`fabrica.prompt.put`
 > afterward), not a log stand-in, closing what was the largest gap found.
 > Credential injection into `Sandbox` and real usage/budget metering are
-> both built too, all tracked, in order, in [`docs/PLAN.md`](docs/PLAN.md),
+> both built too, all tracked, in order, in [`docs/PLAN.md`](https://github.com/civitas-io/fabrica/blob/main/docs/PLAN.md),
 > the active work queue — not silently deferred.
 
 ---
@@ -123,11 +123,11 @@ So Fabrica delivers the whole context loop:
 1. **Tool access as code, not schemas.** Tools become a code-API namespace with
    progressive disclosure. The agent writes code; Fabrica runs it in an isolated
    process; only the result returns to the window — **validated**, not just
-   proposed: [a real spike](specs/archive/spikes/SPIKE-code-mode-execution.md)
+   proposed: [a real spike](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md)
    measured ~79% lower token cost *and* better correctness than the traditional
    tool-calling loop. A simple `find` retrieval mode remains as the fallback for
    models that don't do code mode — shared with skill discovery, see
-   [`docs/retrieval.md`](docs/retrieval.md).
+   [`docs/retrieval.md`](https://github.com/civitas-io/fabrica/blob/main/docs/retrieval.md).
 2. **A skills gateway** that conforms to the open **`SKILL.md`** standard — runtime-native
    skill loading with progressive disclosure.
 3. **A memory interface** — a `MemoryStore` protocol with adapters for the mature
@@ -144,7 +144,7 @@ dependencies) and `FirecrackerSandbox`, ships in one package,
 until closer to a real release (no external user yet for the zero-infra-
 install property to matter to in practice, and building the split before
 Tier 1/managed-sandbox/real-memory-backend adapters exist means guessing its
-shape too early) — see [`docs/context-layer.md`](docs/context-layer.md#interface-first-mirroring-the-platform)
+shape too early) — see [`docs/context-layer.md`](https://github.com/civitas-io/fabrica/blob/main/docs/context-layer.md#interface-first-mirroring-the-platform)
 for the full reasoning.
 
 ---
@@ -166,7 +166,7 @@ libkrun is underneath, only that the problem is solved:
 (Windows: real but slower options exist — Hyper-V isolation for Tier 2, an
 untested `srt` Windows mode for Tier 1. Deliberately deferred: small segment,
 revisit only if a real gap surfaces. Full detail in
-[`docs/isolation.md`](docs/isolation.md).)
+[`docs/isolation.md`](https://github.com/civitas-io/fabrica/blob/main/docs/isolation.md).)
 
 **Real platform dispatch exists today**: `select_sandbox_backend()` auto-detects
 Linux + real KVM + real Firecracker artifacts and returns `FirecrackerSandbox`;
@@ -174,14 +174,14 @@ otherwise returns `SubprocessSandbox`. `CivitasBridge.build()` calls it
 automatically — not a hardcoded choice, and not something agent code ever sees.
 Firecracker's own kernel-per-microVM isolation and snapshot/restore warm pools
 are the Linux production target; `jailer` defense-in-depth hardening is a named,
-real follow-on ([`docs/PLAN.md`](docs/PLAN.md)), not yet built. Restore latency
+real follow-on ([`docs/PLAN.md`](https://github.com/civitas-io/fabrica/blob/main/docs/PLAN.md)), not yet built. Restore latency
 is measured on real hardware, not cited (see
-[the Firecracker spike](specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md));
+[the Firecracker spike](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md));
 the real `vsock` tool-call bridge crossing an actual microVM boundary is
 validated in
-[a second spike](specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md).
+[a second spike](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md).
 A reusable script builds the deployable rootfs image — see
-[`docs/deployment/firecracker-rootfs.md`](docs/deployment/firecracker-rootfs.md).
+[`docs/deployment/firecracker-rootfs.md`](https://github.com/civitas-io/fabrica/blob/main/docs/deployment/firecracker-rootfs.md).
 
 ---
 
@@ -202,9 +202,9 @@ A reusable script builds the deployable rootfs image — see
   real no-op (`NullTracer()`); a real deployment passes a real
   `civitas.observability.tracer.Tracer()` into `CivitasBridge` to get
   real, nested spans end to end. See
-  [`docs/system-design.md §7`](docs/system-design.md#7-observability-spans-this-system-emits).
+  [`docs/system-design.md §7`](https://github.com/civitas-io/fabrica/blob/main/docs/system-design.md#7-observability-spans-this-system-emits).
 
-Full seam map: [`docs/civitas-presidium-integration.md`](docs/civitas-presidium-integration.md).
+Full seam map: [`docs/civitas-presidium-integration.md`](https://github.com/civitas-io/fabrica/blob/main/docs/civitas-presidium-integration.md).
 
 ---
 
@@ -224,7 +224,7 @@ isolation exist as capability areas this table predates entirely.
 | **P4 — Memory & Prompts** | `MemoryStore` protocol + adapters; versioned `PromptStore`. | **Built**: `MemoryManager` (three facets: working memory, `RecencyCompactor`/`NullCompactor`, long-term store), `PromptManager`. Only the local in-memory + `CivitasBridge`-persisted stores exist; Mem0/Zep/Letta/Cognee adapters remain future `fabrica-contrib` work. |
 | **P5 — MCP integration** *(not in the original plan)* | Fabrica as both an MCP client and server | **Built**: `MCPClient`/`MCPToolNamespace` (client direction), `FabricaMCPServer` (server direction, stdio + HTTP transports). |
 | **P6 — Implementation** | Actual `fabrica-context` Python package | **All six object-model contracts built and tested end to end**, plus `CivitasBridge` (service-mode persistence via `PersistedMemoryStore`/`PersistedPromptStore`). 195 local tests + 14 real-hardware-only Firecracker tests. |
-| **P7 — Self-reflection** *(not in the original plan)* | Audit the real code/docs against the founding vision | **Done**: [`docs/self-reflection-report.md`](docs/self-reflection-report.md) found real drift (package split never built, stale Rust/PyO3 doc claim, observability ~unbuilt); tracked as an ordered queue in [`docs/PLAN.md`](docs/PLAN.md), now the active work in progress. |
+| **P7 — Self-reflection** *(not in the original plan)* | Audit the real code/docs against the founding vision | **Done**: [`docs/self-reflection-report.md`](https://github.com/civitas-io/fabrica/blob/main/docs/self-reflection-report.md) found real drift (package split never built, stale Rust/PyO3 doc claim, observability ~unbuilt); tracked as an ordered queue in [`docs/PLAN.md`](https://github.com/civitas-io/fabrica/blob/main/docs/PLAN.md), now the active work in progress. |
 
 ---
 
@@ -238,61 +238,61 @@ tour, or `HANDOFF.md` for the current-state summary.
 
 | Doc | What |
 |---|---|
-| [personas.md](docs/personas.md) | Who Fabrica is for -- human personas + JTBD, and the model as a non-human actor |
-| [problem-definition.md](docs/problem-definition.md) | Per-persona problem statements, success metrics, non-goals |
-| [context-layer.md](docs/context-layer.md) | The pillar framing and full scope |
-| [landscape.md](docs/landscape.md) | Competitive research (Nov 2025), dated + sourced |
+| [personas.md](https://github.com/civitas-io/fabrica/blob/main/docs/personas.md) | Who Fabrica is for -- human personas + JTBD, and the model as a non-human actor |
+| [problem-definition.md](https://github.com/civitas-io/fabrica/blob/main/docs/problem-definition.md) | Per-persona problem statements, success metrics, non-goals |
+| [context-layer.md](https://github.com/civitas-io/fabrica/blob/main/docs/context-layer.md) | The pillar framing and full scope |
+| [landscape.md](https://github.com/civitas-io/fabrica/blob/main/docs/landscape.md) | Competitive research (Nov 2025), dated + sourced |
 
 **Design**
 
 | Doc | What |
 |---|---|
-| [architecture.md](docs/architecture.md) | **Start here for a visual walkthrough** -- diagrams of every layer, plus §1a's named library-first/low-coupling principle |
-| [system-design.md](docs/system-design.md) | Internals: object model, deployment topology, error handling, state ownership |
-| [tool-execution.md](docs/tool-execution.md) | Tools-as-code / code-mode design; `find` fallback |
-| [retrieval.md](docs/retrieval.md) | The shared `Retriever` engine behind tools + skills discovery -- one engine, rank-not-threshold, Rust-for-compute |
-| [isolation.md](docs/isolation.md) | Tiered `Sandbox` protocol; gVisor → Firecracker → Kata |
-| [skills-gateway.md](docs/skills-gateway.md) | `SKILL.md`-conformant skills, discovery via retrieval.md |
-| [memory.md](docs/memory.md) | Three facets: working memory, compaction (harness-engineering primitive, DI'd `Summarizer`), long-term `MemoryStore`. Includes a grounded "related work" section (Generative Agents, MemGPT, MemOS) explaining a deliberate divergence. |
-| [prompts.md](docs/prompts.md) | The narrowest manager: storage/versioning/retrieval only. Plus a grounded "explored, not built" survey (provider-side caching, DSPy-style tuning, `PROMPT.md` portable format) |
-| [mcp-integration.md](docs/mcp-integration.md) | `MCPToolNamespace` -- Fabrica as an MCP client, using `srt` (cross-platform) not Linux-only `bwrap` |
-| [mcp-server.md](docs/mcp-server.md) | `FabricaMCPServer` -- Fabrica as an MCP server, preserving the two-path token-efficiency thesis externally, not just internally |
-| [civitas-presidium-integration.md](docs/civitas-presidium-integration.md) | How Fabrica plugs into the platform |
-| [credentials.md](docs/credentials.md) | Why `Sandbox` gets no credential-injection mechanism at all -- validated against a real, separately-built credential broker (Tessera) |
+| [architecture.md](https://github.com/civitas-io/fabrica/blob/main/docs/architecture.md) | **Start here for a visual walkthrough** -- diagrams of every layer, plus §1a's named library-first/low-coupling principle |
+| [system-design.md](https://github.com/civitas-io/fabrica/blob/main/docs/system-design.md) | Internals: object model, deployment topology, error handling, state ownership |
+| [tool-execution.md](https://github.com/civitas-io/fabrica/blob/main/docs/tool-execution.md) | Tools-as-code / code-mode design; `find` fallback |
+| [retrieval.md](https://github.com/civitas-io/fabrica/blob/main/docs/retrieval.md) | The shared `Retriever` engine behind tools + skills discovery -- one engine, rank-not-threshold, Rust-for-compute |
+| [isolation.md](https://github.com/civitas-io/fabrica/blob/main/docs/isolation.md) | Tiered `Sandbox` protocol; gVisor → Firecracker → Kata |
+| [skills-gateway.md](https://github.com/civitas-io/fabrica/blob/main/docs/skills-gateway.md) | `SKILL.md`-conformant skills, discovery via retrieval.md |
+| [memory.md](https://github.com/civitas-io/fabrica/blob/main/docs/memory.md) | Three facets: working memory, compaction (harness-engineering primitive, DI'd `Summarizer`), long-term `MemoryStore`. Includes a grounded "related work" section (Generative Agents, MemGPT, MemOS) explaining a deliberate divergence. |
+| [prompts.md](https://github.com/civitas-io/fabrica/blob/main/docs/prompts.md) | The narrowest manager: storage/versioning/retrieval only. Plus a grounded "explored, not built" survey (provider-side caching, DSPy-style tuning, `PROMPT.md` portable format) |
+| [mcp-integration.md](https://github.com/civitas-io/fabrica/blob/main/docs/mcp-integration.md) | `MCPToolNamespace` -- Fabrica as an MCP client, using `srt` (cross-platform) not Linux-only `bwrap` |
+| [mcp-server.md](https://github.com/civitas-io/fabrica/blob/main/docs/mcp-server.md) | `FabricaMCPServer` -- Fabrica as an MCP server, preserving the two-path token-efficiency thesis externally, not just internally |
+| [civitas-presidium-integration.md](https://github.com/civitas-io/fabrica/blob/main/docs/civitas-presidium-integration.md) | How Fabrica plugs into the platform |
+| [credentials.md](https://github.com/civitas-io/fabrica/blob/main/docs/credentials.md) | Why `Sandbox` gets no credential-injection mechanism at all -- validated against a real, separately-built credential broker (Tessera) |
 
 **Validation**
 
 | Doc | What |
 |---|---|
-| [critique.md](docs/critique.md) | Every design claim checked against evidence as it existed at the time -- corrections applied, not just proposed |
-| [self-reflection-report.md](docs/self-reflection-report.md) | A later, separate audit -- real code/docs checked against the founding vision after implementation, not just design claims checked against spike evidence |
+| [critique.md](https://github.com/civitas-io/fabrica/blob/main/docs/critique.md) | Every design claim checked against evidence as it existed at the time -- corrections applied, not just proposed |
+| [self-reflection-report.md](https://github.com/civitas-io/fabrica/blob/main/docs/self-reflection-report.md) | A later, separate audit -- real code/docs checked against the founding vision after implementation, not just design claims checked against spike evidence |
 | `specs/archive/spikes/` | Fifteen spikes, real hardware/API evidence -- see `HANDOFF.md`'s arc section for the full list with findings |
 
 **Contracts -- implementation-ready signatures, error types, async behavior**
 
 | Doc | What |
 |---|---|
-| [contracts/retriever.md](docs/contracts/retriever.md) | `Retriever`/`RetrieverBackend` |
-| [contracts/sandbox.md](docs/contracts/sandbox.md) | `Sandbox`/`SandboxPool` -- corrected a real warm-pool reuse bug found while writing exact `release()` semantics |
-| [contracts/managers.md](docs/contracts/managers.md) | `PresidiumClient.check_grant`, `execute_in_sandbox`, `ToolManager`, `SkillManager` |
-| [contracts/memory.md](docs/contracts/memory.md) | `WorkingMemoryStore`, `Compactor`/`Summarizer` (DI'd), `MemoryStore`, `MemoryManager`, `NullCompactor` |
-| [contracts/prompts.md](docs/contracts/prompts.md) | `PromptStore`, `PromptManager` -- `cacheable`/`cache_boundary`, `PROMPT.md` `load()`, `list_names()` |
-| [contracts/civitas-bridge.md](docs/contracts/civitas-bridge.md) | `CivitasBridge` -- reconciled against `python-civitas`'s real `Runtime.spawn`/`StateStore` source |
-| [contracts/mcp-integration.md](docs/contracts/mcp-integration.md) | `MCPClient`, `MCPToolNamespace` |
-| [contracts/mcp-server.md](docs/contracts/mcp-server.md) | `FabricaMCPServer` |
-| [contracts/managed-sandbox.md](docs/contracts/managed-sandbox.md) | `ManagedSandboxAdapter`, `CallbackBridge`, `TunnelProvider` -- interfaces only, no provider implemented yet |
+| [contracts/retriever.md](https://github.com/civitas-io/fabrica/blob/main/docs/contracts/retriever.md) | `Retriever`/`RetrieverBackend` |
+| [contracts/sandbox.md](https://github.com/civitas-io/fabrica/blob/main/docs/contracts/sandbox.md) | `Sandbox`/`SandboxPool` -- corrected a real warm-pool reuse bug found while writing exact `release()` semantics |
+| [contracts/managers.md](https://github.com/civitas-io/fabrica/blob/main/docs/contracts/managers.md) | `PresidiumClient.check_grant`, `execute_in_sandbox`, `ToolManager`, `SkillManager` |
+| [contracts/memory.md](https://github.com/civitas-io/fabrica/blob/main/docs/contracts/memory.md) | `WorkingMemoryStore`, `Compactor`/`Summarizer` (DI'd), `MemoryStore`, `MemoryManager`, `NullCompactor` |
+| [contracts/prompts.md](https://github.com/civitas-io/fabrica/blob/main/docs/contracts/prompts.md) | `PromptStore`, `PromptManager` -- `cacheable`/`cache_boundary`, `PROMPT.md` `load()`, `list_names()` |
+| [contracts/civitas-bridge.md](https://github.com/civitas-io/fabrica/blob/main/docs/contracts/civitas-bridge.md) | `CivitasBridge` -- reconciled against `python-civitas`'s real `Runtime.spawn`/`StateStore` source |
+| [contracts/mcp-integration.md](https://github.com/civitas-io/fabrica/blob/main/docs/contracts/mcp-integration.md) | `MCPClient`, `MCPToolNamespace` |
+| [contracts/mcp-server.md](https://github.com/civitas-io/fabrica/blob/main/docs/contracts/mcp-server.md) | `FabricaMCPServer` |
+| [contracts/managed-sandbox.md](https://github.com/civitas-io/fabrica/blob/main/docs/contracts/managed-sandbox.md) | `ManagedSandboxAdapter`, `CallbackBridge`, `TunnelProvider` -- interfaces only, no provider implemented yet |
 
 **Deployment**
 
 | Doc | What |
 |---|---|
-| [deployment/firecracker-rootfs.md](docs/deployment/firecracker-rootfs.md) | How to build a real, deployable `FirecrackerSandbox` rootfs image -- exact `sudo` scoping included |
+| [deployment/firecracker-rootfs.md](https://github.com/civitas-io/fabrica/blob/main/docs/deployment/firecracker-rootfs.md) | How to build a real, deployable `FirecrackerSandbox` rootfs image -- exact `sudo` scoping included |
 
 **Active work**
 
 | Doc | What |
 |---|---|
-| [PLAN.md](docs/PLAN.md) | The single ordered work queue -- self-reflection fixes first, then the remaining backlog, easiest to most complex |
+| [PLAN.md](https://github.com/civitas-io/fabrica/blob/main/docs/PLAN.md) | The single ordered work queue -- self-reflection fixes first, then the remaining backlog, easiest to most complex |
 
 ---
 

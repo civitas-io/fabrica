@@ -52,6 +52,7 @@ packages = ["src/fabrica"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
     "ruff>=0.8",
     "mypy>=1.13",
 ]
@@ -59,12 +60,22 @@ dev = [
 [project.urls]
 Repository = "https://github.com/civitas-io/fabrica"
 
-# The PyPI `civitas` package lags this project's own >=0.11.0 floor (only
-# 0.9.2.1 is published there as of this writing), so `uv sync` cannot
-# resolve this project standalone without a source override -- the same
-# git-pin pattern presidium's own workspace root already uses for its
-# civitas dependency. Switch to a plain PyPI version constraint once a
-# real >=0.11.0 release lands there.
+# civitas>=0.11.0 IS resolvable from plain PyPI now -- confirmed directly
+# against the real PyPI JSON API and via a clean `pip install` into a
+# fresh, empty venv with zero workarounds (civitas 0.11.1 is published).
+# The earlier reason this override existed (PyPI's own civitas releases
+# lagging this project's floor, only 0.9.2.1 published at the time) is
+# resolved and no longer applies to a plain `pip install fabrica-context`
+# anywhere -- [tool.uv.sources] never appears in published wheel/sdist
+# metadata, so end users are entirely unaffected by this section either
+# way. It stays here for a real, DIFFERENT, machine-local reason: some
+# dev machines (this one included) run a supply-chain policy
+# (~/.config/uv/uv.toml's own `exclude-newer`) that rejects any package
+# published after a rolling cutoff date -- which a sufficiently recent
+# civitas release will eventually fall outside of again. The git-source
+# pin keeps local `uv sync`/`uv lock` working on such machines regardless
+# of that policy's cutoff; it is a local development convenience, not a
+# statement about the published package's own PyPI availability.
 [tool.uv.sources]
 civitas = { git = "https://github.com/civitas-io/python-civitas.git", branch = "main" }
 
