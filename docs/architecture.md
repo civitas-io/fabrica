@@ -103,7 +103,7 @@ The backend is **auto-detected by host OS and hidden from users** — a delibera
 exception to how Civitas normally exposes config (transport selection *is* a
 user choice; isolation backend is not).
 
-![Isolation tiers per platform: Linux (gVisor, Firecracker), macOS (srt, libkrun), Windows (deferred)](assets/isolation-tiers.svg)
+![One Sandbox protocol, platform-detected at runtime: Tier 0 subprocess everywhere, Tier 1 SrtSandbox (validated on macOS, srt-documented-but-untested on Linux/Windows), Tier 2 FirecrackerSandbox on Linux+KVM with real opt-in snapshot/restore and jailer hardening](assets/isolation-tiers.svg)
 
 Full design + the corrected boot-time distinction (VMM-ready vs. actually-usable):
 [isolation.md](isolation.md).
