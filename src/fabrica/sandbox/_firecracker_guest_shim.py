@@ -95,11 +95,16 @@ def _connect_send_ready_and_wait_for_code() -> tuple[socket.socket, dict[str, An
     while True:
         attempt += 1
         # AF_VSOCK is Linux-only -- this shim only ever runs inside a real
-        # Firecracker guest (Linux), never on the host doing local type
-        # checking (which may be macOS, per this project's own dev
-        # environment) -- socket.AF_VSOCK is genuinely absent from
-        # typeshed's non-Linux stubs, not a real bug this ignore is hiding.
-        sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)  # type: ignore[attr-defined]
+        # Firecracker guest (Linux). pyproject.toml's [tool.mypy] pins
+        # platform = "linux" specifically so this evaluates consistently
+        # against typeshed's Linux stubs (where AF_VSOCK is a real,
+        # defined attribute) regardless of which OS a given contributor's
+        # own dev laptop happens to run -- no type: ignore needed here
+        # anymore; one WAS here, but became a real "unused ignore"
+        # strict-mode error once mypy's platform target was pinned
+        # correctly, caught directly on GitHub Actions' own Ubuntu runner
+        # before this fix, not assumed.
+        sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
         try:
             sock.connect((_HOST_CID, _HOST_PORT))
             _send(sock, {"type": "ready"})

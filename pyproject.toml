@@ -93,6 +93,20 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+# Real, found-by-CI reason, not a style preference: this project's own
+# dev environment is often macOS, but every real deployment target for
+# _firecracker_guest_shim.py specifically is Linux (it only ever runs
+# inside a real Firecracker guest). typeshed's socket module stubs are
+# platform-conditional -- socket.AF_VSOCK exists on the Linux stubs but
+# not macOS's, so a `# type: ignore[attr-defined]` needed to satisfy
+# local macOS mypy runs became a real "unused ignore" error on GitHub
+# Actions' own Ubuntu runner (confirmed directly: the exact same code,
+# same mypy version, differed in strictness verdict purely by host OS).
+# Pinning `platform` (mypy's --platform equivalent) makes both
+# environments evaluate consistently against the platform this code
+# actually runs on, rather than whichever platform a given contributor's
+# own laptop happens to be.
+platform = "linux"
 
 [[tool.mypy.overrides]]
 # rank-bm25 ships no type stubs and no py.typed marker -- a known upstream
