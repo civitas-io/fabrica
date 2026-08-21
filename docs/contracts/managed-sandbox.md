@@ -162,9 +162,76 @@ glossed over:
    versions, a real adoption-friction difference from the other two worth
    naming, not the reason it's ranked third by default preference alone.
 
-None of these three are implemented yet — the `TunnelProvider` Protocol
-itself is the resolved, durable part; which concrete backend a given
-deployment uses is a runtime choice, not a build-time one.
+**Real, shipped implementation: `TailscaleTunnelProvider` and
+`CloudflareTunnelProvider` (priorities 1 and 2) are now implemented in
+`src/fabrica/tunnel/`, validated end to end on real hardware with real
+public URLs, real curl round trips, and real access logs on the local
+server proving the request actually crossed the tunnel** -- not
+simulated. `NgrokTunnelProvider` (priority 3) remains unimplemented, per
+this contract's own already-stated adoption-friction note (needs a
+free-tier account/authtoken for anything beyond a very short session) --
+not revisited unless a real deployment specifically needs it and the
+first two backends are both unavailable.
+
+**A real addition to the Protocol itself, found necessary during
+implementation, not in the original design**: `TunnelProvider` gained a
+third method, `is_available() -> bool`, alongside `start()`/`stop()`.
+Without it, picking among the three backends in priority order would
+mean constructing each in turn and treating a `start()` failure as "try
+the next one" -- conflating "this backend cannot possibly work here"
+(no binary installed, or Tailscale not logged into a tailnet) with "this
+backend COULD work but this specific attempt failed" (a flaky free
+service, a transient network issue). `select_tunnel_provider()`
+(`src/fabrica/tunnel/dispatch.py`, mirroring
+`fabrica.sandbox.dispatch.select_sandbox_backend()`'s own shape) walks
+the decided priority order and returns the first backend whose
+`is_available()` check passes, raising `TunnelNotAvailableError` if none
+are.
+
+**Real findings from `CloudflareTunnelProvider`'s implementation,
+across three separate rounds of real end-to-end testing, not assumed
+safe from the CLI's own `--help` text**:
+
+1. `cloudflared`'s own log message when a quick tunnel is created --
+   "Visit it at (it may take some time to be reachable)" -- is not just
+   a hedge. A `curl` against the URL the instant it's printed genuinely
+   fails with a real connection error. `start()`'s own contract promises
+   a real, USABLE url, not just a syntactically-parsed one, so this
+   backend polls the URL with real HTTP requests until it actually
+   responds before returning.
+2. The gap between the URL appearing and it becoming reachable is
+   itself variable and can exceed 30 real seconds -- confirmed by
+   repeated testing, not assumed a fixed constant. Uses a separate
+   timeout budget from URL-discovery, not one shared window.
+3. **The deepest finding**: even with generous polling, a specific
+   quick-tunnel subdomain can sometimes never become reachable at all --
+   confirmed by direct A/B testing (an isolated, freshly-created tunnel
+   succeeded immediately; the SAME code moments later, given a
+   different random subdomain, never became reachable even after 45s of
+   patient polling). This matches Cloudflare's own explicit disclaimer
+   for account-less quick tunnels: "no uptime guarantee." Fixed with a
+   bounded retry that discards a non-cooperating tunnel and starts a
+   completely fresh one (new subdomain, new edge assignment) rather than
+   waiting longer against one that may be persistently degraded.
+4. **A real bug in the reachability check itself**: treating any
+   non-"connection failed" curl status as "reachable" is insufficient --
+   Cloudflare's own edge can and does answer with a real HTTP status
+   (530, "origin unreachable", observed directly) when the edge itself
+   is up but the path to the local origin genuinely isn't working yet.
+   Fixed to require a real 2xx/3xx status specifically.
+
+**Honestly documented, not hidden**: real, repeated testing during this
+implementation showed that Cloudflare's free, account-less quick-tunnel
+service's reliability degrades further under rapid repeated use from the
+same IP within a short window (plausibly rate-limiting, never surfaced
+as an explicit error) -- a real property of the free service tier the
+retry logic mitigates but cannot fully eliminate. This project's own
+tests for this specific path skip (not fail) if every real retry is
+exhausted, rather than treating a best-effort free service's own
+documented unreliability as evidence the implementation is broken.
+`TailscaleTunnelProvider`, by contrast, showed no comparable flakiness
+in the same testing session -- consistent with this contract's own
+decision to rank it priority 1.
 
 ## `ManagedSandboxAdapter`
 
@@ -278,11 +345,17 @@ sharper reason the existing one is load-bearing here.
    same "ship the default, revisit if forced" logic used throughout this
    project. Decide the exact config surface when whichever provider
    ships first is actually being built, not before.
-4. **No credentials exist to build/test any of this for real yet** (same
-   shape as `PresidiumClient`'s blocker, see `HANDOFF.md`) — this contract
-   was written from real, current, sourced provider documentation, not
-   assumed from memory, but has zero implementation or live-API validation
-   behind it.
+4. ~~No credentials exist to build/test any of this for real yet...~~
+   **Partially resolved: `TunnelProvider`'s two implemented backends
+   (Tailscale, Cloudflare) needed NO credentials at all and are real,
+   validated, shipped code** -- see this contract's own "real, shipped
+   implementation" note above. **`ManagedSandboxAdapter` itself remains
+   genuinely blocked** (same shape as `PresidiumClient`'s blocker, see
+   `HANDOFF.md`) — E2B/Modal/AWS/Azure/GCP all require real paid-tier
+   accounts this project does not have; this half of the contract was
+   written from real, current, sourced provider documentation, not
+   assumed from memory, but still has zero implementation or live-API
+   validation behind it.
 5. ~~`RunResult.stdout`-only return shape may be a worse fit here than for
    `SubprocessSandbox`.~~ **Resolved: stays stdout-only for now,
    explicitly.** Several providers (E2B, Azure) have first-class

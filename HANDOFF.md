@@ -35,9 +35,24 @@ firecracker-jailer-vsock-integration.md`](specs/archive/spikes/SPIKE-firecracker
 and `docs/contracts/sandbox.md`'s own "real Tier 2 implementation
 notes" section.
 
-**Next up: items 23/24** (managed-provider adapters -- blocked on
-credentials; `TunnelProvider` concrete backends) are the only remaining
-open Complex-tier items -- see `docs/PLAN.md` directly.
+**Item 24 (`TunnelProvider` concrete backends) is now DONE for
+priorities 1 and 2** -- `TailscaleTunnelProvider` and
+`CloudflareTunnelProvider`, both real, shipped, credential-free, and
+validated end to end on real hardware (real public URLs, real curl
+round trips, real access logs proving requests crossed the tunnel). New
+package: `src/fabrica/tunnel/`. `NgrokTunnelProvider` (priority 3)
+remains unimplemented, per this contract's own already-stated adoption-
+friction note (needs an account for anything beyond a very short
+session) -- not blocking. Full mechanism and four real findings from
+implementing `CloudflareTunnelProvider` (a genuinely flaky free service,
+handled with a real bounded-retry-with-a-fresh-subdomain fix, not just a
+longer timeout):
+[`docs/contracts/managed-sandbox.md`](docs/contracts/managed-sandbox.md)'s
+own "real, shipped implementation" section.
+
+**Only item 23 remains open**: managed-provider adapters (E2B/Modal/
+AWS/Azure/GCP) -- genuinely blocked on real paid-tier credentials this
+project does not have. See `docs/PLAN.md` directly for the exact state.
 
 ---
 

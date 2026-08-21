@@ -533,8 +533,36 @@ doc it's already named in — not repeated here.
 23. [ ] Managed-provider adapters (E2B/Modal/AWS/Azure/GCP) — interfaces
     already designed (`managed-sandbox.md`); real implementation work once
     started.
-24. [ ] `TunnelProvider` concrete backends (Tailscale Funnel, Cloudflare
-    Tunnel, ngrok) — Protocol designed, none implemented.
+24. [x] `TunnelProvider` concrete backends -- **DONE for priorities 1
+    and 2 (Tailscale Funnel, Cloudflare Tunnel), both real, shipped,
+    credential-free, validated end to end on real hardware** (real
+    public URLs, real curl round trips, real access logs proving
+    requests crossed the tunnel). `src/fabrica/tunnel/` -- new package,
+    `TunnelProvider` Protocol, `TailscaleTunnelProvider`,
+    `CloudflareTunnelProvider`, `select_tunnel_provider()` dispatch
+    (mirrors `select_sandbox_backend()`'s own shape). A real Protocol
+    addition found necessary during implementation: `is_available()`,
+    alongside `start()`/`stop()` -- lets priority-ordered selection pick
+    the first backend that will actually work, not just the first one
+    merely installed. `NgrokTunnelProvider` (priority 3) NOT
+    implemented -- needs a paid/free-tier account for anything beyond a
+    very short session, per this contract's own already-stated
+    adoption-friction note; not revisited unless a real deployment needs
+    it and the first two are both unavailable. Real findings from
+    `CloudflareTunnelProvider`'s implementation (four rounds of genuine
+    end-to-end testing, not assumed from --help text): cloudflared's own
+    "may take some time to be reachable" warning is real, not a hedge;
+    the reachable-vs-not gap is itself variable and can exceed 30s; a
+    specific quick-tunnel subdomain can sometimes never become reachable
+    at all (matches Cloudflare's own "no uptime guarantee" disclaimer
+    for account-less tunnels) -- fixed with a bounded retry using a
+    fresh subdomain, not a longer wait against one already-degraded
+    attempt; and a real bug where any non-connection-error curl status
+    was wrongly treated as "reachable" (Cloudflare's own edge returns a
+    real 530 when the tunnel-to-origin path itself isn't working yet).
+    12 new tests (`tests/tunnel/`), full mechanism and every finding in
+    `docs/contracts/managed-sandbox.md`'s own "real, shipped
+    implementation" section.
 
 ### Added mid-session, not part of the original backlog -- costing/billing data
 
