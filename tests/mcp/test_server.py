@@ -25,6 +25,8 @@ from mcp.client.streamable_http import streamable_http_client
 from fabrica.civitas_bridge import CivitasBridge, Fabrica
 from fabrica.mcp.server import FabricaMCPServer, ServerTransportConfig, _to_content
 
+from .conftest import wait_for_port_open
+
 _SERVER_ARGS = ["-m", "tests.mcp.fixtures.fabrica_stdio_server"]
 
 
@@ -251,7 +253,9 @@ class _RunningHttpServer:
             fabrica, transport, allow_weak_isolation_for_external_callers=True
         )
         self._task = asyncio.ensure_future(self._server.start())
-        await asyncio.sleep(0.4)  # real socket bind -- give uvicorn time to start listening
+        # Real readiness check, not a fixed sleep -- see conftest.py's
+        # own docstring for the real CI failure this replaced.
+        await wait_for_port_open(_HTTP_HOST, _HTTP_PORT)
         return self._server
 
     async def __aexit__(self, *exc: object) -> None:

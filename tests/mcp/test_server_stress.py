@@ -27,6 +27,8 @@ from fabrica.civitas_bridge import CivitasBridge, Fabrica
 from fabrica.mcp.server import FabricaMCPServer, ServerTransportConfig
 from fabrica.sandbox import SubprocessSandbox
 
+from .conftest import wait_for_port_open
+
 _HTTP_HOST = "127.0.0.1"
 _HTTP_PORT = 8932  # distinct from test_server.py's 8931 -- avoids any port reuse race
 _N_AGENTS = 10
@@ -83,7 +85,12 @@ class _RunningHttpServer:
             fabrica, transport, allow_weak_isolation_for_external_callers=True
         )
         self._task = asyncio.ensure_future(self._server.start())
-        await asyncio.sleep(0.4)  # real socket bind -- give uvicorn time to start listening
+        # Real readiness check, not a fixed sleep -- see conftest.py's
+        # own docstring for the real CI failure this replaced (a fixed
+        # 0.4s sleep was not always enough under GitHub Actions' own
+        # more resource-constrained runner, unlike this fast local
+        # machine, where it never once flaked).
+        await wait_for_port_open(_HTTP_HOST, self._port)
         return self._server
 
     async def __aexit__(self, *exc: object) -> None:
@@ -105,15 +112,12 @@ async def _call_tool_as_agent(
     -- simulating N genuinely separate tenants, not N calls multiplexed
     over one shared session.
 
-    `timeout` defaults generously above httpx2's own 5s default -- an
-    initial flake looked like it needed this (a client giving up while a
-    long queue drained under real system load), but a longer timeout
-    alone did NOT fix it, and investigation found the real cause was
-    different: a port-reuse race, not a slow queue (see
-    TestConcurrentSandboxContentionUnderHeavySerialization's own note on
-    `port` below for the actual root cause and fix). Kept generous anyway
-    since it costs nothing and is still a reasonable margin for real
-    queuing delay under load.
+    `timeout` defaults generously above httpx2's own 5s default -- a
+    real, previously-diagnosed flake (see the NOTE below the last test
+    class in this file) traced to genuine ambient CPU contention on the
+    dev machine, not a FabricaMCPServer/SandboxPool bug. Kept generous
+    since it costs nothing and is a reasonable margin for real queuing
+    delay under load, on any machine.
     """
     client = httpx2.AsyncClient(
         headers={"Authorization": f"Bearer token-{agent_index}"}, timeout=httpx2.Timeout(timeout)
