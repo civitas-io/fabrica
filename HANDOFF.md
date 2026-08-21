@@ -90,18 +90,31 @@ actually present in this session's bigpowers install, confirmed via
 documented conventions -- pinned action SHAs looked up for real via
 GitHub's own API, not guessed).
 
-**Real, current coverage baseline (local dev machine and, by design,
-also what CI's own numbers will show)**: ~73% on the core suite,
-93% on `fabrica.tunnel`, combined ~74%. This number is an honest FLOOR,
-not a ceiling: `firecracker_backend.py` shows only 22% and the two guest
-shim modules show 0% purely because this dev machine (and any standard
-GitHub-hosted runner) has no KVM/Firecracker/jailer infrastructure
-provisioned -- all 29 tests in that file, including every jailer test,
-pass for real on the homelab, just never measured for coverage there.
-CI will show the same ~73-74% unless/until real hardware provisioning
-is added to the pipeline (a self-hosted runner or a dedicated hardware
-job) -- a real, deliberate scope decision for this first CI pass, not
-an oversight.
+**Real coverage numbers, confirmed on GitHub's own actual
+infrastructure, not just predicted**: the very first real CI run
+(https://github.com/civitas-io/fabrica/actions, workflow run 32499585863)
+reported **71% coverage, 239 passed, 50 skipped** -- close to, but not
+identical to, the ~73% / 256 passed / 33 skipped measured on this local
+dev machine, and the gap itself is a real, understood, and NOTABLE
+finding, not noise: `srt` (the Tier 1 isolation binary) happens to be
+installed on this specific dev machine via an unrelated nvm/npm
+toolchain, so every `SrtSandbox`-dependent test runs and passes locally
+that correctly skips on a clean CI runner where `srt` genuinely isn't
+present (confirmed directly: `shutil.which("srt")` and
+`srt_available()` both return true here, false on GitHub's runner).
+**CI's 71% is the more honest, representative number for what a truly
+clean environment sees** -- this dev machine's own local number is
+slightly inflated by incidental tooling, not a more "complete" measure.
+Separately, and for the SAME underlying reason as before:
+`firecracker_backend.py` shows only 22% and the two guest shim modules
+show 0%, in both local and CI numbers, purely because neither
+environment has KVM/Firecracker/jailer infrastructure provisioned --
+all 29 tests in that file, including every jailer test, pass for real
+on the homelab, just never measured for coverage there. Real hardware
+provisioning in CI (a self-hosted runner or a dedicated hardware job)
+remains a deliberate, un-taken scope decision for this first CI pass,
+not an oversight -- revisit only if real coverage reporting on that
+code specifically becomes a genuine priority.
 
 ---
 
