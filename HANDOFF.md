@@ -54,7 +54,7 @@ and points at where the reasoning actually lives, not a retelling.
 ### Design phase: complete
 
 Full discovery→define→design→validate→critique→architecture→system-design→contracts
-arc. Thirteen spikes, all real hardware/API evidence, in `specs/archive/spikes/`
+arc. Fourteen spikes, all real hardware/API evidence, in `specs/archive/spikes/`
 (twelve from the original arc, plus
 [SPIKE-tessera-credential-integration.md](specs/archive/spikes/SPIKE-tessera-credential-integration.md)).
 Nine contracts (`Retriever`, `Sandbox`, `managers.md`, `memory.md`,

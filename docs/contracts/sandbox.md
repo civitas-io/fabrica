@@ -548,9 +548,21 @@ children, not disconnected spans. Full design:
    process exits cleanly, not just that assertions pass. Fixed by
    suppressing any exception (not just `CancelledError`) when draining
    an already-completed task purely for cleanup purposes.
-4. **New**: `FirecrackerSandbox`'s snapshot/restore support -- v1 always
-   cold-boots; validating restore combined with an already-live vsock
-   connection, then implementing it, is real, separate follow-on work.
+4. ~~`FirecrackerSandbox`'s snapshot/restore support...~~ **Spike done,
+   real implementation is separate follow-on work (PLAN.md item 20a).**
+   The combination is real and buildable, confirmed on real hardware --
+   two findings, both fixable, neither fundamental: Firecracker's own
+   vsock device leaves a stale Unix socket file at `uds_path` after a
+   `SIGKILL` (must be deleted before restoring into a fresh process);
+   the guest kernel-panics on resume as shipped because
+   `_firecracker_guest_shim.py` has no error handling around its
+   blocked `recv()` getting a real, correct `ConnectionResetError` when
+   its old peer no longer exists. A throwaway patched shim with a real
+   reconnect loop fixed both -- verified working end to end (the guest
+   genuinely reconnects and re-signals `ready` after a real snapshot/
+   restore cycle), not just diagnosed. v1 still always cold-boots; full
+   detail: `specs/archive/spikes/SPIKE-firecracker-snapshot-restore-
+   vsock-combination.md`.
 5. ~~`FirecrackerSandbox` uses the existing, general-purpose Ubuntu
    24.04 rootfs image...~~ **Resolved: a real, minimal, purpose-built
    base image now exists** (`scripts/build_firecracker_minimal_base.sh`,

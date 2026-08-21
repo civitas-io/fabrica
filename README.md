@@ -12,7 +12,7 @@ keep the "Fabrica" name, only the package name differs.
 > open, what's next), then the full reasoning trail behind every decision.
 
 > **Status:** Pre-alpha, but substantially real. Full discovery-through-contracts
-> design arc (nine contracts, thirteen spikes in
+> design arc (nine contracts, fourteen spikes in
 > [`specs/archive/spikes/`](specs/archive/spikes/) against real hardware and real
 > API calls, not simulated) has produced actual working code, not just designs.
 > **All six object-model contracts are built and tested** — `Retriever`,
@@ -266,7 +266,7 @@ tour, or `HANDOFF.md` for the current-state summary.
 |---|---|
 | [critique.md](docs/critique.md) | Every design claim checked against evidence as it existed at the time -- corrections applied, not just proposed |
 | [self-reflection-report.md](docs/self-reflection-report.md) | A later, separate audit -- real code/docs checked against the founding vision after implementation, not just design claims checked against spike evidence |
-| `specs/archive/spikes/` | Thirteen spikes, real hardware/API evidence -- see `HANDOFF.md`'s arc section for the full list with findings |
+| `specs/archive/spikes/` | Fourteen spikes, real hardware/API evidence -- see `HANDOFF.md`'s arc section for the full list with findings |
 
 **Contracts -- implementation-ready signatures, error types, async behavior**
 

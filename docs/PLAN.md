@@ -376,9 +376,37 @@ doc it's already named in — not repeated here.
     filesystem confirmed clean afterward (no leftover `/tmp/fc-*` files).
     Documented in `docs/contracts/sandbox.md` and `docs/isolation.md`'s
     tier table.
-20. [ ] `FirecrackerSandbox` snapshot/restore — combining an already-live
-    `vsock` connection with snapshot restore is a genuinely unvalidated
-    combination; needs its own spike before implementation.
+20. [x] `FirecrackerSandbox` snapshot/restore -- **spike done, real
+    implementation is a separate follow-up (20a).** Two real, concrete
+    findings on real hardware, not inference: (1) Firecracker's own
+    vsock device binds a Unix socket at the base `uds_path` -- `SIGKILL`
+    never cleans it up, so restoring into a fresh process fails
+    immediately with `EADDRINUSE` unless that stale file is deleted
+    first; (2) the guest kernel-panics on resume as shipped, but for a
+    real, understood, FIXABLE reason: the guest's blocked `recv()`
+    correctly gets a real `ConnectionResetError` (the old peer genuinely
+    doesn't exist anymore), and `_firecracker_guest_shim.py` has zero
+    error handling around it, so the unhandled exception kills PID 1 and
+    Linux panics. **Verified the fix actually works, not just diagnosed
+    the problem**: a throwaway patched shim with a real reconnect loop
+    (catch `OSError`, open a fresh vsock socket, retry) successfully
+    reconnected and re-signaled `ready` to a fresh process's fresh
+    listener after a real snapshot/restore cycle -- no panic, no manual
+    intervention. The combination is real and buildable; it just needs
+    guest-shim hardening that was never built (the shim was never
+    designed against restore in the first place -- finding that out was
+    this spike's whole job). Full detail, including the exact console
+    log excerpts: `specs/archive/spikes/SPIKE-firecracker-snapshot-
+    restore-vsock-combination.md`.
+20a. [ ] Real implementation, now that the spike de-risked it: port the
+    verified reconnect logic into `_firecracker_guest_shim.py` itself
+    (tuned for latency, not the spike's placeholder `time.sleep(0.2)`
+    backoff); add the stale-`uds_path`-cleanup step; give
+    `FirecrackerSandbox` a real restore path (`boot_clean()` currently
+    always cold-boots); wire it into `SandboxPool`'s warm-pool refill.
+    Only the pre-request "blocked waiting for `code`" state was proven
+    -- a guest snapshotted mid-tool-call needs the same treatment if
+    snapshotting anywhere but the pre-request warm state is ever wanted.
 21. [ ] `jailer` integration for `FirecrackerSandbox` — real defense-in-depth
     hardening, unexplored in both Firecracker spikes so far.
 22. [x] Managers as supervised `GenServer`s ("self-healing pool") --
