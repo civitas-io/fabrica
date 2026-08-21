@@ -381,12 +381,47 @@ doc it's already named in — not repeated here.
     combination; needs its own spike before implementation.
 21. [ ] `jailer` integration for `FirecrackerSandbox` — real defense-in-depth
     hardening, unexplored in both Firecracker spikes so far.
-22. [ ] Managers as supervised `GenServer`s ("self-healing pool") — real
-    structural work: Civitas's dynamic-spawn reconstructs classes from a
-    dotted path with only `name`, incompatible with today's DI-constructed
-    managers. Needs either a Civitas-side change or a real redesign of how
-    managers are constructed in service mode — **walk through with the
-    user before starting**, this is an architecture-level call.
+22. [x] Managers as supervised `GenServer`s ("self-healing pool") --
+    **walked through directly with the user (Civitas's own maintainer),
+    resolved as a documented finding, not built.** Confirmed the
+    technical blocker against real Civitas source first: `spawn()`
+    reconstructs a class from a dotted path via `agent_class(name=
+    child_name)` only, no path for a manager holding live constructor-
+    injected dependencies to survive it, and `spawn()` itself never
+    returns a reference to inject them afterward either.
+    Then went further than the technical blocker: the maintainer
+    revealed `class_path`/`name`/`config` was never meant as a
+    permanent contract -- an early stand-in for a much bigger,
+    genuinely unresolved idea (real process-state migration/
+    "teleportation" across nodes, not just restart-from-config). Tested
+    Fabrica's own managers against whether they're a good motivating
+    case for THAT bigger capability, and concluded they aren't:
+    `SandboxPool`'s only genuinely interesting state (live warm handles
+    -- real VMs/subprocess PIDs/sockets) is physically host-bound and
+    cannot be migrated regardless of technology; every other manager's
+    state is either trivially re-derivable from an external source of
+    truth or already delegated to a real durable backend. Fabrica's
+    real, narrower need (`SandboxPool`'s bookkeeping wedging from an
+    undiscovered bug) is a process-crash-recovery problem, already
+    substantially addressed if the embedding process sits under
+    ordinary Civitas supervision (a plain static child, no dynamic
+    spawn needed) -- ordinary restart already cold-boots a fresh
+    `Fabrica`/`SandboxPool`.
+    **A real, separate, stale-doc finding surfaced along the way**:
+    `system-design.md`'s own component matrix (§4) still labeled every
+    manager "GenServer" under service mode -- silently contradicting
+    `contracts/civitas-bridge.md`'s own, already-correct account of the
+    same finding, which had never actually been back-ported to the
+    matrix. Fixed: the matrix now states the real, current shape
+    (plain constructor-injected objects in both modes) directly.
+    **Not closed as "unneeded", recorded as a documented finding with
+    concrete revisit triggers** -- this project has no real production
+    experience under real failure conditions yet: revisit if (a) real
+    production shows process-level restart granularity is genuinely too
+    coarse, or (b) Civitas's own migration/"teleportation" concept gets
+    built for a better-motivated use case elsewhere. Full reasoning:
+    `system-design.md`'s own "Finding: managers as supervised
+    GenServers, investigated but not built" section.
 23. [ ] Managed-provider adapters (E2B/Modal/AWS/Azure/GCP) — interfaces
     already designed (`managed-sandbox.md`); real implementation work once
     started.

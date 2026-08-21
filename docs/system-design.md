@@ -168,17 +168,119 @@ its own dedicated spike rather than attempted alongside the easier half.
 
 ## 4. Component responsibility matrix
 
+**Correction, matching `contracts/civitas-bridge.md`'s own "Correction
+found during implementation" section**: earlier revisions of this table
+labeled every manager below "GenServer" under Service mode. Reading
+`civitas.runtime.Runtime.spawn`'s and `DynamicSupervisor`'s real
+implementation found this structurally doesn't fit -- dynamic-spawn
+reconstructs a class from a dotted path with only `name`, no way to
+hand it an already-constructed object holding live dependencies. This
+table was never actually fixed to say so until now, silently
+contradicting `civitas-bridge.md`'s own, correct account of the same
+finding -- caught while walking through `PLAN.md` item 22 directly with
+the user (Civitas's own maintainer), not found by inspection alone. See "Finding: managers as supervised GenServers, investigated but not
+built" below for the full reasoning, including why this isn't just a
+technical blocker to work around.
+
 | Component | Owns | Depends on | Library mode | Service mode |
 |---|---|---|---|---|
 | `Fabrica` | top-level config, wiring | all managers | plain object | plain object (always — it's the entry point, never itself a GenServer) |
-| `ToolManager` | `ToolNamespace` registration, code-mode orchestration | `Retriever`, `SandboxPool`, `PresidiumClient`, shared `execute_in_sandbox` helper | in-process | GenServer |
-| `SkillManager` | `SKILL.md` loading, skill execution orchestration | `Retriever`, `SandboxPool`, `PresidiumClient`, shared `execute_in_sandbox` helper | in-process | GenServer |
-| `MemoryManager` | adapter lifecycle (Mem0 etc.) | configured `MemoryStore` adapter | in-process | GenServer, shared across a fleet |
-| `PromptManager` | `PromptStore` | Civitas `StateStore`, mediated through `CivitasBridge.request_state_persistence` — never called directly (§1's correction) | in-process | GenServer |
-| `Retriever` | index, search | `KeywordBackend` (default) or an adapter | in-process, local index | GenServer, one shared index fleet-wide |
-| `SandboxPool` | tier selection, pool of handles, platform dispatch, **baking the guest image** (tool-namespace shim +, for Tier 2, the ZMQ relay) | a `Sandbox` backend (subprocess/gVisor/Firecracker/`srt`/libkrun) | in-process, small pool | GenServer, supervised, larger warm pool |
-| `CivitasBridge` | mode selection at construction time; the ONLY caller of `request_supervision`/`request_state_persistence` | Civitas `Runtime` | no-op | requests that Civitas's runtime supervise each GenServer — Civitas performs the actual registration, `CivitasBridge` never touches the supervision tree itself (§1's correction) |
+| `ToolManager` | `ToolNamespace` registration, code-mode orchestration | `Retriever`, `SandboxPool`, `PresidiumClient`, shared `execute_in_sandbox` helper | in-process | plain object, same constructor-injected shape as library mode -- NOT a GenServer (see correction above) |
+| `SkillManager` | `SKILL.md` loading, skill execution orchestration | `Retriever`, `SandboxPool`, `PresidiumClient`, shared `execute_in_sandbox` helper | in-process | plain object, same as library mode |
+| `MemoryManager` | adapter lifecycle (Mem0 etc.) | configured `MemoryStore` adapter | in-process | plain object; only its PERSISTENT STATE moves to a `ComponentStateHandle` backed by Civitas's real `StateStore` (`contracts/memory.md`'s `PersistedMemoryStore`) -- the manager object itself is not a GenServer |
+| `PromptManager` | `PromptStore` | Civitas `StateStore`, mediated through `CivitasBridge.request_state_persistence` — never called directly (§1's correction) | in-process | plain object; same persistent-state-only distinction as `MemoryManager` (`PersistedPromptStore`) |
+| `Retriever` | index, search | `KeywordBackend` (default) or an adapter | in-process, local index | plain object, same as library mode -- "shared fleet-wide" (if ever needed) means pointing multiple replicas' `Retriever`s at the same real external `RetrieverBackend`, not making `Retriever` itself a GenServer |
+| `SandboxPool` | tier selection, pool of handles, platform dispatch, **baking the guest image** (tool-namespace shim +, for Tier 2, the ZMQ relay) | a `Sandbox` backend (subprocess/gVisor/Firecracker/`srt`/libkrun) | in-process, small pool | plain object, same as library mode -- see the finding below for why crash-resilience here is better served by process-level supervision than per-manager GenServer-ification |
+| `CivitasBridge` | mode selection at construction time; the ONLY caller of `request_supervision`/`request_state_persistence` | Civitas `Runtime` | no-op | `request_supervision` is real and tested against Civitas's real `Runtime`/`DynamicSupervisor`, available for a genuinely fresh, self-contained `GenServer` class -- but no manager in this codebase calls it (see the finding below) |
 | `PresidiumClient` | grant/policy checks only — no usage-emission method | Presidium's REST endpoint (mTLS) | same: REST + mTLS, circuit-breaker protected (Presidium is always a separate deployment, not affected by Fabrica's own mode) |
+
+---
+
+## Finding: managers as supervised GenServers, investigated but not built
+
+`PLAN.md` item 22 ("managers as supervised GenServers, 'self-healing
+pool'") was walked through directly with the user -- Civitas's own
+maintainer -- rather than decided unilaterally, per this project's own
+norm for architecture-level calls. Recorded here in full, not just as a
+commit message, since the reasoning matters as much as the conclusion.
+
+**The technical blocker, confirmed against real Civitas source, not
+assumed**: `Runtime.spawn()` reconstructs an agent from a dotted class
+path via `agent_class(name=child_name)` -- only `name`, nothing else --
+then bolts a small fixed set of attributes on afterward
+(`agent._bus`/`agent.llm`/`agent.tools`/`agent.store`/`agent.config`).
+`spawn()` itself returns only the spawned name, never a reference to the
+live instance. There is no path for a manager built as
+`ToolManager(retriever, sandbox_pool, presidium_client)` -- three live,
+stateful, non-reconstructible objects -- to survive this. Full detail:
+`contracts/civitas-bridge.md`'s own "Correction found during
+implementation" section.
+
+**Why this isn't just a mechanism gap to work around**: the maintainer
+confirmed `class_path`/`name`/`config` was never meant to be a
+permanent, hardened contract -- it's an early, simpler stand-in for a
+much more ambitious, genuinely unresolved idea: serializing a running
+process's real state and moving ("teleporting") it to another node,
+resuming from suspension -- true node-failure resilience and trivial
+autoscaling, closer to Erlang-style process mobility than a simple
+restart-from-config. Real, worth pursuing on its own merits -- but
+tested here against whether Fabrica's own managers are a good
+motivating use case for it, and they aren't:
+
+- **`SandboxPool`'s interesting state -- live warm handles (real
+  Firecracker VMs, real subprocess PIDs, real sockets) -- is physically
+  tied to one host's hardware.** A running KVM guest cannot be
+  serialized and resumed on different hardware; that's not a
+  Python-object-serialization problem, it's "the VM exists on this
+  hypervisor." If the node dies, that warm pool is gone regardless of
+  migration technology. What *would* survive is just the pool's
+  configuration (backend choice, sizing) -- reconstructing a fresh pool
+  from that on a new node, cold-booting new sandboxes there, is both
+  achievable TODAY with the existing simple spawn mechanism and the
+  CORRECT behavior anyway.
+- **`Retriever`'s registered catalog** is genuinely serializable, but
+  trivially re-derivable -- whatever called `register()` at startup can
+  just do it again on a fresh instance. Nothing expensive is lost by
+  not migrating it.
+- **`MemoryManager`/`PromptManager`** already delegate nearly all real
+  state to an external, durable backend (`MemoryStore`/`PromptStore`) --
+  the manager object itself holds almost nothing worth preserving.
+- **`ToolManager`/`SkillManager`**'s registered namespaces often wrap
+  live things themselves (closures, real MCP client connections) that
+  aren't cleanly serializable regardless of what Civitas does.
+
+None of Fabrica's managers hold the thing that would actually justify
+live migration: expensive-to-reconstruct state that isn't either
+host-bound-and-therefore-non-transferable, or trivially replayable from
+an external source of truth. Building the bigger capability just for
+Fabrica's sake would undersell what it deserves as a use case.
+
+**What Fabrica's real, narrower need actually is**: `SandboxPool`'s own
+bookkeeping (warm-handle list, background refill tasks, a condition
+variable coordinating them) is the one place genuinely fragile,
+long-lived internal state exists. If an undiscovered bug wedges it, the
+pool degrades quietly. That's a process-CRASH-RECOVERY problem, not a
+migration problem -- and it's already substantially addressed if the
+whole Fabrica-embedding process sits under ORDINARY Civitas supervision
+(even a plain static child in the topology, no dynamic spawn needed at
+all): a crash already triggers Civitas's existing restart mechanism,
+cold-booting a fresh `Fabrica`/`SandboxPool` via ordinary
+`CivitasBridge.build()`. Real resilience today, just at process
+granularity instead of per-manager.
+
+**Resolved as a documented finding, not a rejection** -- this project
+has never run in real production under real failure conditions, so this
+reasoning is exactly that: reasoning, not something battle-tested
+against a real incident. Recorded here explicitly as a known,
+consciously-accepted gap rather than closed as "unneeded" -- **revisit,
+specifically, if**: (a) real production experience shows process-level
+restart granularity is genuinely too coarse (e.g., `SandboxPool`
+wedging forces restarting healthy, unrelated request-serving alongside
+it often enough to matter), or (b) Civitas's own live-migration/
+"teleportation" concept gets built for a better-motivated use case
+elsewhere, at which point it's worth asking again whether `SandboxPool`
+specifically benefits. Not deferred vaguely -- these are the concrete
+triggers, not "maybe someday."
 
 ---
 

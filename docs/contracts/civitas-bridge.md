@@ -308,10 +308,21 @@ difference from library mode, for what's built today, is narrower than
 constructor-injected plain objects in both modes; only `MemoryManager`/
 `PromptManager`'s *persistent state* moves from a local in-memory default
 to a `ComponentStateHandle` backed by Civitas's real `StateStore`, via
-`request_state_persistence`. `system-design.md`'s component matrix is
-left as directional intent for a future supervised-process shape, not
-corrected to match this narrower v1 reality -- flagged here as the
-authoritative correction for anyone implementing against it now.
+`request_state_persistence`. `system-design.md`'s component matrix has
+since been corrected to match this narrower reality, not left as
+directional intent -- see its own "Finding: managers as supervised
+GenServers, investigated but not built" section for the full
+conclusion, reached by walking this through directly with the user
+(Civitas's own maintainer): even setting the `spawn()` mechanism gap
+aside, none of Fabrica's managers hold state that would actually
+justify the bigger capability the maintainer described wanting
+(real process migration/"teleportation", not just restart-from-config)
+-- `SandboxPool`'s own warm-handle state is physically host-bound and
+non-transferable regardless; every other manager's state is either
+trivially re-derivable or already delegated to a real external backend.
+Recorded as a documented finding with concrete revisit triggers, not a
+permanent rejection -- this project has no real production experience
+under real failure conditions yet to test the reasoning against.
 
 ## Second correction found during implementation: `request_state_persistence` is real and tested, but `build()` doesn't call it for managers yet either
 

@@ -193,48 +193,59 @@ credentials/priority both block real implementation).
 — read that, not this summary, before picking up work.** High-level
 status:
 
-1. **Phase 1 (the six self-reflection fixes) — DONE, in full.** Stale
-   README, the `KeywordBackend` Rust/PyO3 doc claim, `context-layer.md`'s
-   MCP scope gap, the package-split decision, real OTEL span emission,
-   and credentials/usage-metering are all resolved. Two of the six were
-   walked through directly with the user rather than decided
-   unilaterally (the package split, credentials), matching this
-   project's own established norm for bigger/ambiguous decisions.
-2. **Phase 2's Easy tier (items 7–12) — DONE, in full.** `CivitasBridge`'s
-   `build()` idempotency and upfront supervisor validation; `find()`'s
-   kind-override question (decided: no override); `Sandbox`'s
-   per-tool-call timeout (found and fixed a genuinely subtle hang bug
-   along the way); `PromptTemplate`'s size/`cache_boundary` validation;
-   `WorkingMemoryQuotaExceeded`'s ceiling (found already resolved,
-   just undocumented as such).
-3. **Phase 2's Medium tier (items 13–18) — NOT STARTED, pick up here
-   next.** `Retriever`'s eager-cache invalidation and batch atomicity;
-   `RecencyCompactor`'s single-message-exceeds-budget edge case;
-   `PromptManager`'s cache eviction policy; `FirecrackerSandbox` real
-   per-VM CPU accounting; a real, minimal, purpose-built Firecracker
-   rootfs image.
-4. **Phase 2's Complex tier (items 19–24)** — Tier 1 isolation,
-   `FirecrackerSandbox` snapshot/restore, `jailer` integration, managers
-   as supervised `GenServer`s (flagged for a direct walkthrough before
-   starting — a real architecture-level call, same reasoning as the
-   package-split/credentials decisions), managed-provider adapters,
+1. **Phase 1 (the six self-reflection fixes) — DONE, in full.**
+2. **Phase 2's Easy tier (items 7–12) — DONE, in full.**
+3. **Phase 2's Medium tier (items 13–18) — DONE, in full.** `Retriever`'s
+   eager-cache invalidation/batch atomicity; `RecencyCompactor`'s and
+   `PromptManager`'s two open items (both found already resolved in
+   code, just needed the docs to say so); `FirecrackerSandbox` real
+   per-VM CPU accounting (found Firecracker's own `/metrics` API is
+   write-only, checked against the real OpenAPI spec -- real fix reads
+   `/proc/<pid>/stat` instead); a real, minimal, purpose-built
+   Firecracker rootfs (Ubuntu 24.04 + `python3` only, ~3.5x faster
+   per-instance rootfs copy, verified on the homelab).
+4. **Phase 2's Complex tier (items 19–24) — item 19 DONE** (Tier 1
+   isolation via `SrtSandbox`, built directly by the user in a parallel
+   session, reviewed afterward -- one real resource leak found and
+   fixed, `Sandbox` gained a `close()` lifecycle method as a result).
+   **Item 22 walked through directly with the user (Civitas's own
+   maintainer) and resolved as a documented finding, not built** --
+   managers holding live constructor-injected dependencies can't
+   survive Civitas's real dynamic-spawn mechanism, AND, more
+   fundamentally, none of Fabrica's managers hold state that would
+   justify the bigger capability the maintainer actually described
+   wanting (real cross-node process migration, not just restart-from-
+   config) -- full reasoning in `system-design.md`'s own "Finding:
+   managers as supervised GenServers, investigated but not built"
+   section, with concrete, named revisit triggers, not a permanent
+   rejection. **Items 20, 21, 23, 24 remain open**: `FirecrackerSandbox`
+   snapshot/restore, `jailer` integration, managed-provider adapters,
    `TunnelProvider` backends.
-5. **BLOCKED, not just deferred: `PresidiumClient`'s real REST+mTLS
+5. **Added mid-session, not part of the original backlog (item 25) --
+   DONE.** Context-footprint metering extended from `MemoryManager` to
+   `ToolManager.find()`/`SkillManager.find()`/`PromptManager` -- a
+   direct user question ("should we consider other costing parameters
+   to track?") walked through and scoped: Fabrica captures and emits
+   real numbers, billing/policy stays entirely Presidium's job.
+6. **BLOCKED, not just deferred: `PresidiumClient`'s real REST+mTLS
    implementation.** No real Presidium HTTP server exists anywhere to
-   build/validate a client against — `PolicyEngine.evaluate()` is an
-   in-process library call, nothing else. Revisit only if a real
-   Presidium deployment ever exists to build against; not actionable
-   from this repo alone.
-6. **Deliberately deferred, named, not re-litigated per `PLAN.md`'s own
+   build/validate a client against. Revisit only if a real Presidium
+   deployment ever exists to build against; not actionable from this
+   repo alone.
+7. **Deliberately deferred, named, not re-litigated per `PLAN.md`'s own
    closing section**: third-party skill trust/signing, log
    tamper-evidence, other memory backends beyond Mem0, `SKILL.md`
    optional fields/bundled resources, Windows Tier 1, macOS/Windows
    Tier 2 `vsock` equivalents.
 
-**Immediate next action**: open `docs/PLAN.md`, start at item 13
-(`Retriever`'s eager-cache invalidation strategy — Medium tier, first
-item). Nothing above it is blocking; item 5 (`PresidiumClient`) is the
-only genuinely external blocker and does not gate anything else.
+**Immediate next action**: open `docs/PLAN.md`, pick up the Complex
+tier at item 20 (`FirecrackerSandbox` snapshot/restore -- needs its own
+spike before implementation, a genuinely unvalidated combination with
+the already-live vsock bridge) or item 23/24 (managed-provider
+adapters/`TunnelProvider` backends -- real implementation work against
+already-designed interfaces). Nothing above it is blocking; item 6
+(`PresidiumClient`) is the only genuinely external blocker and does not
+gate anything else.
 
 
 ## Read in this order if you're new to this
