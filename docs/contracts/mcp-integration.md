@@ -16,11 +16,11 @@ NOT migrate as-is (replaced by `srt`, per the design doc's resolution).
 @dataclass(frozen=True)
 class MCPServerConfig:
     name: str
-    transport: Literal["stdio", "sse"]
+    transport: Literal["stdio", "sse", "streamable_http"]
     command: str | None = None       # required if transport == "stdio"
     args: list[str] = field(default_factory=list)
     env: dict[str, str] = field(default_factory=dict)
-    url: str | None = None           # required if transport == "sse"
+    url: str | None = None           # required if transport == "sse" or "streamable_http"
     sandbox: SandboxConfig | None = None
 
 
@@ -128,9 +128,10 @@ class MCPClient:
 
     async def connect(self) -> None:
         """Opens the transport (stdio subprocess wrapped in `srt` when
-        sandbox.enabled, or a direct SSE connection), initializes the MCP
-        session. Idempotent -- a second call while already connected is a
-        no-op, matching the migrated code's existing behavior.
+        sandbox.enabled, or a direct SSE / Streamable HTTP connection),
+        initializes the MCP session. Idempotent -- a second call while
+        already connected is a no-op, matching the migrated code's existing
+        behavior.
 
         Raises:
             MCPConnectionError: transport-level failure.
@@ -154,6 +155,17 @@ class MCPClient:
 Retained close to the migrated code's existing shape (`stdio_client`/`sse_client`
 transport selection, `ClientSession` lifecycle) — this contract specifies the
 boundary and error behavior, not a rewrite of internals that already work.
+
+**Real addition, closing [python-civitas GH #26](https://github.com/civitas-io/python-civitas/issues/26)**:
+a third `transport: "streamable_http"` value, using the official `mcp` SDK's
+`mcp.client.streamable_http.streamable_http_client(url)` — confirmed directly
+against the real, pinned `mcp==2.0.0` source to yield the exact same
+`(read_stream, write_stream)` two-tuple shape as `sse_client`/`stdio_client`,
+so the addition is a pure third branch in `connect()`, no change to the
+surrounding session-lifecycle code. Motivating case: most current remote MCP
+servers expose a single `/mcp` endpoint handling `POST`/`GET`/`DELETE`
+(Streamable HTTP), not the classic `sse`-plus-separate-POST-endpoint shape —
+a server shaped that way could not be connected to at all before this.
 
 **Correction found during implementation**: the migrated code
 (`civitas-contrib/packages/fabrica/src/fabrica/mcp/client.py`) reads

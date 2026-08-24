@@ -8,10 +8,12 @@ PATH, skipped otherwise (an environment gap, not a code gap).
 
 from __future__ import annotations
 
+import asyncio
 import shutil
 import sys
 
 import pytest
+import uvicorn
 
 from fabrica.mcp.client import MCPClient
 from fabrica.mcp.errors import (
@@ -22,8 +24,14 @@ from fabrica.mcp.errors import (
 )
 from fabrica.mcp.types import FilesystemMount, MCPServerConfig, SandboxConfig
 
+from .conftest import wait_for_port_open
+from .fixtures.echo_http_server import build_app
+
 _ECHO_SERVER_ARGS = ["-m", "tests.mcp.fixtures.echo_server"]
 _srt_available = shutil.which("srt") is not None
+_HTTP_HOST = "127.0.0.1"
+_HTTP_PORT = 8934
+_HTTP_URL = f"http://{_HTTP_HOST}:{_HTTP_PORT}/mcp"
 
 
 def _stdio_config(**overrides: object) -> MCPServerConfig:
@@ -112,6 +120,94 @@ class TestSseTransport:
     def test_missing_command_raises_at_config_construction(self) -> None:
         with pytest.raises(ValueError, match="requires 'command'"):
             MCPServerConfig(name="x", transport="stdio")
+
+
+class _RunningEchoHttpServer:
+    """Starts tests/mcp/fixtures/echo_http_server.py's real MCP server
+    over real Streamable HTTP in a background task, for the duration of
+    the `async with` block -- mirrors test_server.py's own
+    _RunningHttpServer pattern (real readiness poll via wait_for_port_open,
+    not a fixed sleep -- see conftest.py for the real CI failure that
+    guards against).
+    """
+
+    def __init__(self) -> None:
+        self._server: uvicorn.Server | None = None
+        self._task: asyncio.Task[None] | None = None
+
+    async def __aenter__(self) -> None:
+        config = uvicorn.Config(
+            build_app(_HTTP_HOST), host=_HTTP_HOST, port=_HTTP_PORT, log_level="warning"
+        )
+        self._server = uvicorn.Server(config)
+        self._task = asyncio.ensure_future(self._server.serve())
+        await wait_for_port_open(_HTTP_HOST, _HTTP_PORT)
+
+    async def __aexit__(self, *exc: object) -> None:
+        assert self._server is not None and self._task is not None
+        self._server.should_exit = True
+        await self._task
+
+
+def _streamable_http_config(**overrides: object) -> MCPServerConfig:
+    defaults: dict[str, object] = {
+        "name": "echo-http",
+        "transport": "streamable_http",
+        "url": _HTTP_URL,
+    }
+    defaults.update(overrides)
+    return MCPServerConfig(**defaults)  # type: ignore[arg-type]
+
+
+class TestStreamableHttpTransport:
+    """Closes python-civitas GH #26 -- a real running Streamable HTTP MCP
+    server (echo_http_server.py, the mcp SDK's own real
+    Server.streamable_http_app(), a real uvicorn process), not a mock.
+    """
+
+    def test_missing_url_raises_at_config_construction(self) -> None:
+        with pytest.raises(ValueError, match="requires 'url'"):
+            MCPServerConfig(name="x", transport="streamable_http")
+
+    async def test_connects_and_lists_real_tools(self) -> None:
+        async with _RunningEchoHttpServer():
+            client = MCPClient(_streamable_http_config())
+            await client.connect()
+            try:
+                schemas = await client.list_tools()
+            finally:
+                await client.disconnect()
+        names = {s.name for s in schemas}
+        assert names == {"add", "always_fails"}
+
+    async def test_call_tool_returns_real_result(self) -> None:
+        async with _RunningEchoHttpServer():
+            client = MCPClient(_streamable_http_config())
+            await client.connect()
+            try:
+                result = await client.call_tool("add", {"a": 4, "b": 5})
+            finally:
+                await client.disconnect()
+        assert result == "9"
+
+    async def test_call_tool_raises_mcp_tool_error_on_is_error(self) -> None:
+        async with _RunningEchoHttpServer():
+            client = MCPClient(_streamable_http_config())
+            await client.connect()
+            try:
+                with pytest.raises(MCPToolError) as exc_info:
+                    await client.call_tool("always_fails", {})
+            finally:
+                await client.disconnect()
+        assert exc_info.value.tool_name == "always_fails"
+
+    async def test_connect_fails_cleanly_when_no_server_is_listening(self) -> None:
+        # Deliberately no _RunningEchoHttpServer here -- proves a genuine
+        # connection failure (nothing listening on this port) surfaces as
+        # MCPConnectionError, not an unrelated/opaque exception.
+        client = MCPClient(_streamable_http_config(url="http://127.0.0.1:8935/mcp"))
+        with pytest.raises(MCPConnectionError):
+            await client.connect()
 
 
 @pytest.mark.skipif(not _srt_available, reason="srt not installed on PATH")

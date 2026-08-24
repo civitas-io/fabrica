@@ -26,12 +26,14 @@ against it without fabrica needing to import civitas here at all.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 from typing import Any, Protocol, runtime_checkable
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
+from mcp.client.streamable_http import streamable_http_client
 
 from fabrica.mcp.errors import MCPConnectionError, MCPServerUnavailableError, MCPToolError
 from fabrica.mcp.isolation import SrtIsolation
@@ -79,8 +81,13 @@ class MCPClient:
                 read, write = await self._exit_stack.enter_async_context(
                     stdio_client(self._stdio_params())
                 )
+            elif self.config.transport == "streamable_http":
+                assert self.config.url is not None  # enforced by __post_init__
+                read, write = await self._exit_stack.enter_async_context(
+                    streamable_http_client(self.config.url)
+                )
             else:
-                assert self.config.url is not None  # enforced by MCPServerConfig.__post_init__
+                assert self.config.url is not None  # enforced by __post_init__
                 read, write = await self._exit_stack.enter_async_context(
                     sse_client(self.config.url)
                 )
@@ -88,6 +95,35 @@ class MCPClient:
             await session.initialize()
         except MCPConnectionError:
             raise
+        except asyncio.CancelledError as exc:
+            # Real, confirmed finding, specific to streamable_http: a dead
+            # endpoint's connection failure is raised by a SIBLING task
+            # inside streamable_http_client's own internal anyio task
+            # group, which cancels this method's single task rather than
+            # raising a normal exception into it directly -- confirmed by
+            # comparing against a bare, un-wrapped streamable_http_client
+            # usage (which raises a clean, catchable ExceptionGroup) versus
+            # this method's own AsyncExitStack-based connection lifecycle
+            # (needed so the connection survives across separate connect()/
+            # call_tool()/disconnect() calls, unlike a single contiguous
+            # `async with` block). A CancelledError caught HERE always means
+            # this specific, bounded connect() attempt did not complete --
+            # not an ambient outer shutdown request this method should
+            # silently swallow -- so converting it into MCPConnectionError
+            # is correct, not a workaround that hides a real cancellation.
+            #
+            # The real, meaningful diagnosis (e.g. a genuine ConnectError)
+            # only surfaces now, from aclose() itself, not from the
+            # CancelledError above -- confirmed directly. Prefer it as the
+            # cause when present; fall back to the CancelledError otherwise.
+            cleanup_exc: BaseException = exc
+            try:
+                await self._exit_stack.aclose()
+            except Exception as aclose_exc:  # noqa: BLE001 -- see comment above
+                cleanup_exc = aclose_exc
+            raise MCPConnectionError(
+                f"MCPClient {self.config.name!r} failed to connect: {cleanup_exc}"
+            ) from cleanup_exc
         except Exception as exc:  # noqa: BLE001 -- transport failures are heterogeneous by nature
             await self._exit_stack.aclose()
             raise MCPConnectionError(
