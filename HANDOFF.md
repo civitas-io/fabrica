@@ -5,10 +5,37 @@ re-deriving anything already decided. Read this first, then follow the links —
 don't re-read the whole repo linearly.
 
 **Resume here: [`docs/PLAN.md`](docs/PLAN.md) is the single ordered work
-queue** — everything from a self-reflection audit
+queue** -- everything from a self-reflection audit
 ([`docs/self-reflection-report.md`](docs/self-reflection-report.md), a
 point-in-time check of the real code/docs against the founding vision) plus
 the full remaining backlog, sorted easiest first, most complex last.
+
+## Status as of 2026-08-24: `fabrica-context` v0.2.0 live on PyPI; next real task is GH #26
+
+**Live**: `pip install fabrica-context` (0.2.0) / `pip install fabrica-context[presidium]` for
+`RestPresidiumClient`. Confirmed via a real fresh-venv install. GitHub Release:
+[`v0.2.0`](https://github.com/civitas-io/fabrica/releases/tag/v0.2.0). With `RestPresidiumClient`
+shipped (real REST+mTLS `PresidiumClient`, closing this doc's own previously-BLOCKED item 6 --
+see below), **the entire backlog has exactly one open item left**: item 23 (managed-provider
+adapters), genuinely blocked on real cloud credentials this project doesn't have.
+
+**Next real task, agreed with the user, not started yet: [python-civitas GH #26](https://github.com/civitas-io/python-civitas/issues/26)**
+-- the MCP client (`src/fabrica/mcp/client.py`, `MCPClient.connect()`, this repo) only supports
+`stdio`/`sse` transport, not **Streamable HTTP** (a single `POST`/`GET`/`DELETE` endpoint), which
+is what most current remote MCP servers actually ship. This is a genuine two-repo item --
+`civitas/mcp/types.py`'s `MCPServerConfig.transport` literal needs a third value too (see
+`civitas-io/python-civitas`'s own `HANDOFF.md` for the civitas-side detail). The official `mcp`
+SDK already ships `mcp.client.streamable_http.streamablehttp_client`, mirroring `sse_client`'s
+shape closely. **Also requested for this piece of work**: real performance benchmarks
+(concurrency, latency, throughput, memory load) for the new transport path, added to this
+repo's README once real numbers exist -- the homelab (a real Linux machine) is available if a
+Linux-specific measurement matters, matching this project's own established discipline of
+validating real capabilities on real hardware (see the Firecracker jailer/vsock spikes) rather
+than assuming.
+
+**Org profile README fixed** (`civitas-io/.github`) -- was missing this repo (Fabrica) entirely
+from the org's own repos table, still describing Fabrica as living inside `civitas-contrib`. Now
+has a real "latest release + date" column for every published repo, including this one.
 
 **Status as of this update: Phase 1, Phase 2's Easy tier, and Phase 2's
 Medium tier are ALL fully complete.** Phase 2's Complex tier: items 19
