@@ -78,17 +78,22 @@ version").
 [`.github/workflows/test-build-release.yml`](.github/workflows/test-build-release.yml)
 -- lint (`ruff`+`mypy --strict`) -> test (real coverage via
 `pytest-cov`) -> build (wheel/sdist + a real fresh-venv install-and-import
-check) -> release (currently a clear, honest placeholder -- PyPI publish
-is deliberately NOT wired yet, pending three real decisions: which
-account/org to publish under, TestPyPI first or straight to production,
-and the real version to publish as, since `0.1.0.dev0` is a genuine
-PEP 440 dev release `pip install` won't grab by default). Every job's
+check) -> release. Every job's
 exact commands were run locally first, matching `wire-ci`'s own
 `--validate`/dry-run discipline (the bundled Python CI template wasn't
 actually present in this session's bigpowers install, confirmed via
 `--detect`/`--plan`, so this was hand-written to the skill's own
 documented conventions -- pinned action SHAs looked up for real via
 GitHub's own API, not guessed).
+
+**Update, 2026-08-24: actually published now, twice.** The three real decisions this section used
+to flag as open (which account/org, TestPyPI vs. production, real version) are all resolved:
+`civitas-io` org, straight to production PyPI via OIDC Trusted Publishing (matching every other
+package in this org), real semantic versions. **`fabrica-context` v0.1.0** (2026-08-21) was the
+first real release; **v0.2.0** (2026-08-24, `RestPresidiumClient`) is current. Both confirmed live
+via a real fresh-venv `pip install`, both with real CycloneDX SBOM assets on their GitHub
+Releases. `.github/workflows/publish.yml` now exists alongside `test-build-release.yml`,
+triggered on `v*.*.*` tag push.
 
 **Real coverage numbers, confirmed on GitHub's own actual
 infrastructure, not just predicted**: the very first real CI run

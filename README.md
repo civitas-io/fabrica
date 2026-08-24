@@ -2,8 +2,12 @@
 
 **The context layer for Python agents.** Part of the [Civitas](https://github.com/civitas-io/python-civitas) platform.
 
+[![PyPI](https://img.shields.io/pypi/v/fabrica-context)](https://pypi.org/project/fabrica-context/)
+[![GitHub release](https://img.shields.io/github/v/release/civitas-io/fabrica)](https://github.com/civitas-io/fabrica/releases)
+
 ```
-pip install fabrica-context   # import fabrica
+pip install fabrica-context               # import fabrica
+pip install fabrica-context[presidium]    # + RestPresidiumClient (real REST+mTLS governance client)
 ```
 
 > `fabrica` itself is already taken on PyPI by an unrelated project — the
@@ -64,7 +68,10 @@ hardware/API evidence — [`specs/archive/spikes/`](https://github.com/civitas-i
 every object-model component built and tested, not just designed:
 `Retriever`, `Sandbox`/`SandboxPool` (all three tiers implemented), `ToolManager`,
 `SkillManager`, `MemoryManager`, `PromptManager`, `CivitasBridge`, both MCP
-directions, and `TunnelProvider`. A real GitHub Actions pipeline lints, tests,
+directions, `TunnelProvider`, and -- as of v0.2.0 -- `RestPresidiumClient`, the real
+REST+mTLS `PresidiumClient` implementation (circuit-breaker protected, fail-closed),
+verified against [`civitas-io/presidium`](https://github.com/civitas-io/presidium)'s
+own real, live M7 server, not mocks. A real GitHub Actions pipeline lints, tests,
 and builds on every push.
 
 Genuinely open, not hidden: managed-provider adapters (E2B/Modal/AWS/Azure/GCP)
