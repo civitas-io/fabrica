@@ -19,19 +19,30 @@ shipped (real REST+mTLS `PresidiumClient`, closing this doc's own previously-BLO
 see below), **the entire backlog has exactly one open item left**: item 23 (managed-provider
 adapters), genuinely blocked on real cloud credentials this project doesn't have.
 
-**Next real task, agreed with the user, not started yet: [python-civitas GH #26](https://github.com/civitas-io/python-civitas/issues/26)**
--- the MCP client (`src/fabrica/mcp/client.py`, `MCPClient.connect()`, this repo) only supports
-`stdio`/`sse` transport, not **Streamable HTTP** (a single `POST`/`GET`/`DELETE` endpoint), which
-is what most current remote MCP servers actually ship. This is a genuine two-repo item --
-`civitas/mcp/types.py`'s `MCPServerConfig.transport` literal needs a third value too (see
-`civitas-io/python-civitas`'s own `HANDOFF.md` for the civitas-side detail). The official `mcp`
-SDK already ships `mcp.client.streamable_http.streamablehttp_client`, mirroring `sse_client`'s
-shape closely. **Also requested for this piece of work**: real performance benchmarks
-(concurrency, latency, throughput, memory load) for the new transport path, added to this
-repo's README once real numbers exist -- the homelab (a real Linux machine) is available if a
+**[python-civitas GH #26](https://github.com/civitas-io/python-civitas/issues/26) -- DONE, real,
+commit `f402656`.** `MCPClient.connect()` (`src/fabrica/mcp/client.py`) now has a real third
+transport branch, `"streamable_http"`, using the official `mcp` SDK's
+`mcp.client.streamable_http.streamable_http_client` -- confirmed directly against the real,
+pinned `mcp==2.0.0` source to yield the same `(read_stream, write_stream)` shape as
+`sse_client`/`stdio_client`. Verified end to end against a real running Streamable HTTP MCP
+server (`tests/mcp/fixtures/echo_http_server.py`, real `mcp.server.lowlevel.Server` +
+`Server.streamable_http_app()` + real uvicorn), not mocked -- 5 new tests, 238 total pass.
+**Real, confirmed finding worth knowing for any future work in this area**: a dead
+`streamable_http` endpoint's connection failure surfaces as a raw `asyncio.CancelledError`
+from a sibling task inside the SDK's own internal anyio task group, not a normal exception the
+way `stdio_client`/`sse_client` fail -- only when the connection is held open across separate
+`connect()`/`call_tool()`/`disconnect()` calls via `contextlib.AsyncExitStack` (needed for this
+class's persistent-connection design), confirmed by direct comparison against a bare, contiguous
+`async with` usage (which fails cleanly on its own). Handled with a narrow, scoped
+`asyncio.CancelledError` catch inside `connect()`, reading the real underlying diagnosis off the
+resulting exit-stack cleanup (where it actually surfaces), not off the `CancelledError` itself.
+
+**Next real step, not started yet**: real performance benchmarks (concurrency, latency,
+throughput, memory load) for the new transport path specifically, added to this repo's README
+once real numbers exist -- not estimated. The homelab (a real Linux machine) is available if a
 Linux-specific measurement matters, matching this project's own established discipline of
 validating real capabilities on real hardware (see the Firecracker jailer/vsock spikes) rather
-than assuming.
+than assuming. GH #26 stays open until these land.
 
 **Org profile README fixed** (`civitas-io/.github`) -- was missing this repo (Fabrica) entirely
 from the org's own repos table, still describing Fabrica as living inside `civitas-contrib`. Now
