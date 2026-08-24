@@ -37,12 +37,17 @@ class's persistent-connection design), confirmed by direct comparison against a 
 `asyncio.CancelledError` catch inside `connect()`, reading the real underlying diagnosis off the
 resulting exit-stack cleanup (where it actually surfaces), not off the `CancelledError` itself.
 
-**Next real step, not started yet**: real performance benchmarks (concurrency, latency,
-throughput, memory load) for the new transport path specifically, added to this repo's README
-once real numbers exist -- not estimated. The homelab (a real Linux machine) is available if a
-Linux-specific measurement matters, matching this project's own established discipline of
-validating real capabilities on real hardware (see the Firecracker jailer/vsock spikes) rather
-than assuming. GH #26 stays open until these land.
+**Real perf benchmarks -- DONE, commit `16877b7`, GH #26 now fully closed.** Ran on the real
+homelab (AMD Ryzen 9 3900X), matched dependency versions from this repo's own committed
+`uv.lock`. `streamable_http` p50 2.01ms / 673 calls-s @ concurrency=10, vs. `stdio` 0.69ms/2356
+and `sse` 1.32ms/991 -- roughly 3x `stdio`'s latency, ~1.5x `sse`'s, as expected given it layers a
+full HTTP request/response on an already-open stream. No memory growth on any transport at 2000
+calls. One real, notable, honestly-flagged finding: throughput doesn't meaningfully scale past
+~5 concurrent callers sharing one `ClientSession`, on ANY transport -- a real, still-open
+question (not resolved) is whether multiple independent sessions would scale differently. Full
+methodology, raw JSON, every finding:
+[`specs/archive/spikes/SPIKE-mcp-transport-benchmark.md`](specs/archive/spikes/SPIKE-mcp-transport-benchmark.md).
+Summary table + link added to `README.md`.
 
 **Org profile README fixed** (`civitas-io/.github`) -- was missing this repo (Fabrica) entirely
 from the org's own repos table, still describing Fabrica as living inside `civitas-contrib`. Now
