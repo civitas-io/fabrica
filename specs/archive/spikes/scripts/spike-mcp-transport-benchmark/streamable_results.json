@@ -1,0 +1,50 @@
+{
+  "transport": "streamable_http",
+  "latency": {
+    "p50_ms": 2.0062929979758337,
+    "p95_ms": 2.5597249914426357,
+    "p99_ms": 2.6812099968083203,
+    "mean_ms": 2.235656835619011,
+    "min_ms": 1.8470990034984425,
+    "max_ms": 29.921342997113243
+  },
+  "throughput": [
+    {
+      "concurrency": 1,
+      "total_calls": 2199,
+      "elapsed_s": 5.002088345994707,
+      "calls_per_sec": 439.6163857763113
+    },
+    {
+      "concurrency": 5,
+      "total_calls": 3351,
+      "elapsed_s": 5.0046171770081855,
+      "calls_per_sec": 669.5816845681819
+    },
+    {
+      "concurrency": 10,
+      "total_calls": 3375,
+      "elapsed_s": 5.013310302005266,
+      "calls_per_sec": 673.2078799610787
+    },
+    {
+      "concurrency": 25,
+      "total_calls": 3355,
+      "elapsed_s": 5.033398817002308,
+      "calls_per_sec": 666.5476196058918
+    },
+    {
+      "concurrency": 50,
+      "total_calls": 3277,
+      "elapsed_s": 5.0721241800056305,
+      "calls_per_sec": 646.0803962406856
+    }
+  ],
+  "memory": {
+    "rss_before_mb": 66.6015625,
+    "rss_after_connect_mb": 66.6015625,
+    "rss_after_2000_calls_mb": 66.6015625,
+    "connect_overhead_mb": 0.0,
+    "growth_after_2000_calls_mb": 0.0
+  }
+}

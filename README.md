@@ -44,8 +44,30 @@ decides what they see and how they act on it.**
 | **Skills gateway** | Loads the open `SKILL.md` standard with progressive disclosure — validated against the real 81-skill `bigpowers` catalog. |
 | **Memory** | A `MemoryStore` protocol wrapping mature backends (Mem0 today; Zep/Letta/Cognee planned) — working memory, compaction, and long-term recall as three separate facets, not one blended score. |
 | **Prompts** | A versioned, addressable `PromptStore` — storage and retrieval only, deliberately not rendering or compression. |
-| **MCP, both directions** | A real MCP client (`MCPToolNamespace`) and a real MCP server (`FabricaMCPServer`, stdio + HTTP) — external tools come in, Fabrica's own tools/skills/memory/prompts go out, without reintroducing the schema-dump cost code-mode exists to avoid. |
+| **MCP, both directions** | A real MCP client (`MCPToolNamespace`) and a real MCP server (`FabricaMCPServer`, stdio + HTTP) — external tools come in, Fabrica's own tools/skills/memory/prompts go out, without reintroducing the schema-dump cost code-mode exists to avoid. Client-side transports: `stdio`, `sse`, and `streamable_http` — see benchmarks below. |
 | **Tunnels** | `TunnelProvider` for exposing a local dev deployment publicly — Tailscale Funnel and Cloudflare quick tunnels, both credential-free. |
+
+## MCP transport benchmarks — real, not estimated
+
+Real hardware (AMD Ryzen 9 3900X, 24 threads), matched dependency versions
+(`mcp==2.0.0`, `uvicorn==0.51.0`), one shared `ClientSession` per transport,
+no mocks. Full methodology, raw JSON, and every finding (including one real,
+unexplained latency outlier, flagged honestly rather than smoothed over):
+[`specs/archive/spikes/SPIKE-mcp-transport-benchmark.md`](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-mcp-transport-benchmark.md).
+
+| Transport | p50 latency | p99 latency | throughput @ concurrency=10 | RSS growth / 2000 calls |
+|---|---|---|---|---|
+| `stdio` | 0.69ms | 0.71ms | 2356 calls/s | 0.00 MB |
+| `sse` | 1.32ms | 1.61ms | 991 calls/s | 0.00 MB |
+| `streamable_http` | 2.01ms | 2.68ms | 673 calls/s | 0.00 MB |
+
+`streamable_http` runs at roughly 3x `stdio`'s p50 latency and ~1.5x `sse`'s —
+expected, given it layers a full HTTP request/response on top of what `sse`
+does over an already-open stream. No transport showed measurable memory
+growth at 2000 calls. A real, notable finding: throughput did not
+meaningfully scale past ~5 concurrent callers sharing one `ClientSession`,
+on any transport — see the spike doc for the full reasoning and the (still
+open) question of whether multiple sessions would scale differently.
 
 ## Isolation — the differentiator
 
