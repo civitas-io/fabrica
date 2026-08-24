@@ -166,6 +166,18 @@ code specifically becomes a genuine priority.
 
 ---
 
+## Real, working pre-commit hooks -- new, installed, verified
+
+**2026-08-24**: fabrica had no `.pre-commit-config.yaml`/`CONTRIBUTING.md` at all before now.
+Both added, matching the same standardized shape as `civitas-io/python-civitas`/
+`civitas-io/presidium`: `uv run pre-commit install && uv run pre-commit install --hook-type
+pre-push` wires up ruff/ruff-format/gitleaks on every commit, `mypy --strict` + the full real
+test suite (hardware-gated tests included) on every push. **Real, separate finding along the
+way, not silently fixed**: `specs/archive/spikes/scripts/` has 103 real lint errors CI has
+never caught (`ruff check` there is scoped to `src/`+`tests/` only, matching CI's own real
+scope) -- a real, named, deliberately-not-fixed archival-code gap, not something this change
+quietly papered over.
+
 ## What Fabrica is, in one paragraph
 
 Fabrica is the **context layer** of the Civitas platform — the third pillar
