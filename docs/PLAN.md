@@ -610,10 +610,16 @@ reaffirmed, not a new one invented for this).
 
 ### Blocked — not sequenced by complexity, simply not actionable right now
 
-- [ ] `PresidiumClient`'s real REST+mTLS client — no real Presidium HTTP
-  server exists anywhere to build/validate against.
+- [x] ~~`PresidiumClient`'s real REST+mTLS client~~ **DONE, 2026-08-23/24,
+  v0.2.0.** `civitas-io/presidium` shipped a real M7 server; the blocker is
+  resolved. `fabrica.presidium.rest_client.RestPresidiumClient` -- real
+  REST+mTLS, circuit-breaker protected, fail-closed, verified against
+  `httpx.MockTransport` (24 tests) and a real end-to-end running Presidium
+  server (real certs, not mocks). New `fabrica[presidium]` extra. Published
+  to PyPI as `fabrica-context` v0.2.0, confirmed live via a real fresh-venv
+  install. See `HANDOFF.md`'s own item 6 for the full writeup.
 - [ ] Managed-provider adapters' real credentials (E2B/Modal/AWS/Azure/GCP)
-  — also deliberately deprioritized behind self-hosted Tier 2 regardless.
+  -- also deliberately deprioritized behind self-hosted Tier 2 regardless.
 
 ### Deliberately out of scope for this plan — already correctly deferred, revisit only if forced
 
