@@ -416,8 +416,8 @@ requires-dist = [
     { name = "mcp", specifier = ">=2.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7" },
-    { name = "presidium", marker = "extra == 'dev'", specifier = ">=0.2.1" },
-    { name = "presidium-contrib", extras = ["server"], marker = "extra == 'dev'", specifier = ">=0.2.0" },
+    { name = "presidium", marker = "extra == 'dev'", specifier = ">=0.4.0" },
+    { name = "presidium-contrib", extras = ["server"], marker = "extra == 'dev'", specifier = ">=0.7.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0" },
@@ -1049,28 +1049,31 @@ wheels = [
 
 [[package]]
 name = "presidium"
-version = "0.2.1"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cel-python" },
     { name = "civitas" },
+    { name = "cryptography" },
     { name = "pynacl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/db/2c/65d6c1afb2f6e11c3e72f1f28f24e2dcabafb9d0a2fba2d3eac6e0156c19/presidium-0.2.1.tar.gz", hash = "sha256:220d0d2050e9fe1cb8c6e8ad3760aeca65605e56c7871b25655b84ddb68bdb07", size = 52140, upload-time = "2026-08-22T13:35:28.853Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/e8/a89d676824ab98de82910a6d04c6108768689076744efc8fd3b546ea908c/presidium-0.4.0.tar.gz", hash = "sha256:02a6e6f1705359168ff702f30518e2fc88be80c24df6beac3bfbc1340b58f25d", size = 69268, upload-time = "2026-08-24T16:06:37.445Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/80/12/c335516556edb3fceb87cb4dbccbfcd57d0e17ee7efe1b3739d8a6d4ec59/presidium-0.2.1-py3-none-any.whl", hash = "sha256:18de53f26d507c216f87b42cd0e9f90cab06c50897cb4ffef75c8432923530df", size = 41067, upload-time = "2026-08-22T13:35:27.633Z" },
+    { url = "https://files.pythonhosted.org/packages/57/66/e86aa8f5e4d1b84400dacb83ac0972aa1b3ae14dc33fb5a509bccb342c3d/presidium-0.4.0-py3-none-any.whl", hash = "sha256:961eff51220626924255a120fce9dfaa15b3d6a9f0ff4e6be9546b8a8ea47b28", size = 51282, upload-time = "2026-08-24T16:06:36.215Z" },
 ]
 
 [[package]]
 name = "presidium-contrib"
-version = "0.2.0"
+version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "presidium" },
+    { name = "rich" },
+    { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7b/a8/0d5d7fe72b16b4987d17f9bd7e5146fdca0151216a61e079404239ca4096/presidium_contrib-0.2.0.tar.gz", hash = "sha256:dd381ea2e8d1da0ec90b7e0f9fc4ebe305cd9d824144df7fe55450dcc8ce076c", size = 34242, upload-time = "2026-08-22T13:28:22.706Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/c9/2f86e2312431a8e1b3ffc5ec3aadd7db367381ac08f0474da505af346ed9/presidium_contrib-0.7.0.tar.gz", hash = "sha256:2e7efbb040b3f5454f5f81ecd94662f4c91f97360079d2d451cbe9c74b9a47e3", size = 83378, upload-time = "2026-08-24T16:09:07.389Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/36/69/888cb477e7e298f9d51b16b276ceea37f6f9c0cbfdc6560f063ff87be70a/presidium_contrib-0.2.0-py3-none-any.whl", hash = "sha256:8d4a1fe02a97d644566ccb5b721286ea9c3c6593f446e30eee2353b8d39718b6", size = 26866, upload-time = "2026-08-22T13:28:21.546Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/da/7eea287894eb2cfbb19ea46c181081092f170a1063934931375024bff9fe/presidium_contrib-0.7.0-py3-none-any.whl", hash = "sha256:e96d78cdac4682d1be5f3c954d8ddcfe864b742eeffbe5a94a67a979f2e3d36a", size = 59286, upload-time = "2026-08-24T16:09:06.178Z" },
 ]
 
 [package.optional-dependencies]

@@ -67,13 +67,21 @@ dev = [
     # RestPresidiumClient against an actual running Presidium server, not
     # a mock. cryptography backs that test's own real self-signed CA/leaf
     # certificate generation (mirrors civitas-io/presidium's own real mTLS
-    # test fixture pattern).
-    "presidium>=0.2.1",
+    # test fixture pattern). Floors bumped 2026-08-24 -- found this
+    # repo's own committed uv.lock had been silently pinned to the
+    # original 0.2.1/0.2.0 versions this whole time (a >= floor doesn't
+    # re-resolve on its own; needs `uv lock --upgrade-package`), meaning
+    # real CI here hadn't actually exercised presidium's substantial,
+    # real work since (CEL default-deny, registry CRUD, approval
+    # list/decide, rate limiting) at all. Re-verified this test still
+    # passes for real against the real, current presidium-contrib[server]
+    # before bumping, not assumed compatible.
+    "presidium>=0.4.0",
     # [server] extra: pulls civitas[http] (uvicorn[standard]/httptools) --
     # the real end-to-end test boots an actual presidium_contrib.server
     # (PresidiumGatewayAgent/HealthCheckAgent behind civitas.gateway.
     # HTTPGateway), not just the base presidium-contrib package.
-    "presidium-contrib[server]>=0.2.0",
+    "presidium-contrib[server]>=0.7.0",
     "cryptography>=41",
 ]
 

@@ -10,6 +10,22 @@ queue** -- everything from a self-reflection audit
 point-in-time check of the real code/docs against the founding vision) plus
 the full remaining backlog, sorted easiest first, most complex last.
 
+## Real, found-during-a-docs-audit fix, 2026-08-24: presidium/presidium-contrib dependency floors were stale
+
+`pyproject.toml`'s own dev dependencies (`presidium>=0.2.1`, `presidium-contrib[server]>=0.2.0`)
+had been silently pinned to those exact versions in the committed `uv.lock` this whole time -- a
+`>=` floor doesn't re-resolve to newer releases on its own; needs an explicit `uv lock
+--upgrade-package`. This meant this repo's own real end-to-end mTLS test
+(`tests/presidium/test_rest_client_real_presidium_server.py`) had not actually exercised any of
+`civitas-io/presidium`'s substantial work since -- CEL default-deny, registry CRUD, approval
+list/decide, rate limiting (`presidium` v0.3.0/v0.4.0, `presidium-contrib` v0.3.0 through v0.7.0).
+**Re-verified the real test still passes against the real, current `presidium-contrib[server]`
+before bumping the floors, not assumed compatible** -- confirmed directly: `DENY_NO_GRANT`
+(`expression: "true"`, priority 0) already acts as this test's own real, explicit terminal rule,
+so the CEL default-deny flip was never actually reachable here, no hidden regression. Bumped to
+`presidium>=0.4.0`/`presidium-contrib[server]>=0.7.0`. All 292 real tests (33 skipped, hardware-
+gated) pass, `ruff`/`ruff format --check`/`mypy --strict` clean.
+
 ## Status as of 2026-08-24: `fabrica-context` v0.2.0 live on PyPI; only item 23 remains open
 
 **Live**: `pip install fabrica-context` (0.2.0) / `pip install fabrica-context[presidium]` for
