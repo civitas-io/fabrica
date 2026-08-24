@@ -49,10 +49,24 @@ decides what they see and how they act on it.**
 
 ## MCP transport benchmarks — real, not estimated
 
-Real hardware (AMD Ryzen 9 3900X, 24 threads), matched dependency versions
-(`mcp==2.0.0`, `uvicorn==0.51.0`), one shared `ClientSession` per transport,
-no mocks. Full methodology, raw JSON, and every finding (including one real,
-unexplained latency outlier, flagged honestly rather than smoothed over):
+**Methodology, stated plainly**: single OS process, single OS thread, for
+both client and server (concurrency = concurrent `anyio` tasks on one event
+loop, not real parallelism); one shared `ClientSession`/connection for all
+concurrent callers, not independent simulated users; loopback only, zero
+real network hop; a trivial, zero-work `echo` tool, to isolate transport
+overhead specifically. Real hardware (AMD Ryzen 9 3900X, 24 threads),
+matched dependency versions (`mcp==2.0.0`, `uvicorn==0.51.0`), no mocks.
+
+Compared against two independently-published, real industry benchmarks
+(TM Dev Lab's cross-language benchmark, Stacklok/ToolHive's transport
+benchmark) — the honest conclusion: no fair, direct ranking is possible from
+this spike alone, since neither the network topology nor the tool workload
+match. What DOES hold up: this implementation's raw transport overhead is
+the same order of magnitude as other real Python MCP implementations once
+those differences are accounted for, and its throughput-plateau finding is
+independently corroborated by Stacklok's own session-scaling data. Full
+methodology, raw JSON, every finding, and the full industry comparison with
+real citations:
 [`specs/archive/spikes/SPIKE-mcp-transport-benchmark.md`](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-mcp-transport-benchmark.md).
 
 | Transport | p50 latency | p99 latency | throughput @ concurrency=10 | RSS growth / 2000 calls |

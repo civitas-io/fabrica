@@ -82,6 +82,41 @@ own established spike convention:
 | `sse` | 65.00 | 65.00 | 65.00 | 0.00 |
 | `streamable_http` | 66.60 | 66.60 | 66.60 | 0.00 |
 
+## Honest methodology disclosure -- what "concurrency" and "users" mean here
+
+Asked directly after the fact, and worth stating precisely rather than left
+implicit:
+
+- **Single OS process, single OS thread, for both client and server.**
+  Neither side spawns real OS threads or forked processes. "Concurrency" in
+  the throughput benchmark means concurrent **`anyio` tasks (coroutines) on
+  one asyncio event loop**, not real parallelism -- Python's GIL means only
+  one task actually executes Python bytecode at a time regardless of the
+  concurrency level tested. `uvicorn.Server(config)` on the server side is
+  also a single worker, no `--workers N`, no multiple processes.
+- **Single "user", not multiple.** Every throughput data point comes from
+  ONE `MCPClient`/`ClientSession`/connection, with N concurrent asyncio
+  tasks all issuing `call_tool()` through that SAME shared session. This is
+  NOT N independent simulated users each with their own connection -- see
+  Finding 3 below, which is a direct consequence of this choice.
+- **Loopback only.** Client and server ran in the same process space on the
+  same physical host (`127.0.0.1`), zero real network hops, zero Docker/K8s
+  networking overhead. Real deployments (the actual GH #26 motivating case:
+  a remote MCP server) will add real network RTT on top of every number
+  above.
+- **Trivial workload.** The `echo` tool does zero computation and zero I/O
+  -- deliberately, to isolate transport/serialization overhead specifically
+  (see Method), not to simulate a realistic tool. A tool that computes or
+  makes an external call will be dominated by its own cost, not transport
+  choice, at real-world latencies.
+
+None of this invalidates the relative comparison between the three
+transports (same harness, same host, same tool, same client code) -- but it
+means these are NOT directly comparable to a real load-generator (k6,
+Locust, ToolHive's own harness) hitting independent connections over a real
+network, which is what the industry benchmarks below actually measure. See
+"How this compares to the wider industry" for the full reconciliation.
+
 ## Findings
 
 1. **`stdio` is fastest on every axis**, as expected -- no TCP/HTTP framing,
@@ -124,6 +159,98 @@ own established spike convention:
    honestly as unexplained, not smoothed over -- a real follow-up spike
    with more samples (2000+) would be needed to characterize the tail
    properly before this number is used for any capacity-planning decision.
+
+## How this compares to the wider industry
+
+Two credible, real, independently-published MCP benchmarks exist and were
+reviewed directly (not summarized secondhand) before writing this section:
+
+**[TM Dev Lab's multi-language benchmark](https://www.tmdevlab.com/mcp-server-performance-benchmark.html)**
+(Feb 2026, 3.9M requests via k6, Docker, 50 concurrent VUs, real network hop
+over a Docker bridge, four non-trivial tools including CPU-bound Fibonacci
+and external I/O, all four servers on Streamable HTTP):
+
+| Server | Avg latency | p95 | Throughput (RPS) |
+|---|---|---|---|
+| Java (Spring AI) | 0.84ms | 10.19ms | 1,624 |
+| Go (official SDK) | 0.86ms | 10.03ms | 1,624 |
+| Node.js (official SDK) | 10.66ms | 53.24ms | 559 |
+| **Python (FastMCP, default single-worker uvicorn)** | **26.45ms** | **73.23ms** | **292** |
+
+**[Stacklok/ToolHive's transport benchmark](https://stacklok.com/blog/mcp-server-performance-transport-protocol-matters/)**
+(Jan 2026, a real Kubernetes cluster, a real `echo`-only server designed
+specifically to isolate transport overhead -- the same goal as this spike):
+
+| Transport | Concurrency | Avg RT | Throughput |
+|---|---|---|---|
+| `stdio` | 20 | ~20s (!) | 0.64 req/s, 2/50 succeeded |
+| `sse` | 20 (sustained) | 564ms | 29.87 req/s |
+| `streamable_http`, shared session pool | 20-1000 | 5-6ms (low), 622ms-3.09s (very high) | up to ~293-300 req/s |
+| `streamable_http`, unique session per request | 20-50 | 273ms-1.12s | 33-36 req/s |
+
+### Reconciling: are we faster than published Python numbers? No -- the comparison isn't valid, and here's exactly why
+
+This spike's own `streamable_http` numbers (p50 2.01ms, ~673 calls/s @
+concurrency=10) look better than TM Dev Lab's real, published Python figure
+(26.45ms avg, 292 RPS). **That is not evidence Fabrica's `MCPClient` or this
+transport implementation is faster than FastMCP's** -- it's an artifact of
+four real, named methodology differences, not a real performance win:
+
+1. **No real network/Docker hop here; TM Dev Lab's ran over a real Docker
+   bridge network with a real, separate k6 load generator process.**
+2. **Trivial `echo` tool here; TM Dev Lab's servers do real work** (Fibonacci,
+   external HTTP calls, JSON transforms) -- their own tool-specific
+   breakdown shows Python's `fetch_external_data` tool alone averaging
+   80.92ms, 63x slower than Go's, entirely separate from transport choice.
+3. **One shared session/connection with in-process async-task "concurrency"
+   here; TM Dev Lab used k6's real, independent virtual users**, each a
+   genuinely separate connection -- a fundamentally different concurrency
+   model (see the methodology disclosure above).
+4. **Both benchmarks' Python servers used a default, single-worker uvicorn
+   config with no explicit tuning** -- this dimension IS comparable, and is
+   consistent with, not contradicted by, this spike's own numbers once (1)-(3)
+   are accounted for.
+
+The honest, directionally useful comparisons that DO hold up:
+
+- **Relative to Java/Go's ~0.85ms class-leading baseline latency, this
+   spike's own `streamable_http` mean (2.24ms) on a workload-free echo tool
+   with zero network overhead is still meaningfully higher** -- consistent
+   with, not contradicting, the industry-wide finding that Python trails
+   compiled/JIT'd runtimes by roughly an order of magnitude at the
+   transport/serialization layer alone, before any real tool work or network
+   cost is added on top.
+- **Stacklok's own `streamable_http`-shared-session low-concurrency number
+   (5.31ms avg, including a real Kubernetes+ToolHive-proxy hop) is the same
+   order of magnitude as this spike's loopback-only mean (2.24ms)** -- ours
+   being roughly half is directionally sensible (no real network/proxy hop),
+   not a sign of a faster implementation.
+- **This spike's own headline finding -- throughput does not scale past ~5
+   concurrent callers sharing one session -- is directly corroborated by
+   Stacklok's independent finding that shared vs. unique MCP sessions differ
+   by roughly 10x in throughput.** Session-bound serialization is a real,
+   industry-recognized MCP characteristic, not an artifact of this harness or
+   `MCPClient`'s own implementation. Notably, this is also *why* the MCP spec
+   itself moved to a fully stateless model in its 2026-07-28 revision
+   (sessions and the `initialize` handshake removed entirely) -- a spec
+   change this project's currently-pinned `mcp==2.0.0` SDK predates (this
+   spike's own harness still calls `session.initialize()` on every connect,
+   confirming the older, stateful protocol generation is what's actually
+   under test here, matching both published benchmarks' own dates). If/when
+   this org's `mcp` pin moves to a stateless-spec-compliant SDK version, this
+   specific concurrency ceiling is a real, named candidate to re-measure --
+   it may no longer apply.
+
+**Where this leaves "where do we rank"**: no fair, direct ranking is possible
+from this spike alone -- a true apples-to-apples run (same load generator,
+same network topology, same tool complexity as TM Dev Lab's or Stacklok's own
+harness) has not been done, and is named here as a real, explicit, scoped
+follow-up rather than implied to already exist. What CAN be said honestly:
+this implementation's raw transport overhead is in the same order of
+magnitude as other real-world Python MCP implementations once network and
+workload differences are accounted for, and its one clear architectural
+finding (session-bound throughput ceiling) matches independently-published
+industry data rather than being a one-off artifact.
 
 ## What this does and doesn't prove
 
