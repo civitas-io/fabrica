@@ -10,7 +10,7 @@ queue** -- everything from a self-reflection audit
 point-in-time check of the real code/docs against the founding vision) plus
 the full remaining backlog, sorted easiest first, most complex last.
 
-## Status as of 2026-08-24: `fabrica-context` v0.2.0 live on PyPI; next real task is GH #26
+## Status as of 2026-08-24: `fabrica-context` v0.2.0 live on PyPI; only item 23 remains open
 
 **Live**: `pip install fabrica-context` (0.2.0) / `pip install fabrica-context[presidium]` for
 `RestPresidiumClient`. Confirmed via a real fresh-venv install. GitHub Release:
