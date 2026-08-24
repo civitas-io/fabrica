@@ -49,12 +49,31 @@ dependencies = [
 packages = ["src/fabrica"]
 
 [project.optional-dependencies]
+# RestPresidiumClient (fabrica.presidium.rest_client) -- deliberately NOT a
+# core dependency. PresidiumClient stays a duck-typed Protocol; a caller
+# who wants a different transport, or no Presidium at all
+# (NullPresidiumClient), never needs httpx installed.
+presidium = ["httpx>=0.27"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "pytest-cov>=6.0",
     "ruff>=0.8",
     "mypy>=1.13",
+    "httpx>=0.27",
+    # Real, live PyPI packages (civitas-io/presidium's own M7 server) --
+    # used only by the real end-to-end mTLS integration test proving
+    # RestPresidiumClient against an actual running Presidium server, not
+    # a mock. cryptography backs that test's own real self-signed CA/leaf
+    # certificate generation (mirrors civitas-io/presidium's own real mTLS
+    # test fixture pattern).
+    "presidium>=0.2.1",
+    # [server] extra: pulls civitas[http] (uvicorn[standard]/httptools) --
+    # the real end-to-end test boots an actual presidium_contrib.server
+    # (PresidiumGatewayAgent/HealthCheckAgent behind civitas.gateway.
+    # HTTPGateway), not just the base presidium-contrib package.
+    "presidium-contrib[server]>=0.2.0",
+    "cryptography>=41",
 ]
 
 [project.urls]

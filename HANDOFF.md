@@ -326,11 +326,30 @@ status:
    direct user question ("should we consider other costing parameters
    to track?") walked through and scoped: Fabrica captures and emits
    real numbers, billing/policy stays entirely Presidium's job.
-6. **BLOCKED, not just deferred: `PresidiumClient`'s real REST+mTLS
-   implementation.** No real Presidium HTTP server exists anywhere to
-   build/validate a client against. Revisit only if a real Presidium
-   deployment ever exists to build against; not actionable from this
-   repo alone.
+6. **DONE, 2026-08-23/24 -- `PresidiumClient`'s real REST+mTLS
+   implementation.** The blocker (no real Presidium HTTP server existed)
+   is resolved: `civitas-io/presidium` shipped a real M7 server this
+   session. `fabrica.presidium.rest_client.RestPresidiumClient` is a
+   real, tested implementation -- REST + mTLS (`from_endpoint()`
+   convenience factory, matching `docs/contracts/civitas-bridge.md`'s
+   own stated "convenience factories belong on the dependency's own
+   class" principle), circuit-breaker protected (a minimal, real
+   CLOSED/OPEN/HALF_OPEN state machine matching `system-design.md`
+   section 6's spec exactly), fail-closed on every unreachable/malformed
+   condition -- never raises, always a plain `GrantResult(decision=
+   "deny", ...)`. Verified two ways: `httpx.MockTransport`-based unit
+   tests (24 scenarios, deterministic, no real server) and a real
+   end-to-end test booting an actual `presidium`/`presidium-contrib`
+   M7 server with real mTLS certs (`tests/presidium/
+   test_rest_client_real_presidium_server.py`) -- not mocks. New
+   `fabrica[presidium]` extra (`httpx`) -- deliberately not a core
+   dependency, `PresidiumClient` stays duck-typed. 100% coverage on
+   both new files, `ruff`/`mypy` clean. **Real, live dependency-
+   resolution bug found and fixed along the way**: Fabrica's own
+   `civitas` git-source pin had drifted to a commit predating the real
+   mTLS fix -- `uv lock --upgrade-package civitas` was needed, a real,
+   concrete instance of exactly the kind of drift a `>=` version floor
+   alone doesn't prevent for a git source.
 7. **Deliberately deferred, named, not re-litigated per `PLAN.md`'s own
    closing section**: third-party skill trust/signing, log
    tamper-evidence, other memory backends beyond Mem0, `SKILL.md`

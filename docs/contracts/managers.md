@@ -4,6 +4,17 @@
 **Depends on:** [contracts/retriever.md](retriever.md), [contracts/sandbox.md](sandbox.md),
 [system-design.md](../system-design.md) §1 (composition-over-inheritance resolution)
 
+> **The real implementation exists now (2026-08-23/24):**
+> `fabrica.presidium.rest_client.RestPresidiumClient` -- REST + mTLS, circuit-breaker
+> protected, fail-closed on every unreachable/malformed condition, exactly matching this
+> contract's own spec below. Built against `civitas-io/presidium`'s own real, shipped M7
+> server, verified both with `httpx.MockTransport` (deterministic unit tests) and a real
+> end-to-end test booting an actual Presidium server with real mTLS certs
+> (`tests/presidium/test_rest_client_real_presidium_server.py`). Requires the
+> `fabrica[presidium]` extra (`httpx`) -- `PresidiumClient` itself stays a duck-typed
+> Protocol, unaffected. See `fabrica.presidium.rest_client`'s own module docstring for
+> the exact wire contract confirmed against Presidium's real source.
+
 Four things in one doc because they're genuinely coupled: the shared helper is
 the primary consumer of the grant check, and both managers are thin wrappers
 around the helper. Splitting them into separate files would fragment content
