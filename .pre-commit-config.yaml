@@ -1,0 +1,79 @@
+repos:
+  # -----------------------------------------------------------------------
+  # File hygiene
+  # -----------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: debug-statements   # catch leftover breakpoint() / pdb calls
+
+  # -----------------------------------------------------------------------
+  # Lint + format (ruff replaces flake8, isort, pyupgrade)
+  # -----------------------------------------------------------------------
+  # Scoped to src/ and tests/, matching .github/workflows/test-build-release.yml's
+  # own real "uv run ruff check src/ tests/" exactly -- confirmed real, needed
+  # (2026-08-24): an unscoped run surfaced 103 real ruff errors in
+  # specs/archive/spikes/scripts/, historical/archival spike code this org's
+  # own convention deliberately keeps rather than deletes, but CI itself has
+  # never linted -- a real, pre-existing gap in what CI covers, not something
+  # to silently start enforcing as a side effect of adding this hook.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^(src|tests)/
+      - id: ruff-format
+        files: ^(src|tests)/
+
+  # -----------------------------------------------------------------------
+  # Secret scanning
+  # -----------------------------------------------------------------------
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # -----------------------------------------------------------------------
+  # Type checking + tests -- local hooks via `uv run`, matching
+  # civitas-io/python-civitas and civitas-io/presidium's own established
+  # convention (2026-08-24): `uv run` always uses the exact same mypy/
+  # pytest/dependency versions CI does, with zero separately-pinned mirror
+  # versions to keep in sync by hand.
+  # -----------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy --strict (fabrica)
+        # --frozen: use the committed uv.lock as-is -- avoids a real lockfile
+        # re-resolution as a side effect of running the hook (confirmed
+        # needed, same finding as civitas-io/python-civitas and
+        # civitas-io/presidium's own configs).
+        entry: uv run --frozen mypy --strict src/
+        language: system
+        pass_filenames: false
+        files: ^src/
+        types: [python]
+
+      - id: tests
+        name: tests (fabrica)
+        # Same ignore/deselect shape as .github/workflows/test-build-release.yml's
+        # own real "Run tests with coverage" step, minus coverage flags (not
+        # needed for a fast local pre-push gate) -- kept in sync manually since
+        # pre-commit's own local hooks can't source a CI YAML step directly.
+        entry: >-
+          uv run --frozen pytest tests/ --ignore=tests/tunnel
+          --deselect tests/sandbox/test_srt_backend.py::test_execute_allows_network_to_allowlisted_domain
+          --deselect "tests/mcp/test_server_stress.py::TestConcurrentSandboxContention::test_n_agents_exceed_max_concurrent_and_all_still_succeed_correctly"
+          -x -q --no-header --tb=line --no-cov
+        language: system
+        pass_filenames: false
+        types: [python]
+        stages: [pre-push]

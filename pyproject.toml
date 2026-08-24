@@ -60,6 +60,7 @@ dev = [
     "pytest-cov>=6.0",
     "ruff>=0.8",
     "mypy>=1.13",
+    "pre-commit>=3.7",
     "httpx>=0.27",
     # Real, live PyPI packages (civitas-io/presidium's own M7 server) --
     # used only by the real end-to-end mTLS integration test proving

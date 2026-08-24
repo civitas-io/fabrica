@@ -55,9 +55,7 @@ class DictToolNamespace:
         self._tools = {name: _RegisteredTool(schema, fn) for name, (schema, fn) in tools.items()}
 
     def stubs(self) -> str:
-        return "\n".join(
-            f"{name}: {tool.schema.description}" for name, tool in self._tools.items()
-        )
+        return "\n".join(f"{name}: {tool.schema.description}" for name, tool in self._tools.items())
 
     def open(self, path: str) -> ToolSchema:
         return self._tools[path].schema

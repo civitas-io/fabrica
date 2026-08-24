@@ -46,9 +46,7 @@ class KeywordBackend:
     async def query(
         self, query: str, kind: Literal["tool", "skill"] | None, limit: int
     ) -> list[RankedMatch]:
-        candidates = [
-            item for item in self._items.values() if kind is None or item.kind == kind
-        ]
+        candidates = [item for item in self._items.values() if kind is None or item.kind == kind]
         if not candidates:
             return []
 
@@ -64,8 +62,7 @@ class KeywordBackend:
             zip(candidates, scores, strict=True), key=lambda pair: pair[1], reverse=True
         )
         return [
-            RankedMatch(item=item, rank=rank)
-            for rank, (item, _score) in enumerate(ranked[:limit])
+            RankedMatch(item=item, rank=rank) for rank, (item, _score) in enumerate(ranked[:limit])
         ]
 
     async def health_check(self) -> bool:

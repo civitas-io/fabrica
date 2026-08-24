@@ -667,7 +667,7 @@ class FirecrackerSandbox:
         #    jailer runs, while jail_root is still writable by this
         #    process -- the real fix for the hard problem this whole
         #    mechanism exists to solve (see __init__'s own docstring).
-        #    Explicit chmod(0o777): Python's default socket.bind() 
+        #    Explicit chmod(0o777): Python's default socket.bind()
         #    leaves "other" without write access, and fc-jail (once
         #    jailer locks jail_root down) is evaluated as "other" for
         #    this file -- confirmed to be the actual, only real bug
@@ -1062,8 +1062,7 @@ class FirecrackerSandbox:
         return (
             base_ok
             and (
-                shutil.which(self._jailer_binary) is not None
-                or Path(self._jailer_binary).exists()
+                shutil.which(self._jailer_binary) is not None or Path(self._jailer_binary).exists()
             )
             and Path(self._stage_script).exists()
         )

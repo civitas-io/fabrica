@@ -18,9 +18,7 @@ from fabrica.scope import Scope
 
 
 async def test_manager_delegates_working_memory() -> None:
-    manager = MemoryManager(
-        InMemoryWorkingMemoryStore(), InMemoryMemoryStore(), NullCompactor()
-    )
+    manager = MemoryManager(InMemoryWorkingMemoryStore(), InMemoryMemoryStore(), NullCompactor())
     scope = Scope(session_id="s1")
 
     await manager.remember(scope, "key", "value")
@@ -29,9 +27,7 @@ async def test_manager_delegates_working_memory() -> None:
 
 
 async def test_manager_delegates_long_term_memory() -> None:
-    manager = MemoryManager(
-        InMemoryWorkingMemoryStore(), InMemoryMemoryStore(), NullCompactor()
-    )
+    manager = MemoryManager(InMemoryWorkingMemoryStore(), InMemoryMemoryStore(), NullCompactor())
     scope = Scope(user_id="u1")
 
     item_id = await manager.write(scope, MemoryItem(id=None, content="a fact worth keeping"))

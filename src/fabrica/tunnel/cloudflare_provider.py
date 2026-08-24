@@ -160,8 +160,7 @@ class CloudflareTunnelProvider:
         except TimeoutError as exc:
             await self._kill_process(process)
             raise TunnelStartError(
-                f"quick-tunnel URL {url} never became reachable within "
-                f"{_REACHABILITY_TIMEOUT}s"
+                f"quick-tunnel URL {url} never became reachable within {_REACHABILITY_TIMEOUT}s"
             ) from exc
         return url
 
