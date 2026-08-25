@@ -15,21 +15,34 @@ transcribing the migrated code unchanged:
 2. BubblewrapSandbox -> SrtIsolation (fabrica/mcp/isolation.py) -- Linux-only
    -> cross-platform, per mcp-integration.md's resolved isolation mechanism.
 
-AuditSink here is a minimal, LOCAL structural Protocol, not an import of
-civitas.audit.types -- the migrated code imported civitas's own audit
-types directly; this package depends on shapes, not packages, everywhere
-except CivitasBridge's deliberate GenServer exception (contracts/
-civitas-bridge.md). Audit emission stays best-effort and optional: a
-caller who wants civitas's own audit schema can implement this Protocol
-against it without fabrica needing to import civitas here at all.
+Real, third bug found 2026-08-25 while fixing AgentProcess.connect_mcp()'s
+missing MCPTool, corrected in the same pass: AuditSink here USED TO BE a
+minimal, LOCAL structural Protocol (`emit(event: str, details: dict)`),
+deliberately not importing civitas.audit.types -- reasoned as "this package
+depends on shapes, not packages, everywhere except CivitasBridge's
+deliberate GenServer exception." That reasoning didn't hold up in practice:
+connect_mcp() is the one real, current caller of this class, and it passes
+a real civitas.audit.types.AuditSink instance straight through
+(`audit_sink=self._audit_sink`) -- whose real `emit()` takes ONE argument
+(a whole AuditEvent TypedDict: event/ts/agent/signer_id/details), not two
+positional (event, details) arguments. Any agent with real auditing
+configured would have hit a genuine `TypeError` the moment `connect()`
+tried to emit its first "mcp.connect" event -- confirmed by reading
+civitas.audit.types.AuditSink's real signature directly, not assumed.
+Fixed by importing civitas's real AuditSink/AuditEvent directly, matching
+architecture.md §1a's one deliberate "depend on packages, not shapes"
+carve-out (already used for CivitasBridge) -- civitas is already this
+package's real, hard runtime dependency, so this costs nothing new.
 """
 
 from __future__ import annotations
 
 import asyncio
 import contextlib
-from typing import Any, Protocol, runtime_checkable
+from datetime import UTC, datetime
+from typing import Any
 
+from civitas.audit.types import AuditEvent, AuditSink
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
@@ -39,10 +52,7 @@ from fabrica.mcp.errors import MCPConnectionError, MCPServerUnavailableError, MC
 from fabrica.mcp.isolation import SrtIsolation
 from fabrica.mcp.types import MCPServerConfig, MCPToolSchema
 
-
-@runtime_checkable
-class AuditSink(Protocol):
-    async def emit(self, event: str, details: dict[str, Any]) -> None: ...
+__all__ = ["AuditSink", "MCPClient"]
 
 
 class MCPClient:
@@ -133,12 +143,16 @@ class MCPClient:
 
         if self._audit_sink is not None:
             await self._audit_sink.emit(
-                "mcp.connect",
-                {
-                    "server": self.config.name,
-                    "agent": self._agent_name,
-                    "transport": self.config.transport,
-                },
+                AuditEvent(
+                    event="mcp.connect",
+                    ts=datetime.now(UTC).isoformat(),
+                    agent=self._agent_name,
+                    signer_id="",
+                    details={
+                        "server": self.config.name,
+                        "transport": self.config.transport,
+                    },
+                )
             )
 
     def _stdio_params(self) -> StdioServerParameters:

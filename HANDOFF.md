@@ -10,6 +10,67 @@ queue** -- everything from a self-reflection audit
 point-in-time check of the real code/docs against the founding vision) plus
 the full remaining backlog, sorted easiest first, most complex last.
 
+## Real fix, 2026-08-25: `fabrica.mcp.tool.MCPTool` -- the real, previously-missing piece `civitas.process.AgentProcess.connect_mcp()` needed
+
+**Reported by a downstream project team** working on a different, separate project built on this
+stack -- verified directly against source before agreeing, not taken on faith, exactly like the
+`Scope.extra` finding below. `civitas.process.AgentProcess.connect_mcp()` has always tried
+`from fabrica.mcp.tool import MCPTool` -- that module never existed anywhere in this repo's
+history (confirmed: `git log -S "class MCPTool"` only ever matches `MCPToolNamespace`, a
+substring hit, not a real one). Every real call to `connect_mcp()` raised `ModuleNotFoundError`
+immediately, despite `civitas-io/python-civitas`'s own `docs/mcp.md` presenting it as fully
+working and `docs/milestones.md` marking it **✅ done** in shipped history.
+
+**Real, scoped finding, not a redesign**: `connect_mcp()` itself needed no changes at all -- it
+already calls the real, existing `MCPClient.list_tools()`/`call_tool()` correctly and constructs
+`MCPTool(client, schema, tracer=..., audit_sink=..., agent_name=...)` once per schema, a
+constructor shape this fix had to match exactly, not invent. `MCPToolNamespace` (this repo's own
+code-mode integration, one object per SERVER) and the new `MCPTool` (one object per TOOL,
+implementing `civitas.plugins.tools.ToolProvider`) are two legitimate, parallel wrappers around
+the same `MCPClient` for two different consumers -- not competing designs, and
+`presidium.providers.civitas_adapters.GovernedToolAdapter` needed zero changes either (already
+correctly built one-per-tool; it just had nothing real to wrap before this).
+
+**Two more real bugs found while scoping, both fixed in the same pass, both previously
+undetected because nothing exercised the real cross-repo path before now**:
+
+- **`SandboxConfig.enabled` had opposite fail-open/fail-closed defaults between the two,
+  independently-defined copies of this type** (`False` in `civitas.sandbox.config`, `True`
+  here) -- a real, security-relevant divergence, not a cosmetic one. Fixed by unifying: this
+  repo's `MCPServerConfig`/`SandboxConfig`/`FilesystemMount`/`MCPToolSchema` are now re-exports
+  of civitas's own canonical types (civitas already gained the `allow_unsandboxed` field this
+  repo's version had and civitas's didn't), not a second, divergence-prone copy -- this repo
+  already has a real, hard dependency on civitas (architecture.md §1a's one deliberate "depend
+  on packages, not shapes" exception), so this costs nothing new.
+- **`fabrica.mcp.client.MCPClient`'s own `AuditSink` Protocol didn't match civitas's real one at
+  all** -- found by tracing the actual runtime call, not by comparing signatures side by side.
+  The local Protocol declared `emit(event: str, details: dict)`; civitas's real
+  `civitas.audit.types.AuditSink.emit()` takes ONE argument, a whole `AuditEvent` TypedDict, plus
+  `flush()`/`close()`. `connect_mcp()` passes a real `civitas.audit.types.AuditSink` straight
+  through as `audit_sink=` -- any agent with real auditing configured would have hit a genuine
+  `TypeError` the moment `MCPClient.connect()` tried to emit its first `"mcp.connect"` event.
+  Fixed by importing civitas's real `AuditSink`/`AuditEvent` directly, same reasoning as above.
+
+**Verified real, end to end, not just unit-level**: a new `tests/mcp/test_connect_mcp_integration.py`
+constructs a real `civitas.process.AgentProcess`, calls `connect_mcp()` against the real
+`echo_server.py` fixture (same one `test_namespace.py`/`test_client.py` already use), and asserts
+tools genuinely register into `self.tools` and execute for real -- the exact scenario the bug
+report described, now passing. `tests/mcp/test_tool.py` (real MCP server throughout) covers
+`MCPTool`'s `ToolProvider` shape, the `mcp://server/tool` naming scheme, span emission
+(`civitas.mcp.call`), and the new, correct audit-event shape, including on failure. A new
+`test_connect_emits_a_real_civitas_audit_event` in `test_client.py` is the real regression test
+for the `AuditSink` bug. 260 tests pass (was 232 + this fix's real additions), `ruff`/
+`mypy --strict` clean.
+
+**Real, honest sequencing gap named, not hidden**: this repo's own `civitas>=0.11.0` floor
+still resolves the real, currently-published, still-broken `civitas` on PyPI. The actual fix
+needs `civitas-io/python-civitas` to cut a real release first (its own `SandboxConfig.enabled`
+default flip -- see that repo's `HANDOFF.md`/`CHANGELOG.md` -- is a genuine breaking change,
+suggested as `0.12.0`), then this repo's own `civitas` floor needs bumping to match and a new
+`fabrica-context` release cut, before `MCPTool` is actually installable from PyPI. Not done in
+this pass -- verified locally against an editable local-path override of `civitas-io/python-civitas`
+only, matching this repo's own established `[tool.uv.sources]` local-dev-override precedent.
+
 ## Real fix, 2026-08-25: `Scope` gains an additive `extra` field, closing a real client/server gap
 
 **Reported by a coding agent working on a different, downstream project's own audit of

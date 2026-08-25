@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fabrica-context"
-version = "0.4.0"
+version = "0.5.0"
 description = "The context layer for Python agents -- part of the Civitas platform"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -30,7 +30,16 @@ dependencies = [
     # a real type, not a structural stand-in, because Civitas's dynamic-
     # spawn mechanism is nominally coupled to that concrete class (see
     # src/fabrica/civitas_bridge/runtime.py's inline note).
-    "civitas>=0.11.0",
+    #
+    # >=0.12.0: real, needed floor bump, not cosmetic -- civitas.sandbox.
+    # config.SandboxConfig/civitas.mcp.types.MCPServerConfig/MCPToolSchema
+    # (which fabrica.mcp.types now re-exports directly instead of
+    # duplicating, see HANDOFF.md's 2026-08-25 entry) only gained the shape
+    # MCPTool/SrtIsolation need (allow_unsandboxed, the fail-closed
+    # enabled=True default) in civitas 0.12.0. A floor before that resolves
+    # a real civitas release that would silently diverge from fabrica's own
+    # SandboxConfig default again -- the exact bug this release fixes.
+    "civitas>=0.12.0",
     "mcp>=2.0",
     # Already a transitive dependency of mcp (mcp.server.lowlevel.Server's
     # HTTP transport needs an ASGI host) -- listed explicitly here since

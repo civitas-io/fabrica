@@ -9,7 +9,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-08-25T04:20:59Z"
+exclude-newer = "2026-08-26T00:00:00Z"
 
 [[package]]
 name = "annotated-doc"
@@ -213,8 +213,8 @@ wheels = [
 
 [[package]]
 name = "civitas"
-version = "0.11.3"
-source = { git = "https://github.com/civitas-io/python-civitas.git?branch=main#c258eedb0466d5e04033dea569b43d6ac2bb0781" }
+version = "0.12.0"
+source = { git = "https://github.com/civitas-io/python-civitas.git?branch=main#162ae2005fd50cdeae9edef30be0c5277d43dd9e" }
 dependencies = [
     { name = "msgpack" },
     { name = "pyyaml" },
@@ -379,7 +379,7 @@ wheels = [
 
 [[package]]
 name = "fabrica-context"
-version = "0.4.0"
+version = "0.5.0"
 source = { editable = "." }
 dependencies = [
     { name = "civitas" },

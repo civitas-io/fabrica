@@ -73,6 +73,44 @@ class TestConnectAndListTools:
         with pytest.raises(MCPConnectionError):
             await client.list_tools()
 
+    async def test_connect_emits_a_real_civitas_audit_event(self) -> None:
+        """Real, previously-broken path: civitas.audit.types.AuditSink.emit()
+        takes ONE argument (a whole AuditEvent), not (event: str, details:
+        dict) -- the shape this file's own AuditSink Protocol used to
+        declare. AgentProcess.connect_mcp() passes a real
+        civitas.audit.types.AuditSink straight through as `audit_sink=`;
+        any agent with real auditing configured would have hit a genuine
+        TypeError the moment connect() tried to emit "mcp.connect", before
+        this fix. No test caught it because nothing exercised a real
+        AuditSink here before now.
+        """
+        from civitas.audit.types import AuditEvent
+
+        events: list[AuditEvent] = []
+
+        class _Sink:
+            async def emit(self, event: AuditEvent) -> None:
+                events.append(event)
+
+            async def flush(self) -> None:
+                pass
+
+            async def close(self) -> None:
+                pass
+
+        client = MCPClient(_stdio_config(), audit_sink=_Sink(), agent_name="researcher")
+        await client.connect()
+        try:
+            pass
+        finally:
+            await client.disconnect()
+
+        assert len(events) == 1
+        assert events[0]["event"] == "mcp.connect"
+        assert events[0]["agent"] == "researcher"
+        assert events[0]["details"]["server"] == "echo"
+        assert events[0]["details"]["transport"] == "stdio"
+
     async def test_bad_command_raises_mcp_connection_error(self) -> None:
         client = MCPClient(_stdio_config(command="/no/such/executable-xyz"))
         with pytest.raises(MCPConnectionError):
