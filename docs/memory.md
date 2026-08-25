@@ -141,6 +141,11 @@ class Scope:
     agent_id: str | None = None
     team_id: str | None = None    # shared with usage/budget rollups — see
                                    # civitas-presidium-integration.md#usage--budget-ceilings
+    extra: dict[str, str] = field(default_factory=dict)  # additive (2026-08-25) --
+                                   # arbitrary action-specific context (e.g. target host)
+                                   # a CEL policy might need; merged flat into the
+                                   # check_grant() wire payload, not consumed by
+                                   # MemoryStore/PromptStore themselves
 ```
 
 Default: an in-process store (SQLite/vector) so `pip install fabrica` works with zero

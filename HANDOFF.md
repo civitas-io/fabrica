@@ -10,6 +10,38 @@ queue** -- everything from a self-reflection audit
 point-in-time check of the real code/docs against the founding vision) plus
 the full remaining backlog, sorted easiest first, most complex last.
 
+## Real fix, 2026-08-25: `Scope` gains an additive `extra` field, closing a real client/server gap
+
+**Reported by a coding agent working on a different, downstream project's own audit of
+`civitas-io` products** -- verified directly against source before agreeing with it, not taken
+on faith. `civitas-io/presidium`'s `check_grant()` server-side HTTP endpoint already
+deserializes the whole `scope` JSON object into `ActionRequest.parameters` (shipped
+2026-08-24, FR-1.4), so a CEL policy can reference `request.parameters.<any-key>` -- but
+`fabrica.scope.Scope`, the one real client type that gets serialized into that JSON object,
+only ever had four fixed fields (`user_id`/`session_id`/`agent_id`/`team_id`). The server-side
+capability existed and was unreachable from the one real client that calls it.
+
+Fixed: `Scope` gains `extra: dict[str, str] = field(default_factory=dict)` -- additive, empty by
+default, existing callers unaffected. `RestPresidiumClient._scope_to_dict()` merges `extra`'s
+keys **flat** into the wire payload (not nested under an `"extra"` key), so
+`extra={"target_host": "db1"}` shows up to a policy as `request.parameters.target_host`, not
+`request.parameters.extra.target_host`. A key in `extra` that collides with one of the four
+reserved field names raises `ValueError` **at `Scope()` construction time**, not inside
+`check_grant()`'s own "never raises" contract -- a real design correction made while writing the
+first version of this fix, where the collision check was originally (wrongly) placed inside
+`_scope_to_dict()` and got silently swallowed by `check_grant()`'s generic
+`except (httpx.HTTPError, ValueError)` handler, turning a caller mistake into an opaque `deny`
+result instead of a loud, immediate signal.
+
+**Bonus stale-doc fix found while verifying**: `rest_client.py`'s own module docstring still
+said Presidium's server "does not yet thread `scope` through to its CEL policy layer" --
+stale since 2026-08-24; corrected. `docs/memory.md` and `docs/civitas-presidium-integration.md`'s
+own `Scope` code samples updated to match.
+
+295 tests pass (+3 new: flat-merge, empty-extra-omitted, collision-raises-at-construction), 100%
+coverage on both changed files, `ruff`/`ruff format --check`/`mypy --strict` clean. Released as
+`fabrica-context` v0.3.0.
+
 ## Real, found-during-a-docs-audit fix, 2026-08-24: presidium/presidium-contrib dependency floors were stale
 
 `pyproject.toml`'s own dev dependencies (`presidium>=0.2.1`, `presidium-contrib[server]>=0.2.0`)
@@ -26,11 +58,11 @@ so the CEL default-deny flip was never actually reachable here, no hidden regres
 `presidium>=0.4.0`/`presidium-contrib[server]>=0.7.0`. All 292 real tests (33 skipped, hardware-
 gated) pass, `ruff`/`ruff format --check`/`mypy --strict` clean.
 
-## Status as of 2026-08-24: `fabrica-context` v0.2.0 live on PyPI; only item 23 remains open
+## Status as of 2026-08-25: `fabrica-context` v0.3.0 live on PyPI; only item 23 remains open
 
-**Live**: `pip install fabrica-context` (0.2.0) / `pip install fabrica-context[presidium]` for
+**Live**: `pip install fabrica-context` (0.3.0) / `pip install fabrica-context[presidium]` for
 `RestPresidiumClient`. Confirmed via a real fresh-venv install. GitHub Release:
-[`v0.2.0`](https://github.com/civitas-io/fabrica/releases/tag/v0.2.0). With `RestPresidiumClient`
+[`v0.3.0`](https://github.com/civitas-io/fabrica/releases/tag/v0.3.0). With `RestPresidiumClient`
 shipped (real REST+mTLS `PresidiumClient`, closing this doc's own previously-BLOCKED item 6 --
 see below), **the entire backlog has exactly one open item left**: item 23 (managed-provider
 adapters), genuinely blocked on real cloud credentials this project doesn't have.

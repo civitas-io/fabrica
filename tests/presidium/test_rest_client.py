@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import httpx
+import pytest
 
 from fabrica.presidium.rest_client import RestPresidiumClient
 from fabrica.scope import Scope
@@ -102,6 +103,59 @@ class TestRealRequestShape:
         assert isinstance(body, dict)
         assert body["scope"] == {"user_id": "u1"}
         assert "session_id" not in body["scope"]
+
+    async def test_extra_fields_are_merged_flat_not_nested(self) -> None:
+        """The real gap an external audit found: the wire protocol/server accept
+        arbitrary scope keys (deserialized into ActionRequest.parameters), but
+        Scope itself had no slot for them. extra={"target_host": ...} must show
+        up as request.parameters.target_host to a CEL policy, not nested under
+        an "extra" key."""
+        captured: dict[str, object] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            import json as _json
+
+            captured["body"] = _json.loads(request.content)
+            return httpx.Response(200, json={"decision": "allow"})
+
+        client = _client(handler)
+        await client.check_grant(
+            agent_id="a",
+            action="x",
+            scope=Scope(agent_id="a1", extra={"target_host": "db1", "risk": "high"}),
+        )
+
+        body = captured["body"]
+        assert isinstance(body, dict)
+        assert body["scope"] == {
+            "agent_id": "a1",
+            "target_host": "db1",
+            "risk": "high",
+        }
+        assert "extra" not in body["scope"]
+
+    async def test_empty_extra_is_not_sent(self) -> None:
+        captured: dict[str, object] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            import json as _json
+
+            captured["body"] = _json.loads(request.content)
+            return httpx.Response(200, json={"decision": "allow"})
+
+        client = _client(handler)
+        await client.check_grant(agent_id="a", action="x", scope=Scope())
+
+        body = captured["body"]
+        assert isinstance(body, dict)
+        assert "extra" not in body["scope"]
+
+    def test_extra_key_colliding_with_reserved_field_raises_at_construction(self) -> None:
+        """Raised at Scope() construction, not buried inside check_grant()'s own
+        "never raises" contract (which would silently absorb it into a
+        generic deny result -- the wrong signal for a caller mistake)."""
+        with pytest.raises(ValueError, match="agent_id"):
+            Scope(extra={"agent_id": "override"})
 
 
 class TestRealResponses:

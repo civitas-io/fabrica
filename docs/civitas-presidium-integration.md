@@ -119,6 +119,10 @@ class Scope:
     session_id: str | None = None
     agent_id: str | None = None
     team_id: str | None = None   # added for usage/budget rollups
+    extra: dict[str, str] = field(default_factory=dict)  # additive (2026-08-25) --
+                                  # arbitrary action-specific context, merged flat
+                                  # into check_grant()'s wire payload for a CEL policy
+                                  # to reference; not consumption/budget-related itself
 ```
 
 ### What Fabrica does NOT do

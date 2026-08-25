@@ -16,13 +16,14 @@ principle that Presidium integration stays duck-typed (`PresidiumClient`
 is a Protocol; a caller who wants a different transport, or no Presidium
 at all, never needs httpx installed).
 
-**Real, honest gap, not silently omitted**: Presidium's own real server
-does not yet thread `scope` through to its CEL policy layer (`FR-1.4`,
-tracked in Presidium's own roadmap) -- `check_grant()`'s `scope` is still
-serialized and sent on the wire here, forward-compatible with the day
-Presidium's server does consume it, but it is currently a no-op
-server-side. Not removed, since sending it costs nothing and needs zero
-client-side changes once Presidium catches up.
+**Real, honest gap, closed 2026-08-24 -- this comment was stale until
+2026-08-25's own audit caught it**: Presidium's own real server now DOES
+thread `scope` through to its CEL policy layer (`FR-1.4`) --
+`check_grant()`'s HTTP endpoint deserializes the whole `scope` JSON object
+straight into `ActionRequest.parameters`, so a CEL policy can reference
+`request.parameters.<key>` for anything sent here. `Scope`'s own `extra`
+field (added 2026-08-25, same audit) is the client-side half of this --
+see `fabrica.scope.Scope`'s own docstring.
 """
 
 from __future__ import annotations
@@ -119,11 +120,18 @@ class _CircuitBreaker:
 
 
 def _scope_to_dict(scope: Scope) -> dict[str, str]:
-    """Only non-None fields -- an absent field and an explicit null carry
+    """Only non-None fixed fields -- an absent field and an explicit null carry
     different meaning to a policy engine (e.g. a CEL expression testing
-    `has(request.parameters.team_id)`); omitting is more honest than
-    sending nulls for fields the caller never set."""
-    return {k: v for k, v in dataclasses.asdict(scope).items() if v is not None}
+    `has(request.parameters.team_id)`); omitting is more honest than sending
+    nulls for fields the caller never set. ``scope.extra`` is merged in flat
+    (not nested under an ``"extra"`` key) -- see ``Scope.extra``'s own
+    docstring for why. ``Scope.__post_init__`` already guarantees ``extra``
+    can never collide with a reserved fixed-field name by the time an
+    instance exists, so no re-validation here.
+    """
+    payload = {k: v for k, v in dataclasses.asdict(scope).items() if k != "extra" and v is not None}
+    payload.update(scope.extra)
+    return payload
 
 
 class RestPresidiumClient:
