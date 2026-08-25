@@ -9,7 +9,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2027-01-01T18:30:00Z"
+exclude-newer = "2026-08-25T04:20:59Z"
 
 [[package]]
 name = "annotated-doc"
@@ -406,6 +406,9 @@ dev = [
 presidium = [
     { name = "httpx" },
 ]
+presidium-inprocess = [
+    { name = "presidium" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -416,7 +419,8 @@ requires-dist = [
     { name = "mcp", specifier = ">=2.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7" },
-    { name = "presidium", marker = "extra == 'dev'", specifier = ">=0.4.0" },
+    { name = "presidium", marker = "extra == 'dev'", specifier = ">=0.6.0" },
+    { name = "presidium", marker = "extra == 'presidium-inprocess'", specifier = ">=0.6.0" },
     { name = "presidium-contrib", extras = ["server"], marker = "extra == 'dev'", specifier = ">=0.7.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
@@ -427,7 +431,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8" },
     { name = "uvicorn", specifier = ">=0.31" },
 ]
-provides-extras = ["presidium", "dev"]
+provides-extras = ["presidium", "presidium-inprocess", "dev"]
 
 [[package]]
 name = "filelock"
@@ -1049,7 +1053,7 @@ wheels = [
 
 [[package]]
 name = "presidium"
-version = "0.4.0"
+version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cel-python" },
@@ -1057,9 +1061,9 @@ dependencies = [
     { name = "cryptography" },
     { name = "pynacl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7d/e8/a89d676824ab98de82910a6d04c6108768689076744efc8fd3b546ea908c/presidium-0.4.0.tar.gz", hash = "sha256:02a6e6f1705359168ff702f30518e2fc88be80c24df6beac3bfbc1340b58f25d", size = 69268, upload-time = "2026-08-24T16:06:37.445Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/29/d7/e89fba563cfd9f4d1ccce872cb502399fbd5593517eba9cbc7fd250f7cc3/presidium-0.6.0.tar.gz", hash = "sha256:5eb128049126a223137252b9a1317592ace94052f9d4a9f95245354f42b1b38a", size = 73884, upload-time = "2026-08-25T02:43:09.337Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/66/e86aa8f5e4d1b84400dacb83ac0972aa1b3ae14dc33fb5a509bccb342c3d/presidium-0.4.0-py3-none-any.whl", hash = "sha256:961eff51220626924255a120fce9dfaa15b3d6a9f0ff4e6be9546b8a8ea47b28", size = 51282, upload-time = "2026-08-24T16:06:36.215Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/86/d849938a0740d7aeb0f27c460f16d3f73bb57a549cba050b408abb6aaee2/presidium-0.6.0-py3-none-any.whl", hash = "sha256:6af3d0c1d7e341d84ad81d4ee73185afea9fd1b03a3a414491582974b578a03f", size = 54230, upload-time = "2026-08-25T02:43:07.787Z" },
 ]
 
 [[package]]

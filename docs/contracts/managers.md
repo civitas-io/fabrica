@@ -14,6 +14,16 @@
 > `fabrica[presidium]` extra (`httpx`) -- `PresidiumClient` itself stays a duck-typed
 > Protocol, unaffected. See `fabrica.presidium.rest_client`'s own module docstring for
 > the exact wire contract confirmed against Presidium's real source.
+>
+> **A second real implementation exists too (2026-08-25):**
+> `fabrica.presidium.in_process_client.InProcessPresidiumClient` -- for single-node
+> deployments that embed a real `presidium.GovernedRuntime` directly, no network hop, no
+> mTLS setup, matching Civitas's own in-process-vs-distributed transport duality. Speaks
+> the exact same logical contract as `RestPresidiumClient` (same `Scope`-to-`parameters`
+> flattening, same `resource`/fixed-`"invoke"`-`action` convention), just without JSON/HTTP
+> in between -- verified with a real `GovernedRuntime` (real `InMemoryRegistry`, real
+> `CelPolicyEngine`), nothing mocked, since there's nothing to mock in-process. Requires the
+> `fabrica[presidium-inprocess]` extra (the real `presidium` package, not `httpx`).
 
 Four things in one doc because they're genuinely coupled: the shared helper is
 the primary consumer of the grant check, and both managers are thin wrappers

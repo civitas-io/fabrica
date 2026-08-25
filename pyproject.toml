@@ -54,6 +54,15 @@ packages = ["src/fabrica"]
 # who wants a different transport, or no Presidium at all
 # (NullPresidiumClient), never needs httpx installed.
 presidium = ["httpx>=0.27"]
+# InProcessPresidiumClient (fabrica.presidium.in_process_client) -- a
+# single-node deployment's PresidiumClient: wraps a real
+# presidium.GovernedRuntime directly, no network hop, no mTLS setup,
+# matching this codebase's own in-process-vs-distributed duality
+# (civitas.MessageBus's in_process vs nats transport). Separate extra
+# from `presidium` above (which is really "httpx for RestPresidiumClient")
+# since this one needs the real `presidium` package installed, not just
+# an HTTP client.
+presidium-inprocess = ["presidium>=0.6.0"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
@@ -76,7 +85,10 @@ dev = [
     # list/decide, rate limiting) at all. Re-verified this test still
     # passes for real against the real, current presidium-contrib[server]
     # before bumping, not assumed compatible.
-    "presidium>=0.4.0",
+    # >=0.6.0: also the floor InProcessPresidiumClient's own tests need
+    # (Grant.condition actually evaluated, governed_spawn_check() exists) --
+    # one floor for both real-Presidium test paths in this dev extra.
+    "presidium>=0.6.0",
     # [server] extra: pulls civitas[http] (uvicorn[standard]/httptools) --
     # the real end-to-end test boots an actual presidium_contrib.server
     # (PresidiumGatewayAgent/HealthCheckAgent behind civitas.gateway.
