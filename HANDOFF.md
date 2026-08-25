@@ -58,11 +58,28 @@ so the CEL default-deny flip was never actually reachable here, no hidden regres
 `presidium>=0.4.0`/`presidium-contrib[server]>=0.7.0`. All 292 real tests (33 skipped, hardware-
 gated) pass, `ruff`/`ruff format --check`/`mypy --strict` clean.
 
-## Status as of 2026-08-25: `fabrica-context` v0.3.0 live on PyPI; only item 23 remains open
+## `InProcessPresidiumClient` -- the real single-node PresidiumClient, released as v0.4.0
 
-**Live**: `pip install fabrica-context` (0.3.0) / `pip install fabrica-context[presidium]` for
+Wraps a real `presidium.GovernedRuntime` directly, no network hop, no mTLS setup -- the natural
+counterpart to `RestPresidiumClient` for single-node deployments, matching Civitas's own
+in-process-vs-distributed transport duality (`MessageBus`'s `in_process` vs `nats`). Speaks the
+exact same logical contract as `RestPresidiumClient` (`Scope` flattened into
+`request.parameters`, `resource=action` verbatim with a fixed `"invoke"` action, same
+fail-closed-on-unresolvable-agent semantics). New `fabrica[presidium-inprocess]` extra (pulls
+the real `presidium` package, not `httpx` -- separate from the existing `presidium` extra, which
+is really "httpx for `RestPresidiumClient`"). 6 new tests (a genuine `GovernedRuntime` with
+`InMemoryRegistry` + `CelPolicyEngine`, nothing mocked), including one proving a scope-derived
+`target_host` constraint carried through `Scope.extra` reaches a real CEL rule and blocks an
+out-of-scope request end to end, no network involved -- the first real consumer of the `Scope.
+extra` field added the same day. 301 tests pass total, `ruff`/`mypy --strict` clean. Released as
+`fabrica-context` v0.4.0 (MINOR, not PATCH -- a genuinely new, additive capability, not a bug
+fix, matching this repo's own established semver convention).
+
+## Status as of 2026-08-25: `fabrica-context` v0.4.0 live on PyPI; only item 23 remains open
+
+**Live**: `pip install fabrica-context` (0.4.0) / `pip install fabrica-context[presidium]` for
 `RestPresidiumClient`. Confirmed via a real fresh-venv install. GitHub Release:
-[`v0.3.0`](https://github.com/civitas-io/fabrica/releases/tag/v0.3.0). With `RestPresidiumClient`
+[`v0.4.0`](https://github.com/civitas-io/fabrica/releases/tag/v0.4.0). With `RestPresidiumClient`
 shipped (real REST+mTLS `PresidiumClient`, closing this doc's own previously-BLOCKED item 6 --
 see below), **the entire backlog has exactly one open item left**: item 23 (managed-provider
 adapters), genuinely blocked on real cloud credentials this project doesn't have.
