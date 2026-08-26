@@ -56,6 +56,8 @@ class CompactionResult:
     preserved: list[Message]
     tokens_before: int
     tokens_after: int
+    validation_score: float | None = None  # None: nothing summarized or validate=False
+    degraded: bool = False  # True: validation_score fell below the threshold even after retry
 ```
 
 `Scope` is unchanged from `contracts/managers.md` / `memory.md` — not
@@ -163,7 +165,9 @@ class Compactor(Protocol):
 
 class RecencyCompactor:
     """Default Compactor. Preserves the most recent messages verbatim,
-    folds everything older into one summary via the injected Summarizer.
+    folds everything older into one summary via the injected Summarizer,
+    then validates that summary and optionally retries (added 2026-08-26,
+    see "Real addition: the validation gate" below).
 
     Algorithm: walk backward from the newest message, preserving each
     one verbatim while (a) fewer than preserve_last_n have been kept,
@@ -175,7 +179,22 @@ class RecencyCompactor:
     Remaining (older) messages are summarized with
     target_tokens = budget_tokens - (tokens consumed by preserved messages).
     """
-    def __init__(self, summarizer: Summarizer, *, preserve_last_n: int = 6) -> None: ...
+    def __init__(
+        self,
+        summarizer: Summarizer,
+        *,
+        preserve_last_n: int = 6,
+        validate: bool = True,
+        validation_threshold: float = DEFAULT_VALIDATION_THRESHOLD,  # 0.55
+        retry_summarizer: Summarizer | None = None,
+    ) -> None: ...
+
+
+def score_compaction(source_messages: list[Message], summary: str) -> float:
+    """Cheap, non-LLM validation score in [0, 1] -- 0.6 * numeric-token
+    overlap + 0.4 * content-word overlap between source_messages and
+    summary. Deliberately not another LLM call (would reintroduce the
+    same untrusted-inference risk one level up)."""
 
 
 class CompactionUnavailableError(MemoryError):
@@ -391,8 +410,48 @@ for them in this pass. Full design:
    engaged exactly as coded (`preserve_last_n=10`'s request was correctly
    honored down to 6, the most the budget allowed, in every run), and all
    three N values scored 5/5 grounded-correct — `preserve_last_n`'s exact
-   value made no observable difference in this scenario. Still open,
-   precisely scoped now rather than broadly: multiple competing facts
-   needing simultaneous preservation, and precision-sensitive facts a
-   summary might paraphrase or round, remain untested — this pair of
-   spikes has only validated the single-clear-constraint case.
+   value made no observable difference in this scenario. Was still open,
+   precisely scoped rather than broadly: multiple competing facts needing
+   simultaneous preservation, and a summary itself losing a fact under
+   real token pressure -- **now closed by a third spike, below.**
+
+4. ~~`RecencyCompactor` has zero validation of its own summary output~~
+   **Resolved, 2026-08-26** -- real code, not just a proposal. Triggered
+   by a 5-advisor LLM council (peer-reviewed, 5/5 independent convergence)
+   run against a cited SOTA survey's own sharpest claim (arXiv:2607.21503):
+   unvalidated compaction can drop task accuracy BELOW the no-context
+   baseline. `RecencyCompactor` now scores every summary with a cheap,
+   non-LLM heuristic (`score_compaction()` -- numeric-token overlap +
+   content-word overlap between the source messages and the summary,
+   weighted 0.6/0.4) and exposes the result via two new
+   `CompactionResult` fields: `validation_score: float | None` (`None`
+   when nothing was summarized) and `degraded: bool` (below
+   `validation_threshold`, default 0.55). Retry is opt-in, not automatic
+   -- a caller supplies a `retry_summarizer: Summarizer | None` (typically
+   the same model, a stricter, more fact-explicit prompt); the identical
+   summarizer is never blindly retried with the identical prompt, since
+   that specific configuration was never validated and has no principled
+   reason to help. The retry always uses the SAME `target_tokens` as the
+   first attempt, never a larger one -- a caller's `budget_tokens` is a
+   real ceiling (e.g. a model's context window), not a suggestion.
+
+   **[SPIKE-recency-compactor-validation-gate.md](../../specs/archive/spikes/SPIKE-recency-compactor-validation-gate.md)**
+   validated this directly, real `RecencyCompactor` calls, real Gemini
+   2.5 Flash via Vertex AI, extending the scenario to three competing
+   hard facts (financial, medical/safety, scheduling) under a tight
+   `budget_tokens` with a genuinely generic (non-fact-aware) summarizer
+   prompt -- the exact condition the first two spikes' own fact-aware
+   prompt never exercised. Real result: naive (today's shipped, unvalidated
+   behavior) preserved both critical facts in only 3/6 runs; the same
+   scenario with the validation gate hit 6/6, with the exact missing fact
+   named by the validation detail every time. A confirmatory run using the
+   SAME `budget_tokens` on retry (not a larger one, isolating the
+   prompt-only effect) still held 6/6.
+
+   Named as still open, not silently glossed over: the retry-exhaustion
+   path (what happens when the retry also fails validation -- currently
+   `degraded=True` is surfaced honestly, no third attempt is invented) was
+   never empirically exercised, since every retry in the spike happened to
+   succeed; the exact threshold (0.55) and weighting (0.6/0.4) are a
+   reasonable starting point given the wide separating gap observed, not
+   independently tuned against a broader dataset.

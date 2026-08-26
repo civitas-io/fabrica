@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fabrica-context"
-version = "0.5.0"
+version = "0.6.0"
 description = "The context layer for Python agents -- part of the Civitas platform"
 readme = "README.md"
 requires-python = ">=3.12"

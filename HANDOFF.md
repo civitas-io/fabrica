@@ -10,6 +10,63 @@ queue** -- everything from a self-reflection audit
 point-in-time check of the real code/docs against the founding vision) plus
 the full remaining backlog, sorted easiest first, most complex last.
 
+## Real fix, 2026-08-26: `RecencyCompactor` gains a real validation gate -- closes the org's own council-identified #1 memory-quality gap
+
+**Triggered by a 5-advisor LLM council** (Contrarian/First Principles/Expansionist/Outsider/
+Executor, peer-reviewed -- 5/5 independent convergence on the same finding) run on "what's the
+true path to SOTA memory management," against a cited SOTA survey (arXiv:2607.21503) and this
+org's own `harness-engineering-wiki`. Unanimous verdict: `RecencyCompactor` had zero validation of
+its own summary output -- it called the injected `Summarizer` once and trusted the result
+unconditionally, the exact failure mode the survey's sharpest number describes (unvalidated
+compaction dropping task accuracy from 66.7% to 57.1%, *below* the no-context baseline).
+
+**Validated empirically before shipping, not assumed** --
+[`SPIKE-recency-compactor-validation-gate.md`](specs/archive/spikes/SPIKE-recency-compactor-validation-gate.md):
+extended the prior two `RecencyCompactor` spikes' scenario to three competing hard facts
+(financial/medical-safety/scheduling) under a tight `budget_tokens`, with a genuinely generic
+(non-fact-aware) summarizer prompt -- the exact condition neither prior spike exercised (their own
+prompt was already fact-aware and never once failed). Real result, real Gemini 2.5 Flash calls via
+Vertex AI: naive (today's real, shipped behavior) preserved both critical facts in only **3/6**
+runs; the same scenario with the new validation gate hit **6/6**, with the exact missing fact named
+by the validation detail every time. A confirmatory run kept the retry's `budget_tokens` identical
+to the first attempt (not the spike's initial 1.5× bump) and still held 6/6 -- the production-
+correct, more conservative configuration, since a caller's `budget_tokens` is a real ceiling (e.g.
+a model's context window), not a suggestion to relax on retry.
+
+**Real, shipped code**: `RecencyCompactor` now scores every summary with `score_compaction()` -- a
+cheap, non-LLM heuristic (0.6×numeric-token overlap + 0.4×content-word overlap between the source
+messages and the summary; deliberately not another LLM call, which would reintroduce the same
+untrusted-inference risk one level up, a concern 2 of 5 peer reviewers raised independently).
+`CompactionResult` gained `validation_score: float | None` and `degraded: bool`. **Retry is opt-in,
+not automatic** -- a caller supplies a `retry_summarizer: Summarizer | None` (typically the same
+model, a stricter, more fact-explicit prompt); retrying the identical summarizer with the identical
+prompt was never validated and has no principled reason to help, so this class does not invent that
+behavior by default. A failing retry degrades the result honestly rather than aborting a compaction
+that already has a usable (if imperfect) first summary.
+
+**Named as still genuinely open, not glossed over**: the retry-exhaustion path (every retry in the
+spike happened to succeed, so what happens when the retry *also* fails validation is implemented --
+`degraded=True`, no third attempt invented -- but not empirically exercised); the exact threshold
+(0.55) and weighting (0.6/0.4) are a reasonable starting point given the wide separating gap
+observed (0.315 vs. 0.674 average score), not independently tuned against a broader dataset.
+
+9 new tests (`tests/memory/test_compactor.py`), 334 tests pass total (was 326), `ruff`/
+`mypy --strict` clean.
+
+**The council's other findings, deliberately NOT acted on in this pass** (correctly ranked lower --
+"survivable mediocrity" vs. this fix's "unsurvivable" one): `MemoryStore`'s BM25-only retrieval
+(no semantic/vector search), unbounded growth with no capacity ceiling or freshness/decay policy,
+no entity resolution, and the still-unbuilt `fabrica-contrib[mem0|zep|letta|cognee|langmem]`
+adapters. Real, legitimate future work, not forgotten -- just correctly sequenced behind the fix
+that could make the system actively worse than having no memory at all.
+
+**On `prx`'s possible role, considered and correctly set aside**: extending `prx`'s own mandate to
+help with Fabrica's memory system would violate the org's own established boundary
+(`civitas-io/context`'s `boundary.md`: prx solves codebase/filesystem interaction for coding
+agents, not runtime agent memory) -- the right reuse, if a semantic-search layer for `MemoryStore`
+is ever built, is the SAME pattern already used for `Retriever`: adopt prx's own validated
+embedding-model choice, not a code or product dependency on prx itself.
+
 ## Real fix, 2026-08-25: `fabrica.mcp.tool.MCPTool` -- the real, previously-missing piece `civitas.process.AgentProcess.connect_mcp()` needed
 
 **Reported by a downstream project team** working on a different, separate project built on this

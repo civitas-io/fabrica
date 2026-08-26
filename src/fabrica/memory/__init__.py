@@ -2,7 +2,14 @@
 See docs/contracts/memory.md.
 """
 
-from fabrica.memory.compactor import Compactor, NullCompactor, RecencyCompactor, Summarizer
+from fabrica.memory.compactor import (
+    DEFAULT_VALIDATION_THRESHOLD,
+    Compactor,
+    NullCompactor,
+    RecencyCompactor,
+    Summarizer,
+    score_compaction,
+)
 from fabrica.memory.errors import (
     CompactionError,
     CompactionUnavailableError,
@@ -16,6 +23,7 @@ from fabrica.memory.types import CompactionResult, MemoryItem, Message
 from fabrica.memory.working_memory import InMemoryWorkingMemoryStore, WorkingMemoryStore
 
 __all__ = [
+    "DEFAULT_VALIDATION_THRESHOLD",
     "BlobStore",
     "Compactor",
     "CompactionError",
@@ -35,4 +43,5 @@ __all__ = [
     "Summarizer",
     "WorkingMemoryQuotaExceeded",
     "WorkingMemoryStore",
+    "score_compaction",
 ]
