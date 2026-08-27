@@ -1,6 +1,9 @@
 # Prompts
 
 **Status:** Design · **Last updated:** 2026-08
+**Formalized by:** [contracts/prompts.md](contracts/prompts.md) — implementation-ready
+types/signatures; that file is authoritative for exact API shape, this one for
+the reasoning.
 
 ---
 

@@ -54,6 +54,8 @@ archival record of real findings, not actively maintained production code.
 
 ## Where to start
 
+- [AGENTS.md](AGENTS.md) — repo map and the Design-vs-Contract doc precedence rule; read this
+  before trusting any single doc under `docs/`.
 - [HANDOFF.md](HANDOFF.md) — current, real, dated status; read this first, it's kept in sync
   with what's actually shipped, not what was originally planned.
 - [docs/PLAN.md](docs/PLAN.md) — the single ordered work queue.

@@ -608,6 +608,52 @@ reaffirmed, not a new one invented for this).
     what's actually returned -- a real feature built on top of this,
     not a rename of it).
 
+### Added post-Phase-2 — documentation reliability audit (LLM council, 2026-08-27)
+
+Same council-reviewed documentation-reliability exercise already run on `python-civitas` and
+`presidium` (see those repos' own `docs/milestones.md`/`docs/log.md`), extended here. The
+council's own verdict on Fabrica specifically: the single highest-leverage gap across all three
+repos audited is that Fabrica had **no `AGENTS.md` at all** — worse than python-civitas's
+910-line bloated one, since a bloated file at least gives an agent a signal to push back against;
+zero file means every session starts from scratch. Full council transcript not persisted; verdict
+acted on directly.
+
+26. [x] **Wrote `AGENTS.md`** — a 102-line pure router (repo map, the Design/Contract
+    precedence rule, pointers to `HANDOFF.md`/`PLAN.md`/the two self-audit docs), not reference
+    content, per the council's explicit warning against re-deriving SDK reference material here.
+27. [x] **Closed the Design→Contract naming-collision gap the council flagged as a real risk,
+    not cosmetic.** Verified directly: `docs/contracts/{mcp-integration,mcp-server,memory,
+    prompts}.md` all already linked back to their Design doc ("Depends on: [X.md](../X.md)"),
+    but none of the four Design docs linked forward to their Contract counterpart — an agent
+    reading `docs/memory.md` cold had no signal a more current, implementation-ready
+    `docs/contracts/memory.md` existed. Added a `**Formalized by:**` pointer to all four Design
+    docs. Backed with a mechanical check, not just prose, per the council's explicit finding that
+    every fix on the table was a soft convention identical to the one that caused presidium's
+    staleness problem: new `tests/test_docs_structure.py` asserts both directions of the link
+    for every same-named `docs/X.md`/`docs/contracts/X.md` pair, so this can't silently rot again.
+28. [x] **Verified, not trusted, the two things the council flagged as claims rather than proof**:
+    (1) the README's "~79% cheaper" code-mode claim — confirmed against
+    `specs/archive/spikes/SPIKE-code-mode-execution.md`'s real 3-run token counts (79.5%/79.2%/
+    79.0% reduction, honestly caveated against a larger, non-comparable published figure). (2) A
+    sampled `docs/critique.md` "Resolved" item (A1, the Firecracker boot-time figure) — confirmed
+    the fix actually landed in `docs/isolation.md` with the real measured numbers, not just
+    marked Resolved in the audit doc itself.
+29. [x] **Real, adjacent bug found and fixed while writing `AGENTS.md`'s source-layout section**:
+    `src/fabrica/__init__.py`'s `__version__` was a hardcoded `"0.1.0"` literal, never updated
+    since 2026-08-21's first release — `pyproject.toml` has been at `0.6.0` for multiple releases.
+    `import fabrica; fabrica.__version__` reported the wrong version to any real caller. Fixed to
+    read from installed package metadata (`importlib.metadata.version("fabrica-context")`), the
+    same mechanical-not-prose fix philosophy as item 27 — this can't drift again either, since
+    there's no second literal to forget to update.
+
+**Deliberately not done**, per the council's own recommendation to not let this turn into new,
+unrelated work: no CI enforcement for `docs/critique.md`/`docs/self-reflection-report.md`'s
+"Resolved" claims going forward (an AGENTS.md note asking to spot-check on touch is the interim
+answer); no mkdocs/docs site (the council explicitly ruled this out — no site exists to protect,
+building one is a separate project); no org-wide RFC proposing Fabrica's Design/Contract or
+self-reflection conventions to the other repos (a real idea, raised and explicitly rejected by
+every peer reviewer in the council as scope creep ahead of verifying the thing being exported).
+
 ### Blocked — not sequenced by complexity, simply not actionable right now
 
 - [x] ~~`PresidiumClient`'s real REST+mTLS client~~ **DONE, 2026-08-23/24,

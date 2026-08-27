@@ -1,6 +1,9 @@
 # Memory
 
 **Status:** Design · **Last updated:** 2026-08
+**Formalized by:** [contracts/memory.md](contracts/memory.md) — implementation-ready
+types/signatures; that file is authoritative for exact API shape, this one for
+the reasoning.
 
 ---
 

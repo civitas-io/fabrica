@@ -10,6 +10,25 @@ queue** -- everything from a self-reflection audit
 point-in-time check of the real code/docs against the founding vision) plus
 the full remaining backlog, sorted easiest first, most complex last.
 
+## Docs reliability fix, 2026-08-27 (LLM council, no package release)
+
+Same council-reviewed documentation-reliability exercise already run on `python-civitas` and
+`presidium` (see those repos' own status docs), extended here. Council verdict: the single
+highest-leverage gap across all three repos audited was that Fabrica had **no `AGENTS.md` at
+all** -- worse than python-civitas's bloated one (a bloated file at least gives an agent
+something to push back against; zero file means every session starts cold). Full detail and
+what was deliberately deferred: `docs/PLAN.md`'s new "Added post-Phase-2" section (items 26-29).
+
+**Shipped**: a 102-line `AGENTS.md`; closed a real Design→Contract naming-collision gap (the
+four same-named `docs/X.md`/`docs/contracts/X.md` pairs only linked one direction — Contract to
+Design, never Design to Contract), backed by a new `tests/test_docs_structure.py` so it can't
+silently rot the way a prose-only fix would have; verified (not just trusted) the README's
+"~79% cheaper" code-mode claim and a sampled `docs/critique.md` "Resolved" item against real
+source; found and fixed a real, adjacent bug while writing the source-layout section --
+`src/fabrica/__init__.py`'s `__version__` was a hardcoded `"0.1.0"` literal untouched since the
+first 2026-08-21 release, while `pyproject.toml` has been at `0.6.0` for several releases -- it
+now reads from installed package metadata instead, so it can't drift again either.
+
 ## Real fix, 2026-08-26: `RecencyCompactor` gains a real validation gate -- closes the org's own council-identified #1 memory-quality gap
 
 **Triggered by a 5-advisor LLM council** (Contrarian/First Principles/Expansionist/Outsider/

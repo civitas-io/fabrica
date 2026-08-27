@@ -6,4 +6,10 @@ README.md for the full picture; docs/contracts/*.md for implementation-ready
 signatures.
 """
 
-__version__ = "0.1.0"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("fabrica-context")
+except PackageNotFoundError:
+    # Editable/source checkout with no installed distribution metadata yet.
+    __version__ = "0.0.0+unknown"
