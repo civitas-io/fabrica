@@ -70,7 +70,7 @@ menu of options. **Both are now validated by spike, not just designed.**
 ![Two ways a model gets a capability: code-mode headline vs find() fallback, with measured comparison table](assets/two-capability-paths.svg)
 
 Full design: [tool-execution.md](tool-execution.md). Evidence:
-[SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md).
+[SPIKE-code-mode-execution.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md).
 
 ---
 
@@ -89,7 +89,7 @@ vendor-locked platform.
 
 Both the `find()` fallback and skill discovery run on **one** engine, not two —
 resolved this way after measurement showed the original separate skill-index
-design wasn't actually flat ([SPIKE-skill-progressive-disclosure.md](../specs/archive/spikes/SPIKE-skill-progressive-disclosure.md)).
+design wasn't actually flat ([SPIKE-skill-progressive-disclosure.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-skill-progressive-disclosure.md)).
 
 ![Shared Retriever engine: tools and skills as Indexables, KeywordBackend/PrxBackend/LlamaIndex backends, rank-not-threshold](assets/retrieval-engine.svg)
 
@@ -118,7 +118,7 @@ The spike found Mem0's own defaults require an OpenAI API key just to
 instantiate — directly contradicting a zero-infra assumption until explicitly
 reconfigured. The adapter therefore ships **its own pinned local config**
 (fastembed + chroma + `infer=False`), so that friction never reaches a user.
-Evidence: [SPIKE-memory-mem0-wrap.md](../specs/archive/spikes/SPIKE-memory-mem0-wrap.md).
+Evidence: [SPIKE-memory-mem0-wrap.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-memory-mem0-wrap.md).
 
 ---
 
@@ -134,7 +134,7 @@ diagram's own example, is the exception**: it shipped v1 as pure-Python
 evidence yet to justify the tooling cost ("ship the default, revisit if
 forced"). Wrapped libraries (Mem0, LlamaIndex, prx itself) are unaffected
 either way. Detail: [context-layer.md](context-layer.md#engineering-principle-rust-for-compute-python-for-interface),
-[retrieval.md](retrieval.md#backends--rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception).
+[retrieval.md](retrieval.md#backends-rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception).
 
 ---
 
@@ -154,4 +154,4 @@ made concrete as a single request's lifecycle.
 | The personas this was designed for | [personas.md](personas.md) |
 | Per-persona success metrics | [problem-definition.md](problem-definition.md) |
 | Every claim checked against evidence | [critique.md](critique.md) |
-| Raw spike data | [`specs/archive/spikes/`](../specs/archive/spikes/) |
+| Raw spike data | [`specs/archive/spikes/`](https://github.com/civitas-io/fabrica/tree/main/specs/archive/spikes/) |

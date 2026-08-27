@@ -114,7 +114,7 @@ starts next.
    real, unmodified `tsr mcp` process with **zero new Fabrica code** --
    model-generated code running inside a real `SubprocessSandbox` called
    a Tessera-backed tool, with only the redacted result crossing back
-   ([SPIKE-tessera-credential-integration.md](../specs/archive/spikes/SPIKE-tessera-credential-integration.md),
+   ([SPIKE-tessera-credential-integration.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-tessera-credential-integration.md),
    [`docs/credentials.md`](credentials.md)). Honest gap named, not
    Fabrica's to fix: Tessera's approval model requires a human present
    (`/dev/tty`/Touch ID) and refuses unattended/service-mode use -- a real
@@ -623,7 +623,7 @@ acted on directly.
     content, per the council's explicit warning against re-deriving SDK reference material here.
 27. [x] **Closed the Design→Contract naming-collision gap the council flagged as a real risk,
     not cosmetic.** Verified directly: `docs/contracts/{mcp-integration,mcp-server,memory,
-    prompts}.md` all already linked back to their Design doc ("Depends on: [X.md](../X.md)"),
+    prompts}.md` all already linked back to their Design doc ("Depends on: `X.md` (`../X.md`)"),
     but none of the four Design docs linked forward to their Contract counterpart — an agent
     reading `docs/memory.md` cold had no signal a more current, implementation-ready
     `docs/contracts/memory.md` existed. Added a `**Formalized by:**` pointer to all four Design

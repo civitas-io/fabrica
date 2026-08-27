@@ -24,3 +24,5 @@ coverage.json
 
 # OS
 .DS_Store
+
+site/

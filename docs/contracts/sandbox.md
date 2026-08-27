@@ -7,7 +7,7 @@ real, tested against real hardware (`SubprocessSandbox` continuously;
 enforcement -- Linux/Windows untested, `srt` documents support for both
 but neither has been exercised here; `FirecrackerSandbox` against a real
 homelab with KVM -- see
-[SPIKE-firecracker-vsock-callback-bridge.md](../../specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)).
+[SPIKE-firecracker-vsock-callback-bridge.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)).
 `SubprocessSandbox` and `SrtSandbox` share their subprocess-launch/ZMQ
 mechanics via `_shim_runner.run_shimmed_subprocess()`, parameterized only
 by the command prefix wrapping the guest shim -- not two independently
@@ -336,7 +336,7 @@ that is the fail-closed default working exactly as intended (see
 Implements this exact `Sandbox` Protocol (`src/fabrica/sandbox/firecracker_backend.py`),
 validated end to end on real hardware (real `vsock`, a real tool call
 crossing the VM boundary, a real result returning --
-[SPIKE-firecracker-vsock-callback-bridge.md](../../specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)).
+[SPIKE-firecracker-vsock-callback-bridge.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md)).
 
 **Real snapshot/restore now exists, opt-in** (`use_snapshot_restore=True`,
 PLAN.md item 20a) -- default remains `False`, `boot_clean()` cold-boots
@@ -344,7 +344,7 @@ exactly as v1 originally shipped, zero behavior change for any existing
 caller. When enabled, the FIRST `boot_clean()` lazily cold-boots ONE
 throwaway instance purely to create a reusable golden snapshot (paying
 the real ~1,055ms cold-boot cost from
-[SPIKE-firecracker-boot-restore-latency.md](../../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)
+[SPIKE-firecracker-boot-restore-latency.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)
 exactly once), then every restore -- including that very first served
 instance -- uses `/snapshot/load` instead, real ~8-10ms per restore.
 No `SandboxPool` changes needed -- entirely internal to this class.
@@ -364,7 +364,7 @@ Only the pre-request "blocked waiting for `code`" state is covered --
 snapshotting mid-tool-call is a genuinely different, not-yet-validated
 state, named as real, separate future work if ever needed. Full
 mechanism and both real findings:
-[SPIKE-firecracker-snapshot-restore-vsock-combination.md](../../specs/archive/spikes/SPIKE-firecracker-snapshot-restore-vsock-combination.md).
+[SPIKE-firecracker-snapshot-restore-vsock-combination.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-snapshot-restore-vsock-combination.md).
 
 **Requires a pre-built rootfs with the guest shim already baked in** --
 `FirecrackerSandbox` does not build this itself; `kernel_image_path`/
@@ -374,7 +374,7 @@ dependency in this project (`Summarizer`, `PresidiumClient`). The actual
 baking procedure (mount the rootfs, copy `_firecracker_guest_shim.py` in)
 was first validated by hand, step by step, in the spike above -- now a
 real, reusable, documented deliverable instead:
-[`scripts/build_firecracker_rootfs.sh`](../../scripts/build_firecracker_rootfs.sh),
+[`scripts/build_firecracker_rootfs.sh`](https://github.com/civitas-io/fabrica/blob/main/scripts/build_firecracker_rootfs.sh),
 documented end to end (including the exact, precisely scoped `sudo`
 rules needed -- `mount`/`umount`/`losetup` against one fixed mount
 point, plus a `cp *.py`-scoped rule, not blanket root access) in
@@ -392,7 +392,7 @@ never attempted ("security over optimization"; snapshot+jailer would be
 a third unvalidated combination on top of two already-separately-proven
 ones). Full, empirically-validated mechanism, including every real
 blocker found and how each was resolved (not theorized):
-[SPIKE-firecracker-jailer-vsock-integration.md](../../specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md).
+[SPIKE-firecracker-jailer-vsock-integration.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md).
 Summary of what makes this genuinely hard, not just "pass a flag":
 
 - `jailer` locks its jail's `root/` directory to `700 fc-jail:fc-jail`
@@ -424,10 +424,10 @@ Summary of what makes this genuinely hard, not just "pass a flag":
 Requires real infrastructure already set up on the host (a dedicated
 low-privilege user, a chroot base directory, and four narrowly-scoped
 sudoers rules -- start, terminate, stage, cleanup) via
-[`scripts/setup_firecracker_jailer.sh`](../../scripts/setup_firecracker_jailer.sh)
+[`scripts/setup_firecracker_jailer.sh`](https://github.com/civitas-io/fabrica/blob/main/scripts/setup_firecracker_jailer.sh)
 (idempotent, requires real interactive root, run once by a human --
 not something application code triggers itself) and
-[`scripts/stage_jailer_resources.sh`](../../scripts/stage_jailer_resources.sh)
+[`scripts/stage_jailer_resources.sh`](https://github.com/civitas-io/fabrica/blob/main/scripts/stage_jailer_resources.sh)
 (invoked by `FirecrackerSandbox` itself at boot time, via the
 already-approved sudo rule).
 

@@ -218,7 +218,7 @@ async def list_eager(
   contract — this document specifies what any `RetrieverBackend` must do,
   not how the default one does it. (It shipped v1 as pure-Python
   `rank_bm25`, not the Rust+PyO3 binding originally sketched -- see
-  [retrieval.md](../retrieval.md#backends--rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception)'s
+  [retrieval.md](../retrieval.md#backends-rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception)'s
   correction note; irrelevant to this contract's own scope either way.)
 
 ## Real addition: `tracer` DI and `trace_id`/`parent_span_id` on `search()`

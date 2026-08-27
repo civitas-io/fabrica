@@ -397,12 +397,12 @@ for them in this pass. Full design:
    shows 256KB too small or too generous.
 3. ~~Per `memory.md` open question 9: the whole preserve-verbatim-plus-summarize
    strategy has zero empirical backing~~ **Resolved for the strategy, not the
-   number.** [SPIKE-recency-compactor-validation.md](../../specs/archive/spikes/SPIKE-recency-compactor-validation.md)
+   number.** [SPIKE-recency-compactor-validation.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-recency-compactor-validation.md)
    validated the summarize-vs-truncate mechanism directly (5/5 grounded-correct
    vs. 0/5), the same rigor `SPIKE-code-mode-execution.md` applied elsewhere.
    ~~`preserve_last_n=6` itself is still an unvalidated guess~~ **Narrowed,
    not fully closed.**
-   [SPIKE-recency-compactor-n-value.md](../../specs/archive/spikes/SPIKE-recency-compactor-n-value.md)
+   [SPIKE-recency-compactor-n-value.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-recency-compactor-n-value.md)
    varied `preserve_last_n` (2, 6, 10) against a REAL, deliberately tight
    `budget_tokens` boundary (unlike the first spike's "plenty of room"
    scenario) — calling the actual `RecencyCompactor`/`_select_preserved`
@@ -435,7 +435,7 @@ for them in this pass. Full design:
    first attempt, never a larger one -- a caller's `budget_tokens` is a
    real ceiling (e.g. a model's context window), not a suggestion.
 
-   **[SPIKE-recency-compactor-validation-gate.md](../../specs/archive/spikes/SPIKE-recency-compactor-validation-gate.md)**
+   **[SPIKE-recency-compactor-validation-gate.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-recency-compactor-validation-gate.md)**
    validated this directly, real `RecencyCompactor` calls, real Gemini
    2.5 Flash via Vertex AI, extending the scenario to three competing
    hard facts (financial, medical/safety, scheduling) under a tight

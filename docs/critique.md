@@ -55,7 +55,7 @@ Each row: the doc's current claim, what the spike found, and the fix.
 
 ## B. The gap that matters more than any single number
 
-> **UPDATE:** resolved by [SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md),
+> **UPDATE:** resolved by [SPIKE-code-mode-execution.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md),
 > run immediately after this critique was written. The mechanism works: 3/3 runs
 > produced lower token cost (~79% reduction, consistent) **and** the traditional
 > approach was wrong in 3/3 runs (errors of 16–48%, once even miscounting the file
@@ -165,7 +165,7 @@ zero hands-on validation — got closed by running the spike rather than accepti
 risk, and the result came back stronger than the question asked for.
 
 **Update — both remaining gaps have since been addressed.** P4 (memory) now has a
-real spike ([SPIKE-memory-mem0-wrap.md](../specs/archive/spikes/SPIKE-memory-mem0-wrap.md)):
+real spike ([SPIKE-memory-mem0-wrap.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-memory-mem0-wrap.md)):
 a working `MemoryStore` adapter over real Mem0, round-tripped end to end, with real
 friction found and absorbed (Mem0 requires an API key by default — contradicts
 zero-infra unless explicitly reconfigured; `add()`/`search()` have inconsistent

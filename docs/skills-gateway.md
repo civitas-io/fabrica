@@ -57,7 +57,7 @@ unexercised by coincidence.
    the `Retriever` from [retrieval.md](retrieval.md) — the same engine tool discovery
    uses, not a parallel mechanism. **Correction from measurement:** an earlier
    design (index dumped directly into model context) was **not** O(1) — see
-   [SPIKE-skill-progressive-disclosure.md](../specs/archive/spikes/SPIKE-skill-progressive-disclosure.md),
+   [SPIKE-skill-progressive-disclosure.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-skill-progressive-disclosure.md),
    which measured linear growth (1,478→6,248 tokens, N=10→81). The shared `find`
    meta-tool fixes this the same way it works for tools: server-side matching,
    model never sees the full catalog.
@@ -93,7 +93,7 @@ see that doc for `Indexable`/`RankedMatch`.
    degrading past ~20–30 candidates — the model choosing among N things it only
    partially sees. Rather than a skills-only fix, this is now one shared `Retriever`
    engine and one `find(query, kind)` surface across tools and skills, validated on
-   real data in [SPIKE-skill-progressive-disclosure.md](../specs/archive/spikes/SPIKE-skill-progressive-disclosure.md)
+   real data in [SPIKE-skill-progressive-disclosure.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-skill-progressive-disclosure.md)
    (4/4 exact picks on genuinely ambiguous real skills).
 2. ~~Exact `SKILL.md` frontmatter fields to index — track the published
    standard.~~ **Resolved: only the two required spec fields (`name`,

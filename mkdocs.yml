@@ -1,0 +1,102 @@
+site_name: Fabrica
+site_description: The context layer for Python agents
+site_url: https://civitas-io.github.io/fabrica
+repo_url: https://github.com/civitas-io/fabrica
+repo_name: civitas-io/fabrica
+copyright: Apache 2.0 License
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.instant
+    - navigation.indexes
+    - content.code.copy
+    - content.code.annotate
+    - search.highlight
+    - search.suggest
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+  - pymdownx.inlinehilite
+  - admonition
+  - pymdownx.details
+  - tables
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.keys
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/civitas-io/fabrica
+
+nav:
+  - Home: index.md
+
+  - Architecture:
+    - Overview: architecture.md
+    - System Design: system-design.md
+    - Civitas + Presidium Integration: civitas-presidium-integration.md
+    - Landscape: landscape.md
+
+  - Design:
+    - Context Layer: context-layer.md
+    - Tool Execution: tool-execution.md
+    - Skills Gateway: skills-gateway.md
+    - Memory: memory.md
+    - Prompts: prompts.md
+    - Retrieval: retrieval.md
+    - Isolation: isolation.md
+    - Credentials: credentials.md
+    - MCP Integration: mcp-integration.md
+    - Fabrica as an MCP Server: mcp-server.md
+
+  - Contracts:
+    - Civitas Bridge: contracts/civitas-bridge.md
+    - Managers: contracts/managers.md
+    - Managed Sandbox: contracts/managed-sandbox.md
+    - Sandbox: contracts/sandbox.md
+    - Retriever: contracts/retriever.md
+    - Memory: contracts/memory.md
+    - Prompts: contracts/prompts.md
+    - MCP Integration: contracts/mcp-integration.md
+    - MCP Server: contracts/mcp-server.md
+
+  - Deployment:
+    - Firecracker Rootfs: deployment/firecracker-rootfs.md
+
+  - Reflection & Critique:
+    - Personas: personas.md
+    - Problem Definition: problem-definition.md
+    - Self-Reflection Report: self-reflection-report.md
+    - "Critique: Design vs. Evidence": critique.md
+
+  - Plan: PLAN.md

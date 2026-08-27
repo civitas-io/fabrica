@@ -4,7 +4,7 @@
 **Depends on:** [isolation.md](isolation.md) (the `Sandbox` protocol this decision
 constrains), [tool-execution.md](tool-execution.md) (the `on_tool_call` seam this
 relies on)
-**Evidence:** [SPIKE-tessera-credential-integration.md](../specs/archive/spikes/SPIKE-tessera-credential-integration.md)
+**Evidence:** [SPIKE-tessera-credential-integration.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-tessera-credential-integration.md)
 
 ---
 

@@ -74,7 +74,7 @@ and a scalable sandbox pool, so a bad run can't touch the host or blow the budge
 |---|---|
 | Zero-code-change tier upgrade | Tier 0 \u2192 Tier 1 (gVisor) \u2192 Tier 2 (Firecracker) is a **config change only** |
 | Warm-pool restore latency | p99 in **single-digit ms** from a Firecracker snapshot |
-| Zero credential leakage | **Resolved by decision, not by hardening an injection path** -- see [credentials.md](credentials.md): `Sandbox` gets no credential-injection mechanism at all, so there is no leakage path through the sandbox boundary to defend in the first place. Validated end to end with a real, independently-built credential broker (Tessera) in [SPIKE-tessera-credential-integration.md](../specs/archive/spikes/SPIKE-tessera-credential-integration.md). |
+| Zero credential leakage | **Resolved by decision, not by hardening an injection path** -- see [credentials.md](credentials.md): `Sandbox` gets no credential-injection mechanism at all, so there is no leakage path through the sandbox boundary to defend in the first place. Validated end to end with a real, independently-built credential broker (Tessera) in [SPIKE-tessera-credential-integration.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-tessera-credential-integration.md). |
 | Self-healing pool | a crashed sandbox-pool process restarts automatically under Civitas supervision |
 
 **Non-goals**
@@ -112,7 +112,7 @@ see the usage/budget note below)
 
 **Non-goals**
 
-- Fabrica does not implement the policy engine, grant model, or usage ledger itself — it emits events and enforces pre-flight checks Presidium returns (see [civitas-presidium-integration.md](civitas-presidium-integration.md#usage--budget-ceilings--metering-vs-enforcement))
+- Fabrica does not implement the policy engine, grant model, or usage ledger itself — it emits events and enforces pre-flight checks Presidium returns (see [civitas-presidium-integration.md](civitas-presidium-integration.md#usage-budget-ceilings-metering-vs-enforcement))
 - No compliance dashboard/reporting UI — that's `presidium-audit`'s job, consuming these events
 - Fabrica doesn't decide *what* is compliant — only that every reachable action is observable
 - **Log tamper-evidence (signatures, hash-chaining) — deferred, not dropped.** Ship the emission pipeline working end-to-end first; add integrity guarantees once there's a real log to protect.
@@ -196,13 +196,13 @@ isn't lost.
 
 | Decision | Where it's captured |
 |---|---|
-| Build the `find` interface/aggregation layer (real gap); wrap Tier-1 embedding engines (LlamaIndex/LangChain, later prx) rather than reimplementing retrieval; never operate it as a hosted multi-tenant service | [tool-execution.md](tool-execution.md), [retrieval.md](retrieval.md), [landscape.md](landscape.md#6-tool-search--retrieval-backends--a-two-tier-market) |
+| Build the `find` interface/aggregation layer (real gap); wrap Tier-1 embedding engines (LlamaIndex/LangChain, later prx) rather than reimplementing retrieval; never operate it as a hosted multi-tenant service | [tool-execution.md](tool-execution.md), [retrieval.md](retrieval.md), [landscape.md](landscape.md#6-tool-search-retrieval-backends-a-two-tier-market) |
 | `find`/tools-as-code lives in **Fabrica**, not the Rust toolchain (prx/tessera) — different consumer (the model, mid-inference) and governance/supervision needs that the toolchain doesn't have | [tool-execution.md](tool-execution.md#why-this-lives-in-fabrica-not-the-rust-toolchain-prxtessera) |
-| Usage/budget ceilings split into **metering** (Fabrica emits) vs **enforcement** (Presidium decides) — not a fourth system, an extension of Presidium's already-claimed cost-tracking scope | [civitas-presidium-integration.md](civitas-presidium-integration.md#usage--budget-ceilings--metering-vs-enforcement) |
+| Usage/budget ceilings split into **metering** (Fabrica emits) vs **enforcement** (Presidium decides) — not a fourth system, an extension of Presidium's already-claimed cost-tracking scope | [civitas-presidium-integration.md](civitas-presidium-integration.md#usage-budget-ceilings-metering-vs-enforcement) |
 | `Scope` gains `team_id`, shared between `MemoryStore` and the usage ledger | [memory.md](memory.md), [civitas-presidium-integration.md](civitas-presidium-integration.md) |
 | Disambiguation among overlapping tools/skills is **resolved by unification** (one `Retriever` engine, one `find(query, kind)` surface), not deferred — memory search intentionally kept separate (different semantics) but shares the same engine | [retrieval.md](retrieval.md) |
 | Two **deferred-not-dropped** items on the same footing: log tamper-evidence (Elena) and skill trust/signing (Devon) — both supply-chain-adjacent, both wait until the base feature works | this doc, \u00a73 and \u00a74 |
-| **Post-Define, surfaced during Validate/Critique:** code-mode (the actual headline, not just the `find` fallback) is empirically validated — lower token cost *and* better correctness than direct tool-calling | [SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md), [critique.md](critique.md) |
+| **Post-Define, surfaced during Validate/Critique:** code-mode (the actual headline, not just the `find` fallback) is empirically validated — lower token cost *and* better correctness than direct tool-calling | [SPIKE-code-mode-execution.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md), [critique.md](critique.md) |
 | **Post-Define:** isolation backend is platform-dispatched (auto-detected per host OS) and deliberately hidden from users — a stated exception to how Civitas normally exposes config | [isolation.md](isolation.md), [critique.md](critique.md) |
 | **Post-Define:** engineering principle — where Fabrica *builds* compute internals, Rust with a Python binding, not pure Python; wrapped libraries (Mem0, prx, LlamaIndex) are unaffected | [context-layer.md](context-layer.md#engineering-principle-rust-for-compute-python-for-interface) |
 
@@ -214,9 +214,9 @@ isn't lost.
 record.** At the time this was written, Validate hadn't started. It has since
 happened: seven spikes tested exactly the riskiest claims here, including Priya's
 P1 slice (tools-as-code + `find` fallback — both validated,
-[SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md))
+[SPIKE-code-mode-execution.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md))
 and Marcus's P2 slice (Firecracker restore latency, real hardware,
-[SPIKE-firecracker-boot-restore-latency.md](../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)).
+[SPIKE-firecracker-boot-restore-latency.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)).
 Full results, corrections, and remaining open decisions are in
 [critique.md](critique.md), not repeated here. Next real step now: `plan-work`.
 

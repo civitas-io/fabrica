@@ -140,8 +140,8 @@ currently written.
 
 | Platform | Tier-1-equivalent (lightweight syscall/access control) | Tier-2-equivalent (microVM-class isolation) |
 |---|---|---|
-| **Linux** | gVisor (validated — see landscape §3 above) | Firecracker (validated — see [SPIKE-firecracker-boot-restore-latency.md](../specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)) |
-| **macOS** | `sandbox-exec` / Seatbelt profiles — deny-by-default, VFS-layer interception. **Real precedent**: CrowdStrike already uses Seatbelt specifically for AI-agent code sandboxing. **Concretely validated**: Anthropic's own `srt` (Sandbox Runtime), built on `sandbox-exec` — real enforcement confirmed (write/network denial), measured p50 152ms ([SPIKE-macos-isolation-srt-libkrun.md](../specs/archive/spikes/SPIKE-macos-isolation-srt-libkrun.md)). Also ships an untested Windows mode (`windows-install`), a candidate for the Windows Tier-1 gap below. | **libkrun** (open source, `Virtualization.framework`-based, explicitly positioned for AI/agent isolation with "VM-level security, container-like footprint") — **confirmed via spike: no snapshot/restore support at all**, a permanent ceiling, not a bug. Or Apple's own **Containerization framework** (untested), described as similar in isolation strength to Kata. |
+| **Linux** | gVisor (validated — see landscape §3 above) | Firecracker (validated — see [SPIKE-firecracker-boot-restore-latency.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md)) |
+| **macOS** | `sandbox-exec` / Seatbelt profiles — deny-by-default, VFS-layer interception. **Real precedent**: CrowdStrike already uses Seatbelt specifically for AI-agent code sandboxing. **Concretely validated**: Anthropic's own `srt` (Sandbox Runtime), built on `sandbox-exec` — real enforcement confirmed (write/network denial), measured p50 152ms ([SPIKE-macos-isolation-srt-libkrun.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-macos-isolation-srt-libkrun.md)). Also ships an untested Windows mode (`windows-install`), a candidate for the Windows Tier-1 gap below. | **libkrun** (open source, `Virtualization.framework`-based, explicitly positioned for AI/agent isolation with "VM-level security, container-like footprint") — **confirmed via spike: no snapshot/restore support at all**, a permanent ceiling, not a bug. Or Apple's own **Containerization framework** (untested), described as similar in isolation strength to Kata. |
 | **Windows** | No clean equivalent found. Windows containers/job objects are not in the same isolation class as gVisor/Seatbelt — an open gap. | Hyper-V isolation / Windows Sandbox — real and hypervisor-backed, but meaningfully heavier/slower to boot than Firecracker or libkrun (seconds-to-minutes, not milliseconds, per earlier research) |
 
 Also relevant: **SlicerVM** — not a new primitive, but proof the underlying
@@ -193,7 +193,7 @@ the *lightweight, unopinionated building block* is not.
 
 **Conclusion:** build the interface/aggregation layer (real gap, low risk of
 redundancy) — but wrap Tier 1's embedding engines as optional backends rather than
-reimplementing vector retrieval. See [retrieval.md](retrieval.md#backends--rust-for-the-built-parts-wrap-everything-else)
+reimplementing vector retrieval. See [retrieval.md](retrieval.md#backends-rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception)
 for the resulting package split — now unified with skill discovery, not tool-only
 as originally scoped here.
 

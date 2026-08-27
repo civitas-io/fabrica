@@ -56,13 +56,13 @@ but it's no longer tool-specific. See **[retrieval.md](retrieval.md)** for the
 full design: a single `find(query, kind, limit)` meta-tool shared by tools and
 skills, backed by a pluggable `Retriever` engine (rank-ordered results only —
 never filtered by absolute score, per
-[SPIKE-tool-retrieval-token-overhead.md](../specs/archive/spikes/SPIKE-tool-retrieval-token-overhead.md)).
+[SPIKE-tool-retrieval-token-overhead.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-tool-retrieval-token-overhead.md)).
 This mode is a *compatibility floor*, not the pitch — see
-[SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md)
+[SPIKE-code-mode-execution.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md)
 for why code-mode is now validated as the actual headline, not just the aspiration.
 
 Backends (keyword default, prx/LlamaIndex/LangChain as adapters) are specified in
-[retrieval.md](retrieval.md#backends--rust-for-the-built-parts-wrap-everything-else),
+[retrieval.md](retrieval.md#backends-rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception),
 not duplicated here.
 
 ## Why this lives in Fabrica, not the Rust toolchain (prx/tessera)
@@ -83,7 +83,7 @@ The tight coupling to Civitas (supervision, `ToolProvider`/`ModelProvider`) and
 Presidium (grants, audit) **is the differentiator** (see civitas-presidium-
 integration.md). Spinning it out as a standalone Rust/MCP binary would strip that
 coupling away and reduce it to just another commodity MCP gateway — the exact
-thing [landscape.md](landscape.md#2-mcp-gateways--registries--commoditized-do-not-build)
+thing [landscape.md](landscape.md#2-mcp-gateways-registries-commoditized-do-not-build)
 says not to build. Portability for non-Civitas/non-Python consumers is still
 achieved — Fabrica exposes itself as an MCP server, so any MCP-compatible host can
 connect without needing a Rust rewrite or a separate brand (this claim is now

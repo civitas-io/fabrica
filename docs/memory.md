@@ -23,7 +23,7 @@ whether it does any personalization at all:
 | **Long-term memory** | across sessions, persistent | Cross-session facts/preferences — the original scope of this document, unchanged in substance below. |
 
 **Compaction earns its place here for a very concrete reason, not a theoretical
-one:** producing this repo's own [`HANDOFF.md`](../HANDOFF.md) was a manual,
+one:** producing this repo's own [`HANDOFF.md`](https://github.com/civitas-io/fabrica/blob/main/HANDOFF.md) was a manual,
 human-triggered instance of exactly this mechanism — a person noticed context
 pressure and asked for a checkpoint by hand. A generic `MemoryManager` should
 offer that as a callable primitive a harness invokes automatically, not
@@ -98,7 +98,7 @@ platform's interface-first philosophy, Fabrica ships a **`MemoryStore` protocol*
 **adapters** for the established players.
 
 **Validated, not just proposed** — see
-[SPIKE-memory-mem0-wrap.md](../specs/archive/spikes/SPIKE-memory-mem0-wrap.md): a
+[SPIKE-memory-mem0-wrap.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-memory-mem0-wrap.md): a
 working `MemoryStore` adapter over real Mem0 was built and round-tripped (write →
 search, real local embeddings, real relevance score) in minutes. But "wrap, don't
 build" is **not** the same as "wrap, zero config" — Mem0's own defaults require an
@@ -324,7 +324,7 @@ class MemoryManager:
    assumed away.
 9. ~~`RecencyCompactor`'s `preserve_last_n` default of 6 is a guess, not
    validated by any spike~~ **Partially resolved** — see
-   [SPIKE-recency-compactor-validation.md](../specs/archive/spikes/SPIKE-recency-compactor-validation.md).
+   [SPIKE-recency-compactor-validation.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-recency-compactor-validation.md).
    The core strategy (summarize what falls out of the window, don't just drop
    it) is now validated: matched full-history correctness 5/5 vs. naive
    truncation's 0/5 genuinely-grounded answers on a scenario requiring recall

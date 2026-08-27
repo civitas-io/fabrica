@@ -130,7 +130,7 @@ actually has network/filesystem/API access), the real result crosses back in —
 but only the *next* line of generated code sees it, not the model. This is the
 mechanism, not a diagram simplification. Getting the callback transport wrong
 would break the whole token-savings story from
-[SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md).
+[SPIKE-code-mode-execution.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md).
 
 **The callback transport, resolved:** a shared wire protocol (ZMQ) over a
 tier-specific bridge — not one uniform transport, and not a different RPC
@@ -155,7 +155,7 @@ trusted, Fabrica-controlled infrastructure the generated code never touches
 directly — the same trust boundary as the tool-namespace shim already
 described in `isolation.md`.
 
-**Sanity-checked:** [SPIKE-zmq-sandbox-channel-feasibility.md](../specs/archive/spikes/SPIKE-zmq-sandbox-channel-feasibility.md)
+**Sanity-checked:** [SPIKE-zmq-sandbox-channel-feasibility.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-zmq-sandbox-channel-feasibility.md)
 confirmed Tier 0/1's half of this — `pyzmq` bundles its own statically-compiled
 `libzmq` (1.6MB, self-contained, no system dependency chain needed), and a real
 `ipc://` round trip measured **0.73ms**, negligible overhead. **Still not
@@ -290,12 +290,12 @@ triggers, not "maybe someday."
 |---|---|---|---|
 | `Retriever` index | tool/skill `Indexable`s | in-memory dict / BM25 | Postgres or Redis, shared |
 | `SandboxPool` | warm handles, snapshot refs | local files / OS processes | shared node pool, snapshot store on disk or object storage |
-| `MemoryManager` | conversation memories | SQLite + local vector (fastembed/chroma — the config [SPIKE-memory-mem0-wrap.md](../specs/archive/spikes/SPIKE-memory-mem0-wrap.md) validated) | hosted vector store, or a Postgres-backed adapter |
+| `MemoryManager` | conversation memories | SQLite + local vector (fastembed/chroma — the config [SPIKE-memory-mem0-wrap.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-memory-mem0-wrap.md) validated) | hosted vector store, or a Postgres-backed adapter |
 | `PromptManager` | prompt versions | local files or SQLite | Civitas `StateStore` (via `CivitasBridge.request_state_persistence`) / Postgres |
 | Usage/budget counters | **not owned by Fabrica at all** | emitted to Presidium, not stored here | emitted to Presidium, not stored here |
 
 That last row matters: per
-[civitas-presidium-integration.md](civitas-presidium-integration.md#usage--budget-ceilings--metering-vs-enforcement),
+[civitas-presidium-integration.md](civitas-presidium-integration.md#usage-budget-ceilings-metering-vs-enforcement),
 Fabrica meters, Presidium owns the ledger. This table is a reminder that "state
 Fabrica owns" and "state Fabrica reports on" are different rows, not the same one.
 
@@ -309,7 +309,7 @@ something breaks. Six real decisions, one flagged as a real availability tradeof
 | Failure | Detection | Fabrica's response |
 |---|---|---|
 | Sandbox crashes mid-run | Civitas supervisor detects process death | `ToolManager` returns a structured error to the caller, not a silent hang. `SandboxPool` discards the handle and provisions a fresh one. **Civitas restarts the supervisor's child; Fabrica does not reimplement supervision.** |
-| `Retriever` backend (e.g. prx) unreachable | persistent-process health check fails (same pattern validated in [SPIKE-prx-invocation-latency.md](../specs/archive/spikes/SPIKE-prx-invocation-latency.md)) | falls back to `KeywordBackend` automatically, logs a degraded-mode event. Never fails the caller outright for this. |
+| `Retriever` backend (e.g. prx) unreachable | persistent-process health check fails (same pattern validated in [SPIKE-prx-invocation-latency.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-prx-invocation-latency.md)) | falls back to `KeywordBackend` automatically, logs a degraded-mode event. Never fails the caller outright for this. |
 | Presidium unreachable | REST timeout on `check_grant`, or an open circuit breaker after N consecutive failures | **fail closed — DENY by default.** Never fail-open on a security check. This is a real, explicit availability-vs-safety tradeoff: a Presidium outage degrades Fabrica to doing nothing, on purpose. The circuit breaker means this triggers immediately once tripped, not after a fresh timeout wait on every call — and its cooldown/half-open retry protects Presidium from a thundering herd the moment it recovers. |
 | Warm pool exhausted | `acquire()` finds no available handle | **Resolved — hybrid bounded overflow** (see §7): cold-start on demand up to a hard `max_concurrent` ceiling; only queue (bounded wait + timeout, structured error if it expires) once that ceiling is hit. Never unbounded, never queues while the host still has headroom. |
 | Generated code hangs | `Sandbox.run(..., timeout=...)` | hard timeout enforced by the sandbox itself; process/VM killed; a `TimedOut` error returned, not a hang. |

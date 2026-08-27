@@ -5,7 +5,7 @@
 implementation-ready types/signatures; that file is authoritative for exact
 API shape, this one for the reasoning.
 **Depends on:** [tool-execution.md](tool-execution.md) (`ToolNamespace`, unchanged
-by this doc), [landscape.md §2](landscape.md#2-mcp-gateways--registries--commoditized-do-not-build)
+by this doc), [landscape.md §2](landscape.md#2-mcp-gateways-registries-commoditized-do-not-build)
 (the constraint this design must not violate)
 
 ---

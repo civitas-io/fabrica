@@ -24,7 +24,7 @@ Everything that governs **the content and execution of the context window**:
 
 1. **Tool access** — how tools reach the model and where tool code runs.
    Headline: tools-as-code + sandboxed execution (**validated** — see the
-   [code-mode spike](../specs/archive/spikes/SPIKE-code-mode-execution.md)).
+   [code-mode spike](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md)).
    Fallback: `find` retrieval, shared with skills — see [retrieval.md](retrieval.md).
 2. **Skills** — packaged, reusable agent capabilities, loaded on demand, conformant
    to the open `SKILL.md` standard. Discovery shares the same `Retriever` engine as
@@ -149,7 +149,7 @@ default, revisit if forced" -- the same pattern applied elsewhere in this
 project (sandbox language, `eager`'s per-deployment override). The
 principle itself is not abandoned; this is a stated, reasoned exception
 for the *first* real instance of it, not a quiet reversal of the rule.
-See [retrieval.md](retrieval.md#backends--rust-for-the-built-parts-wrap-everything-else)
+See [retrieval.md](retrieval.md#backends-rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception)
 for the current, accurate state, and `HANDOFF.md`/`docs/PLAN.md` for the
 reasoning trail.
 

@@ -14,7 +14,7 @@ duplicating infrastructure.
 because matching happens server-side — the model never sees the full registry.
 The skills index, as originally sketched in
 [skills-gateway.md](skills-gateway.md), did not have this property:
-[SPIKE-skill-progressive-disclosure.md](../specs/archive/spikes/SPIKE-skill-progressive-disclosure.md)
+[SPIKE-skill-progressive-disclosure.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-skill-progressive-disclosure.md)
 measured it growing linearly (1,478→6,248 tokens, N=10→81) because the whole index
 was placed directly in the model's context to browse.
 
@@ -30,7 +30,7 @@ shape would paper over a real difference rather than resolve one.
 |---|---|
 | **`find_tools`** (RFC 0001) | The interface shape: one meta-tool, server-side matching, model never sees the full list. |
 | **Anthropic's `tool_search_tool`** (`defer_loading`) | The eager/deferred split — critical, frequently-used items stay always-visible; everything else is deferred and only surfaces via search. |
-| **prx** ([SPIKE-tool-disambiguation-retrieval-quality.md](../specs/archive/spikes/SPIKE-tool-disambiguation-retrieval-quality.md)) | A validated backend (100% precision@3, zero fine-tuning) plus two hard rules that now apply platform-wide: **rank, never absolute threshold** ([SPIKE-tool-retrieval-token-overhead.md](../specs/archive/spikes/SPIKE-tool-retrieval-token-overhead.md), [SPIKE-code-mode-execution.md](../specs/archive/spikes/SPIKE-code-mode-execution.md)), and **persistent-process integration**, not subprocess-per-call ([SPIKE-prx-invocation-latency.md](../specs/archive/spikes/SPIKE-prx-invocation-latency.md)). |
+| **prx** ([SPIKE-tool-disambiguation-retrieval-quality.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-tool-disambiguation-retrieval-quality.md)) | A validated backend (100% precision@3, zero fine-tuning) plus two hard rules that now apply platform-wide: **rank, never absolute threshold** ([SPIKE-tool-retrieval-token-overhead.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-tool-retrieval-token-overhead.md), [SPIKE-code-mode-execution.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md)), and **persistent-process integration**, not subprocess-per-call ([SPIKE-prx-invocation-latency.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-prx-invocation-latency.md)). |
 
 ## The engine
 

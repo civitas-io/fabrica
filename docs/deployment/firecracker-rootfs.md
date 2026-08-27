@@ -4,7 +4,7 @@
 
 This is the real, reusable, documented version of the exact procedure
 validated by hand on a real homelab in
-[SPIKE-firecracker-vsock-callback-bridge.md](../../specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md).
+[SPIKE-firecracker-vsock-callback-bridge.md](https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md).
 It closes the one real reproducibility gap left after `FirecrackerSandbox`
 shipped: without this, the only way to produce a working rootfs image was
 a one-off set of manual commands run by hand on one specific machine —

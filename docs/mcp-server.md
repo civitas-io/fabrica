@@ -6,7 +6,7 @@ implementation-ready types/signatures; that file is authoritative for exact
 API shape, this one for the reasoning.
 **Depends on:** [mcp-integration.md](mcp-integration.md) (the opposite,
 complementary direction), [tool-execution.md](tool-execution.md) (the claim this
-closes), [landscape.md §2](landscape.md#2-mcp-gateways--registries--commoditized-do-not-build)
+closes), [landscape.md §2](landscape.md#2-mcp-gateways-registries-commoditized-do-not-build)
 (the constraint checked again, in a new direction)
 
 ---
