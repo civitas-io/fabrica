@@ -1,0 +1,2693 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The context layer for Python agents">
+      
+      
+      
+        <link rel="canonical" href="https://civitas-io.github.io/fabrica/contracts/sandbox/">
+      
+      
+        <link rel="prev" href="../managed-sandbox/">
+      
+      
+        <link rel="next" href="../retriever/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Sandbox - Fabrica</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#contract-sandbox-sandboxpool" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Fabrica" class="md-header__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Fabrica
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Sandbox
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../context-layer/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../civitas-bridge/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Contracts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../deployment/firecracker-rootfs/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Deployment
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../personas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reflection & Critique
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../PLAN/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plan
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Fabrica" class="md-nav__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Fabrica
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../civitas-presidium-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas + Presidium Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../landscape/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Landscape
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../context-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tool-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../skills-gateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../retrieval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fabrica as an MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../civitas-bridge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas Bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../managers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../managed-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managed Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-correction-found-by-writing-this-out-precisely" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A correction found by writing this out precisely
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-levels-matching-the-retrieverretrieverbackend-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two levels, matching the Retriever/RetrieverBackend split
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-contract-deliberately-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this contract deliberately does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-a-queryable-tier-property-closing-contractsmcp-servermds-open-weakisolationerror-gap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition: a queryable tier property, closing contracts/mcp-server.md's open WeakIsolationError gap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#firecrackersandbox-real-tier-2-implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FirecrackerSandbox -- real Tier 2 implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-close-on-sandbox-backend-instance-level-cleanup-distinct-from-terminates-per-handle-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition: close() on Sandbox -- backend-instance-level cleanup, distinct from terminate()'s per-handle scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-tracer-di-and-trace_idparent_span_id-on-acquirerun" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition: tracer DI and trace_id/parent_span_id on acquire()/run()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-items-for-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open items for implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#correction-applied-to-system-designmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correction applied to system-design.md
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retriever/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retriever
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/firecracker-rootfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firecracker Rootfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reflection & Critique
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reflection & Critique
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../problem-definition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problem Definition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../self-reflection-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Reflection Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../critique/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Critique: Design vs. Evidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-correction-found-by-writing-this-out-precisely" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A correction found by writing this out precisely
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-levels-matching-the-retrieverretrieverbackend-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two levels, matching the Retriever/RetrieverBackend split
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-contract-deliberately-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this contract deliberately does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-a-queryable-tier-property-closing-contractsmcp-servermds-open-weakisolationerror-gap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition: a queryable tier property, closing contracts/mcp-server.md's open WeakIsolationError gap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#firecrackersandbox-real-tier-2-implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FirecrackerSandbox -- real Tier 2 implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-close-on-sandbox-backend-instance-level-cleanup-distinct-from-terminates-per-handle-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition: close() on Sandbox -- backend-instance-level cleanup, distinct from terminate()'s per-handle scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-tracer-di-and-trace_idparent_span_id-on-acquirerun" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition: tracer DI and trace_id/parent_span_id on acquire()/run()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-items-for-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open items for implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#correction-applied-to-system-designmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correction applied to system-design.md
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="contract-sandbox-sandboxpool">Contract: <code>Sandbox</code> / <code>SandboxPool</code><a class="headerlink" href="#contract-sandbox-sandboxpool" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Implemented -- <code>SubprocessSandbox</code> (Tier 0), <code>SrtSandbox</code>
+(Tier 1, wraps <code>srt</code>), and <code>FirecrackerSandbox</code> (Tier 2, self-hosted) all
+real, tested against real hardware (<code>SubprocessSandbox</code> continuously;
+<code>SrtSandbox</code> live-verified on macOS, including real network-allowlist
+enforcement -- Linux/Windows untested, <code>srt</code> documents support for both
+but neither has been exercised here; <code>FirecrackerSandbox</code> against a real
+homelab with KVM -- see
+<a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md">SPIKE-firecracker-vsock-callback-bridge.md</a>).
+<code>SubprocessSandbox</code> and <code>SrtSandbox</code> share their subprocess-launch/ZMQ
+mechanics via <code>_shim_runner.run_shimmed_subprocess()</code>, parameterized only
+by the command prefix wrapping the guest shim -- not two independently
+maintained copies. Tier 1 gVisor (Linux) remains not implemented
+separately; <code>srt</code>'s own Linux support (bubblewrap+netns) may cover that
+platform once verified, avoiding a second Tier 1 implementation
+entirely. All three backends implement <code>close()</code> for backend-instance-
+level cleanup, distinct from <code>terminate()</code>'s per-handle scope -- see
+"Real addition: <code>close()</code> on <code>Sandbox</code>" below for the real, confirmed
+leak this closes. · <strong>Last updated:</strong> 2026-08
+<strong>Supersedes:</strong> the <code>Sandbox</code> sketch in <a href="../../isolation/">isolation.md</a>
+<strong>Depends on:</strong> <a href="../../system-design/">system-design.md</a> §1 (object model), §3
+(internal code-mode flow, the callback this contract implements), §6 (resilience
+decisions this contract makes concrete)
+<strong>Corrects:</strong> <code>system-design.md</code>'s open-question-1 resolution — see below.</p>
+<hr />
+<h2 id="a-correction-found-by-writing-this-out-precisely">A correction found by writing this out precisely<a class="headerlink" href="#a-correction-found-by-writing-this-out-precisely" title="Permanent link">&para;</a></h2>
+<p><code>system-design.md §6</code>/§7 describes a cold-started overflow sandbox as being
+<em>"folded back into the warm pool... rather than discarded."</em> That's imprecise in
+a way that matters: <strong>the instance itself is never reused.</strong> Arbitrary
+model-generated code just ran inside it — it may have written files, mutated
+memory, left arbitrary state. Reusing that <em>same live instance</em> for a different
+task or agent would leak state across an isolation boundary this whole design
+exists to enforce.</p>
+<p>What actually happens: every used instance is <strong>always terminated</strong> after
+<code>run()</code>. The pool "regrows" by restoring a <strong>fresh</strong> instance from the clean base
+snapshot — not by recycling the dirty one. The externally-visible behavior
+(pool size trends back toward <code>warm_size</code> after a burst) is the same; the
+mechanism is different, and the difference matters for correctness, not just
+precision. This contract implements the corrected version; <code>system-design.md</code>
+should be updated to match (noted at the end of this doc, not silently left
+inconsistent).</p>
+<hr />
+<h2 id="two-levels-matching-the-retrieverretrieverbackend-split">Two levels, matching the <code>Retriever</code>/<code>RetrieverBackend</code> split<a class="headerlink" href="#two-levels-matching-the-retrieverretrieverbackend-split" title="Permanent link">&para;</a></h2>
+<p><code>Sandbox</code> is the narrow, swappable per-tier backend. <code>SandboxPool</code> is the one
+public class <code>ToolManager</code>/<code>SkillManager</code> actually depend on — it owns warm-pool
+bookkeeping, the bounded-overflow behavior, and the always-clean-instance
+guarantee, in one place, not duplicated per backend.</p>
+<pre><code class="language-python">class Sandbox(Protocol):
+    &quot;&quot;&quot;A single-tier backend. Implementations: SubprocessSandbox (Tier 0),
+    GvisorSandbox / SrtSandbox (Tier 1), FirecrackerSandbox / LibkrunSandbox
+    (Tier 2). Never used directly outside Fabrica — always wrapped by
+    SandboxPool.&quot;&quot;&quot;
+
+    async def boot_clean(self) -&gt; SandboxHandle:
+        &quot;&quot;&quot;Boot, or restore-from-snapshot, a fresh instance in a known
+        clean state. This is the ONLY way an instance is created — there
+        is no reuse path in this Protocol at all.&quot;&quot;&quot;
+        ...
+
+    async def execute(
+        self,
+        handle: SandboxHandle,
+        code: str,
+        *,
+        on_tool_call: ToolCallCallback,
+        timeout: float,
+    ) -&gt; RunResult: ...
+
+    async def terminate(self, handle: SandboxHandle) -&gt; None:
+        &quot;&quot;&quot;Tear down an instance permanently. Called by SandboxPool on
+        every release() — never on a path that reuses the handle.&quot;&quot;&quot;
+        ...
+
+    async def health_check(self) -&gt; bool: ...
+
+    async def close(self) -&gt; None:
+        &quot;&quot;&quot;Tear down BACKEND-INSTANCE-level resources -- see &quot;Real
+        addition: close() on Sandbox&quot; below for the real leak this
+        exists to prevent and the rule for any new backend.&quot;&quot;&quot;
+        ...
+</code></pre>
+<pre><code class="language-python">class SandboxPool:
+    &quot;&quot;&quot;The public engine. ToolManager and SkillManager depend on this,
+    never on a Sandbox backend directly.&quot;&quot;&quot;
+
+    def __init__(
+        self,
+        backend: Sandbox,
+        *,
+        warm_size: int,
+        max_concurrent: int,
+        acquire_timeout: float = 5.0,
+    ) -&gt; None:
+        &quot;&quot;&quot;`backend` is resolved by CivitasBridge at construction time
+        based on host OS + deployment tier (isolation.md's platform
+        dispatch) — never chosen per-call. `warm_size` and
+        `max_concurrent` implement the bounded-overflow design from
+        system-design.md §6/§7.&quot;&quot;&quot;
+        ...
+</code></pre>
+<hr />
+<h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">@dataclass(frozen=True)
+class SandboxHandle:
+    &quot;&quot;&quot;An opaque reference to one running instance. Callers must not
+    depend on its internal fields — they vary by backend/tier.&quot;&quot;&quot;
+    id: str
+    tier: int
+
+
+ToolCallCallback = Callable[[str, dict], Awaitable[dict]]
+&quot;&quot;&quot;Invoked once per namespace.call(tool, params) the running code makes.
+Delivered via direct ZMQ ipc:// for Tier 0/1, or the guest-side relay
+bridging to vsock / VZVirtioSocketDevice / AF_HYPERV for Tier 2 —
+system-design.md §3. The caller (ToolManager) supplies this; it is where
+the actual tool execution and grant-checking happens, not inside Sandbox
+itself.&quot;&quot;&quot;
+
+
+@dataclass(frozen=True)
+class RunResult:
+    &quot;&quot;&quot;The only thing that crosses back out of the sandbox boundary.
+
+    Deliberately stdout-based, not a magic &quot;return value&quot; mechanism —
+    this matches exactly what SPIKE-code-mode-execution.md validated
+    (the model's generated code prints its answer; that's what comes
+    back), not an idealized structured-value extraction that was never
+    tested.&quot;&quot;&quot;
+
+    success: bool
+    stdout: str                 # capped — see MAX_STDOUT_BYTES below
+    stdout_truncated: bool
+    error_message: str | None   # populated iff success is False; the
+                                 # CODE's own exception/traceback — this
+                                 # is a routine outcome, not a raised
+                                 # SandboxError (see Errors, below)
+    cpu_seconds: float
+    duration_ms: float
+    tool_call_count: int        # matches the OTEL span attribute,
+                                 # system-design.md §7
+
+
+MAX_STDOUT_BYTES = 65536   # 64KB. Exceeding this truncates, sets
+                           # stdout_truncated=True — never silently
+                           # drops data without signaling it happened,
+                           # never raises for a chatty print() loop.
+</code></pre>
+<hr />
+<h2 id="errors">Errors<a class="headerlink" href="#errors" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class SandboxError(Exception):
+    &quot;&quot;&quot;Base for all Sandbox/SandboxPool errors.&quot;&quot;&quot;
+
+
+class SandboxTimeoutError(SandboxError):
+    &quot;&quot;&quot;Code did not complete within the given timeout. The instance is
+    killed; the handle is no longer usable after this — callers must not
+    run() with the same handle.&quot;&quot;&quot;
+
+
+class SandboxCrashedError(SandboxError):
+    &quot;&quot;&quot;The instance died unexpectedly during run() — not a timeout, not
+    a code-level exception. Handle is no longer usable. Matches
+    system-design.md §6's &quot;Sandbox crashes mid-run&quot; row: SandboxPool
+    discards the handle; Civitas supervision (a separate concern) is
+    what actually restarts the underlying supervised process, if this
+    pool is running in service mode.&quot;&quot;&quot;
+
+
+class SandboxPoolExhaustedError(SandboxError):
+    &quot;&quot;&quot;acquire() found no handle within acquire_timeout — both the warm
+    pool and cold-start-up-to-max_concurrent were unavailable. Structured
+    error, not a hang, per system-design.md §6's resolution of this
+    exact failure mode.&quot;&quot;&quot;
+</code></pre>
+<p><strong>Why code-level failures are <em>not</em> exceptions:</strong> if the generated code raises,
+that's a routine, expected outcome the model may legitimately need to see and
+correct — <code>RunResult(success=False, error_message=...)</code>, not a raised Python
+exception propagating through <code>ToolManager</code>. Exceptions are reserved for
+infrastructure failures (timeout, crash, exhaustion) that are genuinely
+exceptional, not "the model wrote code with a bug."</p>
+<hr />
+<h2 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">async def acquire(self) -&gt; SandboxHandle:
+    &quot;&quot;&quot;Get a handle for this deployment's configured tier — never a
+    per-call choice (isolation.md's platform-dispatch principle: the
+    backend is hidden from callers, not just from end users).
+
+    Tries the warm pool first (fast path — Firecracker restore measured
+    at 8–11ms in SPIKE-firecracker-boot-restore-latency.md). If empty
+    and current concurrent count is under max_concurrent, boots a fresh
+    instance on demand (bounded, accepting the cold-boot cost measured
+    in the same spike). If at max_concurrent, queues up to
+    acquire_timeout.
+
+    Raises:
+        SandboxPoolExhaustedError: no handle became available in time.
+    &quot;&quot;&quot;
+
+async def run(
+    self,
+    handle: SandboxHandle,
+    code: str,
+    *,
+    on_tool_call: ToolCallCallback,
+    timeout: float = 30.0,
+) -&gt; RunResult:
+    &quot;&quot;&quot;Execute code inside the instance referenced by handle. Every real
+    tool invocation the code makes calls on_tool_call via the
+    tier-appropriate channel; intermediate results never leave the
+    sandbox boundary — only the final RunResult does (this is the
+    mechanism behind the token-savings measured in
+    SPIKE-code-mode-execution.md, not a diagram simplification).
+
+    After this call returns OR raises, the handle must be passed to
+    release() — run() does not release it implicitly, since a caller
+    may want to inspect handle-adjacent state (not exposed by this
+    Protocol, but reserved) before releasing.
+
+    Raises:
+        SandboxTimeoutError, SandboxCrashedError: handle is no longer
+            usable after either.
+    &quot;&quot;&quot;
+
+async def release(self, handle: SandboxHandle) -&gt; None:
+    &quot;&quot;&quot;Return a handle after use. The underlying instance is ALWAYS
+    terminated — never reused live, regardless of whether run()
+    succeeded, failed, or was never called at all after acquire().
+
+    If the pool is under warm_size after this termination, triggers a
+    background boot_clean() to restore a FRESH instance from the base
+    snapshot and refill the warm slot. This is the corrected version of
+    system-design.md §6's &quot;regrow the pool&quot; language — it is a fresh
+    restore, not a reuse of the just-released instance.&quot;&quot;&quot;
+
+async def close(self) -&gt; None:
+    &quot;&quot;&quot;Real gap found by testing SandboxPool wrapped around a REAL
+    backend (FirecrackerSandbox) rather than only the fast in-memory
+    _FakeBackend used to test the pool's own bookkeeping in isolation:
+    nothing terminates the warm pool's resident instances at shutdown.
+    With SubprocessSandbox this was a real but easy-to-miss leak (an
+    orphaned OS process); with FirecrackerSandbox it is a full,
+    impossible-to-miss orphaned rootfs copy per warm slot, found by
+    inspecting /tmp after real test runs.
+
+    Must be called once, at deployment shutdown, by whichever owner
+    constructed this pool (CivitasBridge.build()'s caller, or a test's
+    own teardown). Waits for any in-flight background refill task
+    (release()'s fire-and-forget boot_clean(), see above) to finish
+    FIRST — otherwise a refill that completes after draining would add
+    one more never-terminated instance to an already-emptied warm
+    list — then terminates every handle still resident in the warm
+    pool and clears it. Safe to call on an already-closed pool (a
+    second call terminates nothing, since the warm pool is already
+    empty and there are no pending refill tasks left to wait for).&quot;&quot;&quot;
+</code></pre>
+<hr />
+<h2 id="what-this-contract-deliberately-does-not-cover">What this contract deliberately does not cover<a class="headerlink" href="#what-this-contract-deliberately-does-not-cover" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Image-baking</strong> (the tool-namespace shim, the Tier-2 ZMQ relay) is
+  <code>SandboxPool</code>'s construction-time responsibility per <code>system-design.md §4</code>,
+  not something <code>acquire</code>/<code>run</code>/<code>release</code> expose — a caller never sees or
+  configures image contents through this contract.</li>
+<li><strong>The <code>vsock</code>/<code>VZVirtioSocketDevice</code>/<code>AF_HYPERV</code> bridge implementation</strong> is
+  internal to each Tier-2 <code>Sandbox</code> backend. This contract specifies that
+  <code>on_tool_call</code> gets invoked correctly regardless of tier — not how each
+  backend's relay achieves that.</li>
+<li><strong>Presidium's grant check</strong> happens in <code>ToolManager</code>, before <code>acquire()</code> is
+  even called (<code>system-design.md §3</code>, step 4) — not inside this contract.</li>
+</ul>
+<h2 id="real-addition-a-queryable-tier-property-closing-contractsmcp-servermds-open-weakisolationerror-gap">Real addition: a queryable <code>tier</code> property, closing <code>contracts/mcp-server.md</code>'s open <code>WeakIsolationError</code> gap<a class="headerlink" href="#real-addition-a-queryable-tier-property-closing-contractsmcp-servermds-open-weakisolationerror-gap" title="Permanent link">&para;</a></h2>
+<p>Neither <code>Sandbox</code> nor <code>SandboxPool</code> originally exposed which isolation tier
+a backend actually provides -- <code>contracts/mcp-server.md</code>'s
+<code>WeakIsolationError</code> needed exactly this and had nothing to check against,
+so its check was accepted-but-inert. Closed by adding a read-only
+<code>tier: int</code> property to both:</p>
+<pre><code class="language-python">class Sandbox(Protocol):
+    @property
+    def tier(self) -&gt; int:
+        &quot;&quot;&quot;0/1/2 -- isolation.md's capability levels. Fixed per backend
+        instance, never changes at runtime.&quot;&quot;&quot;
+        ...
+    # ... boot_clean/execute/terminate/health_check unchanged
+</code></pre>
+<p><code>SandboxPool.tier</code> delegates straight to <code>self._backend.tier</code> -- <code>SandboxPool</code>
+never chooses or changes tier itself, only <code>CivitasBridge</code>'s platform
+dispatch does, once, at construction. <code>ToolManager.tier</code>/<code>SkillManager.tier</code>
+(<code>contracts/managers.md</code>) delegate the same way one level up, so
+<code>FabricaMCPServer</code> can check isolation strength (<code>fabrica.tools.tier</code>)
+without reaching into either manager's private <code>SandboxPool</code> reference.</p>
+<p>A plain <code>int</code>, not an enum -- the only thing ever done with it is a <code>&lt; 2</code>
+comparison; an enum would add ceremony with no behavior this doesn't
+already have.</p>
+<p><strong>Honest consequence, stated directly rather than glossed over</strong>: only
+<code>SubprocessSandbox</code> (Tier 0) is actually implemented anywhere in this
+codebase today. This means, as of this writing, every real
+<code>FabricaMCPServer(kind="http")</code> deployment must pass
+<code>allow_weak_isolation_for_external_callers=True</code> to construct at all --
+that is the fail-closed default working exactly as intended (see
+<code>contracts/mcp-server.md</code>'s own note on this), not a bug to work around.</p>
+<h2 id="firecrackersandbox-real-tier-2-implementation-notes"><code>FirecrackerSandbox</code> -- real Tier 2 implementation notes<a class="headerlink" href="#firecrackersandbox-real-tier-2-implementation-notes" title="Permanent link">&para;</a></h2>
+<p>Implements this exact <code>Sandbox</code> Protocol (<code>src/fabrica/sandbox/firecracker_backend.py</code>),
+validated end to end on real hardware (real <code>vsock</code>, a real tool call
+crossing the VM boundary, a real result returning --
+<a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-vsock-callback-bridge.md">SPIKE-firecracker-vsock-callback-bridge.md</a>).</p>
+<p><strong>Real snapshot/restore now exists, opt-in</strong> (<code>use_snapshot_restore=True</code>,
+PLAN.md item 20a) -- default remains <code>False</code>, <code>boot_clean()</code> cold-boots
+exactly as v1 originally shipped, zero behavior change for any existing
+caller. When enabled, the FIRST <code>boot_clean()</code> lazily cold-boots ONE
+throwaway instance purely to create a reusable golden snapshot (paying
+the real ~1,055ms cold-boot cost from
+<a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md">SPIKE-firecracker-boot-restore-latency.md</a>
+exactly once), then every restore -- including that very first served
+instance -- uses <code>/snapshot/load</code> instead, real ~8-10ms per restore.
+No <code>SandboxPool</code> changes needed -- entirely internal to this class.</p>
+<p>Two real, non-obvious unknowns resolved before shipping, not assumed
+safe: (1) every restored instance gets its OWN vsock path via
+Firecracker's real, documented <code>vsock_override</code> parameter -- verified
+working for concurrent instances on real hardware, not just single-
+instance restore; (2) no equivalent override exists for the rootfs
+block device, so every restored instance shares ONE golden rootfs file
+-- verified this is SAFE for this project's actual usage (each
+restored instance is used for exactly one <code>execute()</code> then terminated,
+so nothing depends on the shared file's own on-disk state afterward)
+via a real, deliberate concurrent-write test, not assumed from theory.</p>
+<p>Only the pre-request "blocked waiting for <code>code</code>" state is covered --
+snapshotting mid-tool-call is a genuinely different, not-yet-validated
+state, named as real, separate future work if ever needed. Full
+mechanism and both real findings:
+<a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-snapshot-restore-vsock-combination.md">SPIKE-firecracker-snapshot-restore-vsock-combination.md</a>.</p>
+<p><strong>Requires a pre-built rootfs with the guest shim already baked in</strong> --
+<code>FirecrackerSandbox</code> does not build this itself; <code>kernel_image_path</code>/
+<code>base_rootfs_path</code> are real, deployment-specific artifacts it receives
+fully-constructed, the same DI shape used for every other injected
+dependency in this project (<code>Summarizer</code>, <code>PresidiumClient</code>). The actual
+baking procedure (mount the rootfs, copy <code>_firecracker_guest_shim.py</code> in)
+was first validated by hand, step by step, in the spike above -- now a
+real, reusable, documented deliverable instead:
+<a href="https://github.com/civitas-io/fabrica/blob/main/scripts/build_firecracker_rootfs.sh"><code>scripts/build_firecracker_rootfs.sh</code></a>,
+documented end to end (including the exact, precisely scoped <code>sudo</code>
+rules needed -- <code>mount</code>/<code>umount</code>/<code>losetup</code> against one fixed mount
+point, plus a <code>cp *.py</code>-scoped rule, not blanket root access) in
+<a href="../../deployment/firecracker-rootfs/">deployment/firecracker-rootfs.md</a>.
+This is what makes a SECOND deployer able to actually produce a working
+image, not just re-read a spike's transcript of one machine's history.</p>
+<p><strong>Real <code>jailer</code> defense-in-depth hardening now exists, opt-in</strong>
+(<code>use_jailer=True</code>, PLAN.md item 21) -- chroot, cgroups, uid/gid drop on
+top of the existing KVM boundary, via Firecracker's own <code>jailer</code> binary.
+<strong>Cold-boot only, by direct decision</strong>: combining <code>use_jailer</code> with
+<code>use_snapshot_restore</code> raises <code>SandboxConfigurationError</code> at
+construction time -- a real, separate, harder combination deliberately
+never attempted ("security over optimization"; snapshot+jailer would be
+a third unvalidated combination on top of two already-separately-proven
+ones). Full, empirically-validated mechanism, including every real
+blocker found and how each was resolved (not theorized):
+<a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md">SPIKE-firecracker-jailer-vsock-integration.md</a>.
+Summary of what makes this genuinely hard, not just "pass a flag":</p>
+<ul>
+<li><code>jailer</code> locks its jail's <code>root/</code> directory to <code>700 fc-jail:fc-jail</code>
+  as part of its own setup -- but the vsock host socket living inside
+  it must stay usable by this (unprivileged) process. Solved by binding</li>
+<li><code>chmod(0o777)</code>-ing that socket BEFORE invoking <code>jailer</code> (while
+  <code>root/</code> is still writable), then relying on the already-open file
+  descriptor surviving the subsequent lockdown -- a real, confirmed
+  Unix property (permission checks happen at bind()/connect() time, not
+  on every later operation via an already-open fd), not a weakening of
+  the jail. No new sudo grant was needed for this specifically.</li>
+<li>Boot configuration goes through Firecracker's own <code>--config-file</code>
+  mechanism (a static JSON document, schema confirmed directly against
+  Firecracker v1.16.1's own source), not the runtime REST API the
+  non-jailed paths use -- the API socket is bound by <code>firecracker</code>
+  itself as <code>fc-jail</code>, not by this process, so the vsock "bind before
+  lockdown" trick does not apply to it. This was confirmed to eliminate
+  the need for a fourth sudo rule that would otherwise have been needed
+  for runtime API calls.</li>
+<li>Termination and cleanup use two SEPARATE, narrowly-scoped sudo rules,
+  not <code>process.kill()</code>: <code>jailer</code>'s own process tree forks (the process
+  this class invokes stays root-owned as a monitor; the real
+  <code>firecracker</code> process is a separate child that fully drops to the
+  jailed uid/gid -- killing the monitor does not kill that child,
+  confirmed on real hardware), and the whole jail directory is
+  <code>fc-jail</code>-owned by the time an instance is done, not this process's
+  own to remove directly.</li>
+</ul>
+<p>Requires real infrastructure already set up on the host (a dedicated
+low-privilege user, a chroot base directory, and four narrowly-scoped
+sudoers rules -- start, terminate, stage, cleanup) via
+<a href="https://github.com/civitas-io/fabrica/blob/main/scripts/setup_firecracker_jailer.sh"><code>scripts/setup_firecracker_jailer.sh</code></a>
+(idempotent, requires real interactive root, run once by a human --
+not something application code triggers itself) and
+<a href="https://github.com/civitas-io/fabrica/blob/main/scripts/stage_jailer_resources.sh"><code>scripts/stage_jailer_resources.sh</code></a>
+(invoked by <code>FirecrackerSandbox</code> itself at boot time, via the
+already-approved sudo rule).</p>
+<p><strong>One real, pre-existing, named limitation, not introduced by this
+work</strong>: all jails currently share ONE <code>fc-jail</code> uid/gid, for simplicity
+-- Firecracker's own <code>prod-host-setup.md</code> recommends per-instance
+unique uid/gid pairs specifically so a broken-out-of jail can't touch
+another jail's resources. A known, accepted tradeoff of this project's
+simplicity choice, not fixed here -- worth revisiting if this ever
+needs to harden further (a uid pool, one per concurrent instance).</p>
+<p><strong>Two real resource leaks found and fixed by inspecting the filesystem
+after real test runs, not assumed clean</strong>: <code>terminate()</code> was cleaning up
+the <code>{vsock_uds}_{port}</code> guest-connection proxy socket but not
+<code>vsock_uds</code> itself (Firecracker's own separate vsock control path); and
+<code>boot_clean()</code>'s own failure paths (a guest that never sends "ready",
+timeout, unexpected first message) weren't cleaning up ANY of the files
+they'd created before raising -- only the success path was. Both fixed
+with one shared <code>_cleanup_files()</code> helper used everywhere an instance is
+torn down, successfully or not. A dedicated regression test
+(<code>test_terminate_removes_every_file_it_created</code>) asserts this directly by
+checking <code>/tmp</code> for leftovers after <code>terminate()</code>, not just that
+<code>terminate()</code> runs without raising.</p>
+<p><strong><code>cpu_seconds</code> is now real, measured per-call CPU time -- resolved,
+not still <code>0.0</code>.</strong> Checked directly against the real, bundled
+<code>firecracker_spec-v1.16.1.yaml</code> OpenAPI spec first, not assumed:
+Firecracker's REST <code>/metrics</code> endpoint is write-only (it configures a
+named pipe/file Firecracker periodically dumps operational counters to
+-- not a queryable CPU-seconds value at all), so "wire up Firecracker's
+own metrics API" -- this contract's own original framing of the gap --
+was never actually the right mechanism. Real per-VM CPU accounting
+instead reads <code>/proc/&lt;firecracker_pid&gt;/stat</code> from the HOST side (the
+same mechanism <code>libvirt</code>/<code>virsh domstats</code> and most other VMM CPU-
+accounting layers use): Firecracker runs its vCPU(s) as threads WITHIN
+one process, not separate child processes, so that process's aggregate
+<code>utime+stime</code> already includes all real guest CPU execution. Reported
+as a DELTA against this same process's own reading at the start of
+<code>execute()</code>, not a lifetime total -- this metric doesn't have the
+problem that made <code>Sandbox</code>'s memory-bytes dimension deliberately left
+unmeasured (<code>RUSAGE_CHILDREN</code>'s <code>ru_maxrss</code> is a lifetime high-water-
+mark; <code>/proc</code>'s <code>utime+stime</code> genuinely accumulates monotonically, so a
+delta against it is real). Verified on the homelab, not assumed: a real
+CPU-bound guest loop measured ~2.81s of delta CPU time closely matching
+its own ~2.81s wall-clock duration (a single vCPU, CPU-bound task, so
+CPU time ≈ wall time is the expected, confirmed shape); a trivial
+<code>print(1)</code> measured ~0.000s. Returns <code>0.0</code> (not raising) if the process
+has already exited between reads -- the same honest-gap posture the
+previous always-<code>0.0</code> value held, never worse than before this existed.</p>
+<p><strong>Network isolation is real and now verified, not just implied</strong> --
+<code>FirecrackerSandbox</code> never calls Firecracker's own <code>/network-interfaces</code>
+API (confirmed by inspecting <code>boot_clean()</code>'s actual REST calls: only
+<code>/boot-source</code>, <code>/drives/rootfs</code>, <code>/machine-config</code>, <code>/actions</code>), so the
+guest boots with NO network device at all -- not a policy-filtered one,
+a genuinely absent one. This was always the design intent
+(<code>isolation.md</code>: <code>vsock</code> "without exposing IP networking"), but until
+verified for real on the homelab (<code>kodiak@darkenergy</code>, real KVM), it was
+an implication of the code's omissions, not a tested guarantee --
+exactly the gap named when <code>SrtSandbox</code>'s own network denial was
+reviewed and found to have real tests where this had none.</p>
+<p>Verified two ways, both against a real booted microVM, not assumed:
+a raw <code>socket.create_connection</code> to <code>8.8.8.8:53</code> fails immediately with
+<code>OSError: [Errno 101] Network is unreachable</code>; <code>socket.gethostbyname
+('example.com')</code> fails immediately with <code>socket.gaierror: [Errno -3]
+Temporary failure in name resolution</code>. Both fail structurally
+differently from <code>SrtSandbox</code>'s own network denial: <code>srt</code> still has a
+real interface to route through and denies at the firewall/proxy layer,
+which is why its own equivalent test needs a live connection attempt
+that gets rejected; here there is no interface to route through at
+all, so the failure is immediate and at the socket/DNS layer itself,
+not a policy decision that could in principle be misconfigured away.</p>
+<h2 id="real-addition-close-on-sandbox-backend-instance-level-cleanup-distinct-from-terminates-per-handle-scope">Real addition: <code>close()</code> on <code>Sandbox</code> -- backend-instance-level cleanup, distinct from <code>terminate()</code>'s per-handle scope<a class="headerlink" href="#real-addition-close-on-sandbox-backend-instance-level-cleanup-distinct-from-terminates-per-handle-scope" title="Permanent link">&para;</a></h2>
+<p><strong>A real, confirmed leak, found by reviewing <code>SrtSandbox</code> (Tier 1) after
+it was implemented, not a hypothetical one.</strong> <code>SrtSandbox.__init__</code>
+allocates a directory under <code>/tmp</code> shared across every <code>SandboxHandle</code>
+that instance ever produces via <code>boot_clean()</code> (used to hold each
+handle's per-execution socket/settings files). <code>terminate()</code> correctly
+cleaned up the files inside it per handle -- but nothing anywhere ever
+removed the directory itself, since <code>SandboxPool.close()</code> at the time
+only called <code>terminate()</code> per warm handle. Confirmed by inspecting
+<code>/tmp</code> directly, not assumed: hundreds of empty, never-reclaimed
+directories had already accumulated purely from normal dev/test
+iteration before this was caught.</p>
+<p><strong>Why this couldn't be fixed inside <code>terminate()</code> itself</strong>: the leaked
+directory is scoped to the BACKEND INSTANCE, not to any one handle --
+<code>SandboxPool</code> calls <code>boot_clean()</code> repeatedly against the same backend
+to refill its warm pool, so multiple live handles can share one
+instance's directory at any given time. Removing it inside <code>terminate()</code>
+(which runs per handle, on every <code>release()</code>, while sibling handles from
+the same instance may still be warm and in active use) would be unsafe.
+The directory's cleanup genuinely belongs at backend-INSTANCE lifecycle
+end -- which, before this fix, nothing in the <code>Sandbox</code> Protocol ever
+represented at all.</p>
+<p><strong>Resolved</strong>: <code>Sandbox</code> gained a fourth lifecycle method, <code>close()</code>,
+called exactly once by <code>SandboxPool.close()</code>, AFTER every warm handle is
+already terminated -- so by the time it runs, no handle from that
+instance is still live. <code>SubprocessSandbox</code>/<code>FirecrackerSandbox</code> both
+implement it as a genuine no-op (verified, not assumed: neither
+allocates anything beyond a reference to a shared, externally-owned
+directory -- every real resource either one owns is already per-handle
+and already torn down by <code>terminate()</code>). <code>SrtSandbox.close()</code> is the
+real fix: <code>shutil.rmtree(self._socket_dir, ignore_errors=True)</code>.</p>
+<p><strong>The rule for any NEW <code>Sandbox</code> backend, stated here so it's picked up
+by construction, not rediscovered by the next leak</strong>: if <code>__init__</code>
+allocates anything beyond reading configuration -- a directory, an open
+connection, a subprocess, a temp file -- that is not scoped to one
+<code>SandboxHandle</code>, that resource's teardown belongs in <code>close()</code>, not
+<code>terminate()</code>. <code>close()</code> must be safe to call even if the backend was
+constructed and closed without <code>boot_clean()</code>/<code>execute()</code> ever being
+called, and safe to call more than once.</p>
+<p>A second, related class of the same bug was found and fixed across the
+test suite while verifying this fix, not just in <code>SrtSandbox</code> itself:
+most of <code>CivitasBridge(...).build()</code>'s call sites in this project's own
+tests never called <code>fabrica.close()</code> at all, which was harmless by
+accident under Tier 0 (<code>SubprocessSandbox</code>, nothing instance-level to
+leak) but became a real leak the moment real platform dispatch could
+select <code>SrtSandbox</code> on a host that has <code>srt</code> on PATH -- confirmed
+directly (460+ leaked directories from ordinary dev/test iteration
+before any of these were fixed). Fixed by either pinning
+<code>sandbox_backend=SubprocessSandbox()</code> for tests that don't care about
+sandbox tier at all (matching a pattern this project's own <code>SrtSandbox</code>
+implementation had already established for exactly this class of test
+fragility), or adding a missing <code>fabrica.close()</code>/<code>backend.close()</code> call
+where real dispatch is genuinely the point of the test.</p>
+<h2 id="real-addition-tracer-di-and-trace_idparent_span_id-on-acquirerun">Real addition: <code>tracer</code> DI and <code>trace_id</code>/<code>parent_span_id</code> on <code>acquire()</code>/<code>run()</code><a class="headerlink" href="#real-addition-tracer-di-and-trace_idparent_span_id-on-acquirerun" title="Permanent link">&para;</a></h2>
+<p><code>SandboxPool</code> now accepts an optional <code>tracer: fabrica.observability
+.Tracer | None = None</code> (defaults to <code>NullTracer()</code>, same DI shape as
+everywhere else). <code>acquire()</code>/<code>run()</code> both gained optional <code>trace_id</code>/
+<code>parent_span_id</code> keyword parameters -- default to "start a fresh root
+span", so a direct caller never has to think about tracing to use these
+correctly, but <code>execute_in_sandbox</code> passes its own outer span's identity
+down so <code>fabrica.sandbox.acquire</code>/<code>fabrica.sandbox.run</code> nest as real
+children, not disconnected spans. Full design:
+<a href="../../system-design/#7-observability-spans-this-system-emits">system-design.md §7</a>.</p>
+<h2 id="open-items-for-implementation">Open items for implementation<a class="headerlink" href="#open-items-for-implementation" title="Permanent link">&para;</a></h2>
+<ol>
+<li>~~<code>boot_clean()</code>'s background-replenishment trigger... not decided
+   here.~~ <strong>Resolved during implementation</strong>: fire-and-forget, tracked
+   in a <code>set</code> of tasks specifically so <code>SandboxPool.close()</code> can wait
+   for any in-flight one before draining the warm pool (see <code>close()</code>
+   above and its own real-gap note).</li>
+<li>~~What happens if <code>release()</code> is called with a handle that was never
+   <code>acquire()</code>'d, or already released?~~ <strong>Resolved, consistent with
+   <code>Retriever.deregister()</code>'s precedent as guessed here</strong>: both real
+   backends treat an unknown/already-terminated handle id as a no-op,
+   not an error -- <code>FirecrackerSandbox.terminate()</code> does
+   <code>self._instances.pop(handle.id, None)</code> and returns early;
+   <code>SubprocessSandbox.terminate()</code>'s <code>unlink(missing_ok=True)</code> is
+   harmless regardless. Found true by inspection, not newly added.</li>
+<li>~~Whether <code>run()</code>'s <code>on_tool_call</code> callback itself needs its own
+   timeout...~~ <strong>Resolved: yes.</strong> New optional <code>tool_call_timeout: float
+   | None = None</code> on <code>Sandbox.execute()</code>/<code>SandboxPool.run()</code>, threaded
+   through <code>execute_in_sandbox</code>/<code>ToolManager.run_code()</code>/<code>SkillManager
+   .run()</code>. <code>None</code> (the default) preserves the original behavior exactly.
+   When set, a hung tool call raises the new <code>SandboxToolCallTimeoutError</code>
+   (a <code>SandboxTimeoutError</code> subclass, same consequence -- instance killed,
+   handle unusable -- just attributed specifically) well before the much
+   larger overall <code>timeout</code> would have caught it, on both backends.</li>
+</ol>
+<p><strong>A real, subtle bug found and fixed while implementing this on
+   <code>SubprocessSandbox</code>, not assumed correct</strong>: the original
+   <code>asyncio.wait_for(proc.communicate(...), timeout=timeout)</code> structure
+   ran <code>serve_task</code> (the tool-call loop) as a fully separate fire-and-
+   forget task -- a hung/timed-out tool call inside it was never actually
+   observed by <code>execute()</code> at all, silently consuming the FULL overall
+   <code>timeout</code> budget before a generic, unattributed <code>SandboxTimeoutError</code>
+   finally fired. Fixed by racing both tasks with
+   <code>asyncio.wait(..., return_when=FIRST_COMPLETED)</code>. That fix itself
+   surfaced a second, genuinely nasty bug: cleanup code in <code>finally</code>
+   awaited the already-exception-holding <code>serve_task</code> while only
+   suppressing <code>asyncio.CancelledError</code>, not the actual exception it
+   held -- silently re-raising the SAME exception type a second time,
+   which skipped every remaining cleanup statement (<code>ctx.term()</code>
+   included) without ever surfacing as a visible test failure, because
+   the re-raised exception happened to match what the calling test's
+   <code>pytest.raises()</code> was already expecting. The leaked <code>zmq.asyncio
+   .Context</code> then hung indefinitely during a full garbage-collection
+   pass at process shutdown (confirmed via a real stack dump, not
+   guessed) -- entirely invisible unless a test explicitly checks the
+   process exits cleanly, not just that assertions pass. Fixed by
+   suppressing any exception (not just <code>CancelledError</code>) when draining
+   an already-completed task purely for cleanup purposes.
+4. ~~<code>FirecrackerSandbox</code>'s snapshot/restore support...~~ <strong>Resolved,
+   real and shipped, opt-in (<code>use_snapshot_restore=True</code>, PLAN.md item
+   20a).</strong> The spike found and fixed two real, non-fundamental gaps
+   (a stale vsock socket file <code>SIGKILL</code> never cleans up; the guest
+   shim's own lack of reconnect logic around a real, correct
+   <code>ConnectionResetError</code> on resume), verified against a throwaway
+   patched shim first, then ported into the real, shipped guest shim
+   and <code>FirecrackerSandbox</code> itself -- see this contract's own
+   "<code>FirecrackerSandbox</code> -- real Tier 2 implementation notes" above for
+   the full mechanism, both real unknowns resolved along the way
+   (<code>vsock_override</code> for concurrent instances; the shared-golden-rootfs
+   safety argument), and the 8 new tests verified on real hardware. Full
+   original spike narrative: <code>specs/archive/spikes/SPIKE-firecracker-
+   snapshot-restore-vsock-combination.md</code>.
+5. ~~<code>FirecrackerSandbox</code> uses the existing, general-purpose Ubuntu
+   24.04 rootfs image...~~ <strong>Resolved: a real, minimal, purpose-built
+   base image now exists</strong> (<code>scripts/build_firecracker_minimal_base.sh</code>,
+   <code>scripts/firecracker-minimal-base.Dockerfile</code>) -- Ubuntu 24.04 +
+   <code>python3</code> only, no systemd, no other packages, built via a real
+   <code>docker build</code>/<code>export</code> + <code>mke2fs -t ext4 -d</code> (no new <code>sudo</code> scope
+   needed). Real, measured result on the homelab: apparent size 1.0G -&gt;
+   300M, actual on-disk size 170M -&gt; 60M, the per-instance rootfs copy
+   <code>boot_clean()</code> does for every sandbox instance dropped ~945ms -&gt;
+   ~265ms (a real ~3.5x speedup, roughly proportional to file size).
+   Guest kernel boot time itself did not meaningfully change -- stated
+   honestly as a disk-footprint/copy-time win, not a boot-latency win.
+   Full detail, including a real dead end tried and rejected first (the
+   official <code>python:3.12-slim</code> Docker image installs Python at
+   <code>/usr/local/bin/</code>, not the fixed <code>/usr/bin/python3</code> this backend's
+   kernel boot args require -- confirmed via a real kernel panic on real
+   hardware, not assumed): <code>docs/deployment/firecracker-rootfs.md</code>.
+6. ~~<code>jailer</code> (cgroups/namespaces/seccomp/chroot hardening) remains
+   completely unexplored...~~ <strong>Resolved: real, shipped, opt-in
+   (<code>use_jailer=True</code>, PLAN.md item 21), cold-boot only.</strong> See this
+   contract's own "<code>FirecrackerSandbox</code> -- real Tier 2 implementation
+   notes" above for the full mechanism -- the vsock-inside-a-locked-
+   chroot problem, the <code>--config-file</code> boot mechanism, and the four
+   narrowly-scoped sudoers rules involved. Full research trail and every
+   empirical finding:
+   <code>specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md</code>.
+   5 new tests verified on real hardware (3 stable runs, zero leaked
+   processes or files each time).
+7. ~~<code>FirecrackerSandbox</code>'s real CPU-second accounting...~~ <strong>Resolved:
+   real, measured per-call CPU time via <code>/proc/&lt;pid&gt;/stat</code> on the host,
+   NOT Firecracker's own metrics API</strong> (checked directly against the
+   real OpenAPI spec: <code>/metrics</code> is write-only, never a queryable
+   CPU-seconds value) -- see "Real addition" above for the full
+   resolution and homelab verification.</p>
+<h2 id="correction-applied-to-system-designmd">Correction applied to <code>system-design.md</code><a class="headerlink" href="#correction-applied-to-system-designmd" title="Permanent link">&para;</a></h2>
+<p>§6/§7's "cold-started overflow sandbox... folded back into the warm pool
+rather than discarded" language has been corrected there to match this
+contract's <code>release()</code> semantics (fresh restore, not reuse) — see the note in
+<a href="../../system-design/">system-design.md §6</a>, which credits this contract as the
+source of the correction rather than silently fixing it in both places at once.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Apache 2.0 License
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/civitas-io/fabrica" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "navigation.instant", "navigation.indexes", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

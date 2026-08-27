@@ -1,0 +1,2300 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The context layer for Python agents">
+      
+      
+      
+        <link rel="canonical" href="https://civitas-io.github.io/fabrica/problem-definition/">
+      
+      
+        <link rel="prev" href="../personas/">
+      
+      
+        <link rel="next" href="../self-reflection-report/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Problem Definition - Fabrica</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#problem-definition" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Fabrica" class="md-header__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Fabrica
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Problem Definition
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../context-layer/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../contracts/civitas-bridge/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Contracts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../deployment/firecracker-rootfs/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Deployment
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../personas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reflection & Critique
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../PLAN/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plan
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Fabrica" class="md-nav__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Fabrica
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../system-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../civitas-presidium-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas + Presidium Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../landscape/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Landscape
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../context-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tool-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skills-gateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retrieval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fabrica as an MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/civitas-bridge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas Bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/managers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/managed-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managed Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/retriever/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retriever
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/firecracker-rootfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firecracker Rootfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reflection & Critique
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reflection & Critique
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problem Definition
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problem Definition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-read-this-doc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to read this doc
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-priya-agent-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Priya — Agent Builder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-marcus-platform-production-engineer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Marcus — Platform / Production Engineer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-elena-security-governance-engineer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Elena — Security / Governance Engineer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-devon-skill-tool-author" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Devon — Skill / Tool Author
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-alicia-engineering-decision-maker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Alicia — Engineering Decision Maker
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-cutting-decisions-made-during-define" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-cutting decisions made during Define
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../self-reflection-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Reflection Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../critique/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Critique: Design vs. Evidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-read-this-doc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to read this doc
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-priya-agent-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Priya — Agent Builder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-marcus-platform-production-engineer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Marcus — Platform / Production Engineer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-elena-security-governance-engineer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Elena — Security / Governance Engineer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-devon-skill-tool-author" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Devon — Skill / Tool Author
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-alicia-engineering-decision-maker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Alicia — Engineering Decision Maker
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-cutting-decisions-made-during-define" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-cutting decisions made during Define
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="problem-definition">Problem Definition<a class="headerlink" href="#problem-definition" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Define phase, complete · <strong>Last updated:</strong> 2026-08
+<strong>Precedes:</strong> <a href="../personas/">personas.md</a> (Discovery) · <strong>Feeds:</strong> architecture docs
+(context-layer.md, tool-execution.md, isolation.md, skills-gateway.md, memory.md)</p>
+<hr />
+<h2 id="how-to-read-this-doc">How to read this doc<a class="headerlink" href="#how-to-read-this-doc" title="Permanent link">&para;</a></h2>
+<p>Each persona from <a href="../personas/">personas.md</a> gets a <strong>problem statement</strong> (specific,
+falsifiable — should point at an exact moment the pain occurs), <strong>success metrics</strong>
+(how we'd know it's solved), and <strong>non-goals</strong> (what this slice explicitly does not
+solve). Order follows the prioritization signal from personas.md: whoever's job
+blocks everyone else if unsolved goes first.</p>
+<pre><code>1. Priya   — Agent Builder                — P1 gate (nobody else matters without agents built on this)
+2. Marcus  — Platform/Production Engineer — P2 gate (the stated differentiator; without it it's &quot;just retrieval, no execution&quot;)
+3. Elena   — Security/Governance Engineer — governance seams, can lag slightly (Presidium covers policy)
+4. Devon   — Skill/Tool Author            — fast-follow, rides the SKILL.md wave
+5. Alicia  — Engineering Decision Maker   — aggregator persona, not new build scope
+</code></pre>
+<hr />
+<h2 id="1-priya-agent-builder">1. Priya — Agent Builder<a class="headerlink" href="#1-priya-agent-builder" title="Permanent link">&para;</a></h2>
+<p><strong>JTBD:</strong> <em>When I add a capability to my agent, I want it to just work without me
+hand-managing token budgets, so I can ship without babysitting the context window.</em></p>
+<p><strong>Problem statement</strong></p>
+<blockquote>
+<p>Today, adding a tool to a Civitas agent means hand-authoring a JSON schema, wiring
+it into the LLM call's <code>tools</code> list, and — with no library help — watching schema
+tokens grow linearly and untracked as the tool count rises. There is no primitive
+that lets a developer add a capability and have retrieval, execution, and context
+budget handled automatically. The pain is invisible at 5 tools and acute at 50.</p>
+</blockquote>
+<p><strong>Success metrics</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Time-to-first-tool-call</td>
+<td><code>pip install fabrica</code> \u2192 first working tool call in <strong>&lt; 5 minutes</strong>, no external services</td>
+</tr>
+<tr>
+<td>Schema-token overhead is flat, not linear in N</td>
+<td>bounded overhead per call whether 5 or 500 tools are registered</td>
+</tr>
+<tr>
+<td>Zero required infra for hello-world</td>
+<td>Tier-0 sandbox + in-memory index, no Docker/DB/Firecracker to try it</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Non-goals</strong></p>
+<ul>
+<li>Production-grade isolation (Marcus's job, P2 — Priya gets Tier 0 free, upgrades later with no code changes)</li>
+<li>Cross-agent/cross-team tool governance (Elena's job, Presidium-side)</li>
+<li>A management UI/dashboard for tool inventories</li>
+<li>Optimizing for enterprise-scale registries (1000s of tools) in v1</li>
+</ul>
+<hr />
+<h2 id="2-marcus-platform-production-engineer">2. Marcus — Platform / Production Engineer<a class="headerlink" href="#2-marcus-platform-production-engineer" title="Permanent link">&para;</a></h2>
+<p><strong>JTBD:</strong> <em>When agents run model-generated code in prod, I want provable isolation
+and a scalable sandbox pool, so a bad run can't touch the host or blow the budget.</em></p>
+<p><strong>Problem statement</strong></p>
+<blockquote>
+<p>Today, running model-generated or tool-invoked code from an LLM agent in
+production means either trusting it in-process (no isolation) or standing up
+bespoke sandboxing infrastructure per team. There is no drop-in, tiered isolation
+primitive a Civitas-based agent can adopt without redesigning its execution path.
+The risk is invisible until an escape, a runaway resource consumer, or a leaked
+credential happens — at which point it's an incident, not a design review.</p>
+</blockquote>
+<p><strong>Success metrics</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Zero-code-change tier upgrade</td>
+<td>Tier 0 \u2192 Tier 1 (gVisor) \u2192 Tier 2 (Firecracker) is a <strong>config change only</strong></td>
+</tr>
+<tr>
+<td>Warm-pool restore latency</td>
+<td>p99 in <strong>single-digit ms</strong> from a Firecracker snapshot</td>
+</tr>
+<tr>
+<td>Zero credential leakage</td>
+<td><strong>Resolved by decision, not by hardening an injection path</strong> -- see <a href="../credentials/">credentials.md</a>: <code>Sandbox</code> gets no credential-injection mechanism at all, so there is no leakage path through the sandbox boundary to defend in the first place. Validated end to end with a real, independently-built credential broker (Tessera) in <a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-tessera-credential-integration.md">SPIKE-tessera-credential-integration.md</a>.</td>
+</tr>
+<tr>
+<td>Self-healing pool</td>
+<td>a crashed sandbox-pool process restarts automatically under Civitas supervision</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Non-goals</strong></p>
+<ul>
+<li>No custom hypervisor work — wrap Firecracker/gVisor/Kata, never reimplement isolation primitives</li>
+<li>No multi-region/global pool orchestration in v1 — single-cluster first</li>
+<li>No hosted managed-sandbox SaaS (see <a href="../tool-execution/">tool-execution.md</a> — build/maintain, don't operate)</li>
+<li>GPU-in-sandbox — deferred (open question in <a href="../isolation/">isolation.md</a>)</li>
+</ul>
+<hr />
+<h2 id="3-elena-security-governance-engineer">3. Elena — Security / Governance Engineer<a class="headerlink" href="#3-elena-security-governance-engineer" title="Permanent link">&para;</a></h2>
+<p><strong>JTBD:</strong> <em>When an agent calls a tool or executes generated code, I want to control
+and audit exactly what it can reach — and how much of it — so I can prove compliance
+without slowing builders down.</em> (widened to include consumption, not just reach —
+see the usage/budget note below)</p>
+<p><strong>Problem statement</strong></p>
+<blockquote>
+<p>Today, once an agent is running, there's no single place to see or bound what it
+actually touched — which tools it called, what code it executed, what memory it
+read, and how much of each it consumed against a team's budget. Grants exist as
+config, but compliance requires proving what <em>happened</em>, not just what was
+<em>allowed</em>. Without emitted, structured events at every execution point, an audit
+is a forensic reconstruction, not a query.</p>
+</blockquote>
+<p><strong>Success metrics</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Every execution point emits an event</td>
+<td>100% of tool calls, sandbox runs, memory ops, skill invocations produce a structured audit + usage event</td>
+</tr>
+<tr>
+<td>Grant/budget denial happens before execution</td>
+<td>0 cases of a denied action executing before the deny is processed</td>
+</tr>
+<tr>
+<td>No secret ever appears in an event payload</td>
+<td>automated redaction test on every emitted event</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Non-goals</strong></p>
+<ul>
+<li>Fabrica does not implement the policy engine, grant model, or usage ledger itself — it emits events and enforces pre-flight checks Presidium returns (see <a href="../civitas-presidium-integration/#usage-budget-ceilings-metering-vs-enforcement">civitas-presidium-integration.md</a>)</li>
+<li>No compliance dashboard/reporting UI — that's <code>presidium-audit</code>'s job, consuming these events</li>
+<li>Fabrica doesn't decide <em>what</em> is compliant — only that every reachable action is observable</li>
+<li><strong>Log tamper-evidence (signatures, hash-chaining) — deferred, not dropped.</strong> Ship the emission pipeline working end-to-end first; add integrity guarantees once there's a real log to protect.</li>
+</ul>
+<hr />
+<h2 id="4-devon-skill-tool-author">4. Devon — Skill / Tool Author<a class="headerlink" href="#4-devon-skill-tool-author" title="Permanent link">&para;</a></h2>
+<p><strong>JTBD:</strong> <em>When I want my capability adopted, I want a standard packaging format
+with clear discovery, so it gets used correctly and only when relevant.</em></p>
+<p><strong>Problem statement</strong></p>
+<blockquote>
+<p>Today, packaging a capability for reuse means either hand-rolling a bespoke
+integration per consuming framework, or hoping a description string is enough for
+an LLM to find it among dozens of others. <code>SKILL.md</code> is emerging as the portable
+standard, but no Python agent runtime loads it natively — authors either write for
+Claude-specific tooling or roll their own loader per project. The result: a skill
+gets authored once and used inconsistently, or never surfaces when it's actually
+relevant.</p>
+</blockquote>
+<p><strong>Success metrics</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Write once, run anywhere</td>
+<td>a <code>SKILL.md</code> package loads unmodified across any Fabrica-based agent</td>
+</tr>
+<tr>
+<td>Discovery precision</td>
+<td>correct skill surfaces in top-3 candidates for a benchmark task set</td>
+</tr>
+<tr>
+<td>Flat index cost</td>
+<td>loading the skill index (names + descriptions only) stays token-bounded regardless of skill count — achieved via the shared <code>find</code> primitive in <a href="../retrieval/">retrieval.md</a>, not the original per-skill-index design (correction logged in <a href="../critique/">critique.md</a>)</td>
+</tr>
+<tr>
+<td>Time to first invocation</td>
+<td>a new <code>SKILL.md</code> is loadable and callable in minutes, no custom glue code</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Non-goals</strong></p>
+<ul>
+<li>No new skill format — conform to <code>SKILL.md</code>, full stop</li>
+<li>No skill marketplace/registry UI in v1</li>
+<li>No skill versioning/dependency resolution in v1 — flagged as a future concern</li>
+<li><strong>Third-party skill trust/signing — deferred, not dropped.</strong> Same posture as Elena's log-tamper deferral: get discovery + loading working first, add provenance once there's a real ecosystem to protect.</li>
+<li><strong>Disambiguation among overlapping skills is real but explicitly not solved here.</strong> It's the same failure mode as tool-selection accuracy degrading past ~20\u201330 candidates — elevated to a cross-cutting design question spanning tools, skills, and memory search, not a skills-only fix. See <a href="../skills-gateway/#open-questions">skills-gateway.md</a>.</li>
+</ul>
+<hr />
+<h2 id="5-alicia-engineering-decision-maker">5. Alicia — Engineering Decision Maker<a class="headerlink" href="#5-alicia-engineering-decision-maker" title="Permanent link">&para;</a></h2>
+<p><strong>JTBD:</strong> <em>When choosing agent infrastructure, I want an open, standards-aligned
+layer not locked to one model vendor, so we keep flexibility as the ecosystem
+shifts.</em></p>
+<p><strong>Structural note:</strong> Alicia doesn't generate new build scope. She's the <strong>aggregator
+persona</strong> — her job is satisfied entirely by personas 1\u20134's slices being genuinely
+true, plus evidence that they are. Solving her with new features would be solving a
+marketing problem with engineering effort.</p>
+<p><strong>Problem statement</strong></p>
+<blockquote>
+<p>Teams evaluating agent infrastructure face a false choice: adopt vendor-native
+features (fast-moving, but locked to one model provider's roadmap) or build
+bespoke glue in-house (flexible, but a maintenance tax reinventing solved
+problems). There's no standards-aligned layer delivering tool retrieval, sandboxed
+execution, skills, and memory without betting the roadmap on one vendor, or paying
+indefinitely to DIY it.</p>
+</blockquote>
+<p><strong>Success metrics (evidence artifacts, not new features)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model-provider portability</td>
+<td>swapping the underlying LLM requires <strong>zero changes</strong> to tool/skill/memory code</td>
+</tr>
+<tr>
+<td>Migration cost from vendor lock-in</td>
+<td>a real agent hand-wired to one model's native tool-search ports to Fabrica with a measurable before/after (tokens, LOC)</td>
+</tr>
+<tr>
+<td>Standards-compliance checklist</td>
+<td>Fabrica conforms to <code>SKILL.md</code> and other open standards wherever one exists; zero proprietary formats invented needlessly</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Non-goals</strong></p>
+<ul>
+<li>No dedicated marketing/distribution engine — satisfied by personas 1\u20134's artifacts</li>
+<li>No new build scope beyond what Priya/Marcus/Elena/Devon already require</li>
+</ul>
+<hr />
+<h2 id="cross-cutting-decisions-made-during-define">Cross-cutting decisions made during Define<a class="headerlink" href="#cross-cutting-decisions-made-during-define" title="Permanent link">&para;</a></h2>
+<p>These came up while defining individual personas but apply platform-wide. Each is
+already reflected in the relevant design doc; listed here so the reasoning trail
+isn't lost.</p>
+<table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Where it's captured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Build the <code>find</code> interface/aggregation layer (real gap); wrap Tier-1 embedding engines (LlamaIndex/LangChain, later prx) rather than reimplementing retrieval; never operate it as a hosted multi-tenant service</td>
+<td><a href="../tool-execution/">tool-execution.md</a>, <a href="../retrieval/">retrieval.md</a>, <a href="../landscape/#6-tool-search-retrieval-backends-a-two-tier-market">landscape.md</a></td>
+</tr>
+<tr>
+<td><code>find</code>/tools-as-code lives in <strong>Fabrica</strong>, not the Rust toolchain (prx/tessera) — different consumer (the model, mid-inference) and governance/supervision needs that the toolchain doesn't have</td>
+<td><a href="../tool-execution/#why-this-lives-in-fabrica-not-the-rust-toolchain-prxtessera">tool-execution.md</a></td>
+</tr>
+<tr>
+<td>Usage/budget ceilings split into <strong>metering</strong> (Fabrica emits) vs <strong>enforcement</strong> (Presidium decides) — not a fourth system, an extension of Presidium's already-claimed cost-tracking scope</td>
+<td><a href="../civitas-presidium-integration/#usage-budget-ceilings-metering-vs-enforcement">civitas-presidium-integration.md</a></td>
+</tr>
+<tr>
+<td><code>Scope</code> gains <code>team_id</code>, shared between <code>MemoryStore</code> and the usage ledger</td>
+<td><a href="../memory/">memory.md</a>, <a href="../civitas-presidium-integration/">civitas-presidium-integration.md</a></td>
+</tr>
+<tr>
+<td>Disambiguation among overlapping tools/skills is <strong>resolved by unification</strong> (one <code>Retriever</code> engine, one <code>find(query, kind)</code> surface), not deferred — memory search intentionally kept separate (different semantics) but shares the same engine</td>
+<td><a href="../retrieval/">retrieval.md</a></td>
+</tr>
+<tr>
+<td>Two <strong>deferred-not-dropped</strong> items on the same footing: log tamper-evidence (Elena) and skill trust/signing (Devon) — both supply-chain-adjacent, both wait until the base feature works</td>
+<td>this doc, \u00a73 and \u00a74</td>
+</tr>
+<tr>
+<td><strong>Post-Define, surfaced during Validate/Critique:</strong> code-mode (the actual headline, not just the <code>find</code> fallback) is empirically validated — lower token cost <em>and</em> better correctness than direct tool-calling</td>
+<td><a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md">SPIKE-code-mode-execution.md</a>, <a href="../critique/">critique.md</a></td>
+</tr>
+<tr>
+<td><strong>Post-Define:</strong> isolation backend is platform-dispatched (auto-detected per host OS) and deliberately hidden from users — a stated exception to how Civitas normally exposes config</td>
+<td><a href="../isolation/">isolation.md</a>, <a href="../critique/">critique.md</a></td>
+</tr>
+<tr>
+<td><strong>Post-Define:</strong> engineering principle — where Fabrica <em>builds</em> compute internals, Rust with a Python binding, not pure Python; wrapped libraries (Mem0, prx, LlamaIndex) are unaffected</td>
+<td><a href="../context-layer/#engineering-principle-rust-for-compute-python-for-interface">context-layer.md</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="whats-next">What's next<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
+<p><strong>Update — this section is stale in its original form and kept for the historical
+record.</strong> At the time this was written, Validate hadn't started. It has since
+happened: seven spikes tested exactly the riskiest claims here, including Priya's
+P1 slice (tools-as-code + <code>find</code> fallback — both validated,
+<a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-code-mode-execution.md">SPIKE-code-mode-execution.md</a>)
+and Marcus's P2 slice (Firecracker restore latency, real hardware,
+<a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md">SPIKE-firecracker-boot-restore-latency.md</a>).
+Full results, corrections, and remaining open decisions are in
+<a href="../critique/">critique.md</a>, not repeated here. Next real step now: <code>plan-work</code>.</p>
+<p>Original text below, preserved:</p>
+<p>Per the lifecycle: <strong>Design</strong> is already partially drafted (context-layer.md,
+tool-execution.md, isolation.md, skills-gateway.md, memory.md) — this Define pass
+was partly a validation of that earlier work, and it held up (e.g. the tiered
+<code>Sandbox</code> protocol directly resolves the Priya-vs-Marcus/Elena tension named in
+personas.md).</p>
+<p><em>(Original next-step line preserved for the record, superseded by the update at the
+top of this section: "Next real step: Validate — a spike against Priya's actual
+workflow... to test the success metrics above against reality before locking the
+build roadmap." That validation is now done — see the update above.)</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Apache 2.0 License
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/civitas-io/fabrica" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "navigation.instant", "navigation.indexes", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,2498 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The context layer for Python agents">
+      
+      
+      
+        <link rel="canonical" href="https://civitas-io.github.io/fabrica/contracts/civitas-bridge/">
+      
+      
+        <link rel="prev" href="../../mcp-server/">
+      
+      
+        <link rel="next" href="../managers/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Civitas Bridge - Fabrica</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#contract-civitasbridge" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Fabrica" class="md-header__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Fabrica
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Civitas Bridge
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../context-layer/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Contracts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../deployment/firecracker-rootfs/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Deployment
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../personas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reflection & Critique
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../PLAN/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plan
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Fabrica" class="md-nav__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Fabrica
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../civitas-presidium-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas + Presidium Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../landscape/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Landscape
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../context-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tool-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../skills-gateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../retrieval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fabrica as an MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas Bridge
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas Bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scope-decided-through-direct-discussion-before-this-was-written" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope, decided through direct discussion before this was written
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#civitasruntime-grounded-against-real-python-civitas-source-not-guessed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CivitasRuntime — grounded against real python-civitas source, not guessed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nullpresidiumclient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NullPresidiumClient
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#civitasbridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CivitasBridge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#correction-found-during-implementation-request_supervision-is-real-and-tested-but-fabricas-own-managers-dont-call-it-in-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correction found during implementation: request_supervision is real and tested, but Fabrica's own managers don't call it in v1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#second-correction-found-during-implementation-request_state_persistence-is-real-and-tested-but-build-doesnt-call-it-for-managers-yet-either" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Second correction found during implementation: request_state_persistence is real and tested, but build() doesn't call it for managers yet either
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-contract-deliberately-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this contract deliberately does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#correction-found-during-implementation-sandbox-platform-dispatch-was-claimed-but-not-real-until-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correction found during implementation: Sandbox platform dispatch was claimed but not real, until now
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-tracer-di-wired-through-the-whole-object-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition: tracer DI, wired through the whole object graph
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-items-for-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open items for implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../managers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../managed-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managed Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retriever/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retriever
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/firecracker-rootfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firecracker Rootfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reflection & Critique
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reflection & Critique
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../problem-definition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problem Definition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../self-reflection-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Reflection Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../critique/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Critique: Design vs. Evidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scope-decided-through-direct-discussion-before-this-was-written" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope, decided through direct discussion before this was written
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#civitasruntime-grounded-against-real-python-civitas-source-not-guessed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CivitasRuntime — grounded against real python-civitas source, not guessed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nullpresidiumclient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NullPresidiumClient
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#civitasbridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CivitasBridge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#correction-found-during-implementation-request_supervision-is-real-and-tested-but-fabricas-own-managers-dont-call-it-in-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correction found during implementation: request_supervision is real and tested, but Fabrica's own managers don't call it in v1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#second-correction-found-during-implementation-request_state_persistence-is-real-and-tested-but-build-doesnt-call-it-for-managers-yet-either" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Second correction found during implementation: request_state_persistence is real and tested, but build() doesn't call it for managers yet either
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-contract-deliberately-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this contract deliberately does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#correction-found-during-implementation-sandbox-platform-dispatch-was-claimed-but-not-real-until-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correction found during implementation: Sandbox platform dispatch was claimed but not real, until now
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-tracer-di-wired-through-the-whole-object-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition: tracer DI, wired through the whole object graph
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-items-for-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open items for implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="contract-civitasbridge">Contract: <code>CivitasBridge</code><a class="headerlink" href="#contract-civitasbridge" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Contract — implementation-ready. <code>CivitasRuntime</code> (below) has been
+reconciled against <code>python-civitas</code>'s real source (<code>civitas/runtime.py</code>,
+<code>civitas/genserver.py</code>, <code>civitas/plugins/state.py</code>), superseding the
+originally-provisional sketch. · <strong>Last updated:</strong> 2026-08
+<strong>Depends on:</strong> <a href="../../system-design/">system-design.md §1–§2</a> (the corrected
+"requests, never reaches in" design), <a href="../memory/">contracts/memory.md</a>
+(<code>NullCompactor</code>, resolved together with this contract)
+<strong>Sixth and final contract</strong> in the object model — <code>Retriever</code>, <code>Sandbox</code>,
+<code>managers.md</code>, <code>memory.md</code>, <code>prompts.md</code> precede this one.</p>
+<p>The one component <code>architecture.md §1a</code> explicitly grants permission to
+integrate tightly. This contract's job is stating exactly where that license
+ends, not just what it can do.</p>
+<hr />
+<h2 id="scope-decided-through-direct-discussion-before-this-was-written">Scope, decided through direct discussion before this was written<a class="headerlink" href="#scope-decided-through-direct-discussion-before-this-was-written" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Construction-time wiring only.</strong> <code>CivitasBridge</code> assembles the object
+   graph once (<code>build() -&gt; Fabrica</code>) and is inert afterward. It does not
+   orchestrate per-turn, cross-manager behavior — that would duplicate
+   Civitas's own runtime loop. A bounded, opt-in, read-only-preferred
+   extension is deliberately left possible later, not built now: <code>build()</code>
+   returns every manager as a public <code>Fabrica</code> attribute (never hidden
+   exclusively behind <code>CivitasBridge</code>), so a later narrow convenience method
+   needs no new privileged access — <code>CivitasBridge</code> already holds every
+   reference it would need, from construction.</li>
+<li><strong>Requests, never reaches in.</strong> <code>CivitasBridge</code> never touches a
+   supervision tree or a <code>StateStore</code> directly. It calls <code>request_supervision</code>/
+   <code>request_state_persistence</code>; Civitas's own runtime decides how to fulfill
+   each request. Applied consistently — this is also why <code>PromptManager</code>/
+   <code>MemoryManager</code> route their persistence through <code>CivitasBridge</code>, not
+   directly to Civitas (<code>system-design.md §1</code>'s correction).</li>
+<li><strong>External dependencies are always fully-constructed objects, never raw
+   config values <code>CivitasBridge</code> would translate itself.</strong> Established with
+   <code>Summarizer</code>, then applied to <code>PresidiumClient</code> for the same reason: a bare
+   config value (e.g. an endpoint string) would be insufficient anyway
+   (mTLS needs certs, not just a URL) and would otherwise force
+   <code>CivitasBridge</code>'s constructor to slowly absorb another object's entire
+   configuration surface. Convenience factories (<code>PresidiumClient.from_endpoint(...)</code>)
+   belong on the dependency's own class, never on <code>CivitasBridge</code>.</li>
+</ol>
+<hr />
+<h2 id="civitasruntime-grounded-against-real-python-civitas-source-not-guessed"><code>CivitasRuntime</code> — grounded against real <code>python-civitas</code> source, not guessed<a class="headerlink" href="#civitasruntime-grounded-against-real-python-civitas-source-not-guessed" title="Permanent link">&para;</a></h2>
+<p>Reconciled by reading <code>civitas/runtime.py</code>, <code>civitas/genserver.py</code>, and
+<code>civitas/plugins/state.py</code> directly, not just docs. Two real corrections to
+what an earlier draft of this contract assumed:</p>
+<ol>
+<li><strong>There is no "register a supervision spec" call.</strong> Civitas's real
+   mechanism is <code>Runtime.spawn(supervisor_name, agent_class, name, config, *,
+   wait=True) -&gt; str</code> — dynamically spawning an agent <em>into an
+   already-existing, named <code>DynamicSupervisor</code></em> that Civitas's own deployment
+   topology defines. <code>CivitasBridge</code> does not create a supervisor or choose a
+   restart strategy; it spawns into one Civitas already established. Returns
+   the spawned agent's <strong>name</strong> (a string) on success, raises <code>SpawnError</code> on
+   failure — not an opaque handle object.</li>
+<li><strong><code>StateStore</code> is far simpler than originally sketched</strong>: keyed by
+   <code>agent_name: str</code>, storing <code>dict[str, Any]</code> directly (<code>get</code>/<code>set</code>/<code>delete</code>/
+   <code>list_agents</code>/<code>close</code>) — not a byte-oriented, opaquely-keyed store.</li>
+</ol>
+<pre><code class="language-python">class CivitasRuntime(Protocol):
+    &quot;&quot;&quot;The subset of civitas.runtime.Runtime's real public API CivitasBridge
+    needs. Not a new interface Civitas must conform to -- civitas.runtime.Runtime
+    already satisfies this shape today.&quot;&quot;&quot;
+    async def spawn(
+        self, supervisor_name: str, agent_class: type[GenServer], name: str,
+        config: dict[str, Any] | None = None, *, wait: bool = True,
+    ) -&gt; str: ...
+    async def despawn(self, supervisor_name: str, name: str) -&gt; None: ...
+</code></pre>
+<p><code>SpawnError</code> is NOT redefined or re-exported by Fabrica as its own class --
+an earlier draft of this contract sketched a re-exported <code>class SpawnError</code>
+here; implementation found that would be dead code, since
+<code>CivitasBridge.request_supervision</code> never catches or wraps anything, it
+just lets whatever exception the injected <code>CivitasRuntime</code> actually raises
+propagate unchanged (the real <code>civitas.runtime.Runtime.spawn</code> raises
+<code>civitas.errors.SpawnError</code> -- an earlier guess said <code>civitas.process</code>,
+fixed here after reading the real source). A Fabrica-defined <code>SpawnError</code>
+class nothing ever raises would only invite an <code>except
+fabrica...SpawnError</code> that silently never matches. <code>request_supervision</code>'s
+<code>Raises</code> section documents this as "propagated unchanged", not as a type
+this package defines.</p>
+<hr />
+<h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class ComponentStateHandle(Protocol):
+    &quot;&quot;&quot;A StateStore access already bound to one component's name -- so a
+    manager cannot accidentally read or write a different component's
+    state by passing the wrong key. Thin wrapper over Civitas's real
+    civitas.plugins.state.StateStore (get(agent_name)/set(agent_name, state)/
+    delete(agent_name)), pre-bound to one name. CivitasBridge is the only
+    thing holding a direct reference to the raw StateStore; managers only
+    ever see this name-bound wrapper.&quot;&quot;&quot;
+    async def get(self) -&gt; dict[str, Any] | None: ...
+    async def set(self, state: dict[str, Any]) -&gt; None: ...
+    async def delete(self) -&gt; None: ...
+</code></pre>
+<hr />
+<h2 id="errors">Errors<a class="headerlink" href="#errors" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class CivitasBridgeError(Exception):
+    &quot;&quot;&quot;Base for CivitasBridge-specific errors.&quot;&quot;&quot;
+
+
+class UngovernedConfigurationError(CivitasBridgeError):
+    &quot;&quot;&quot;Raised at construction time (not at first check_grant call) when
+    presidium_client is None and allow_ungoverned is False -- the default
+    combination. Forces an explicit decision before Fabrica is usable at
+    all, rather than allowing &quot;nobody configured this&quot; to silently become
+    &quot;everything is allowed&quot; by omission.&quot;&quot;&quot;
+
+
+class RuntimeRequiredError(CivitasBridgeError):
+    &quot;&quot;&quot;Raised at construction time when mode=&quot;service&quot; but civitas_runtime,
+    civitas_state_store, or dynamic_supervisor_name is None -- service mode
+    is meaningless without a runtime and a named supervisor to spawn into,
+    and state persistence needs the real StateStore. All three required
+    together, per CivitasBridge.__init__'s Raises section.&quot;&quot;&quot;
+</code></pre>
+<p><code>CompactionUnavailableError</code> (raised by <code>NullCompactor</code>, not by
+<code>CivitasBridge</code> itself) is specified in <code>contracts/memory.md</code> — referenced
+here, not redefined.</p>
+<hr />
+<h2 id="nullpresidiumclient"><code>NullPresidiumClient</code><a class="headerlink" href="#nullpresidiumclient" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class NullPresidiumClient:
+    &quot;&quot;&quot;Wired in by CivitasBridge when presidium_client=None and
+    allow_ungoverned=True. Implements PresidiumClient's one method,
+    unconditionally allowing -- the opposite failure direction from
+    NullCompactor (contracts/memory.md), and deliberately so: check_grant
+    is mandatory hot-path control flow under code-mode itself (called by
+    execute_in_sandbox on every execution), unlike compaction, which a
+    harness invokes optionally. Failing closed here by default would make
+    the platform's own headline feature unusable without Presidium --
+    exactly the zero-infra-quickstart cost this exists to avoid, PROVIDED
+    the caller has explicitly opted in via allow_ungoverned=True.&quot;&quot;&quot;
+    async def check_grant(self, *, agent_id: str, action: str, scope: Scope) -&gt; GrantResult:
+        return GrantResult(decision=&quot;allow&quot;, reason=&quot;allow_ungoverned=True, no Presidium configured&quot;)
+</code></pre>
+<hr />
+<h2 id="civitasbridge"><code>CivitasBridge</code><a class="headerlink" href="#civitasbridge" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class CivitasBridge:
+    def __init__(
+        self,
+        mode: Literal[&quot;library&quot;, &quot;service&quot;] = &quot;library&quot;,
+        *,
+        summarizer: Summarizer | None = None,
+        presidium_client: PresidiumClient | None = None,
+        allow_ungoverned: bool = False,
+        civitas_runtime: CivitasRuntime | None = None,
+        civitas_state_store: StateStore | None = None,
+        dynamic_supervisor_name: str | None = None,
+        overrides: dict[str, Literal[&quot;library&quot;, &quot;service&quot;]] | None = None,
+    ) -&gt; None:
+        &quot;&quot;&quot;
+        Raises:
+            UngovernedConfigurationError: presidium_client is None and
+                allow_ungoverned is False.
+            RuntimeRequiredError: mode=&quot;service&quot; and civitas_runtime,
+                civitas_state_store, or dynamic_supervisor_name is None.
+                All three are required together in service mode -- spawning
+                needs a runtime AND a named, already-existing
+                DynamicSupervisor to spawn into; state persistence needs
+                the real StateStore.
+
+        summarizer=None is NOT an error -- MemoryManager receives a
+        NullCompactor instead of RecencyCompactor (contracts/memory.md).
+        Compaction becomes unavailable, not the whole construction.
+
+        dynamic_supervisor_name names a DynamicSupervisor Civitas's own
+        deployment topology must already define -- CivitasBridge spawns
+        managers INTO it, per civitas.runtime.Runtime.spawn's real
+        contract; it never creates a supervisor of its own.
+
+        overrides is the v2 per-component mode-granularity hook
+        (system-design.md §2) -- present in the signature from v1, even
+        though nothing in this contract exercises anything beyond
+        uniform mode selection yet. This is what makes v2 additive: the
+        parameter already exists, only its effect grows later.
+
+        sandbox_backend is the &quot;hidden override for testing/CI only&quot;
+        isolation.md names -- real deployments leave it None and get
+        select_sandbox_backend()'s real platform dispatch instead (see
+        below). Now real code, not aspirational: this contract's own
+        earlier draft only ever constructed SubprocessSandbox regardless
+        of host, a gap found and fixed once FirecrackerSandbox (Tier 2)
+        became real -- see the correction below.
+        &quot;&quot;&quot;
+
+    async def build(self) -&gt; Fabrica:
+        &quot;&quot;&quot;Assembles the full object graph exactly once:
+        1. Resolves each component's mode (uniform `mode`, unless
+           `overrides` names it specifically).
+        2. Constructs each backend: Sandbox (REAL platform dispatch --
+           `sandbox_backend or select_sandbox_backend()`, isolation.md;
+           see the correction below for the gap this closes),
+           RetrieverBackend, PromptStore, MemoryStore, WorkingMemoryStore,
+           Compactor (RecencyCompactor(summarizer) or NullCompactor if
+           summarizer is None).
+        3. Constructs the shared Retriever and SandboxPool.
+        4. Constructs each manager with its dependencies injected --
+           ToolManager, SkillManager get the shared engines +
+           presidium_client (or NullPresidiumClient); MemoryManager,
+           PromptManager get their default in-memory stores directly, in
+           BOTH modes for now -- see the second correction below for why
+           service mode does not yet actually swap these for a
+           StateStore-backed store, despite this step's own name.
+        5. request_supervision is NOT called for Fabrica's own managers in
+           v1 at all, in either mode (see the first correction below,
+           despite system-design.md's component matrix labeling them all
+           &quot;GenServer&quot; under service mode).
+        6. Returns the assembled Fabrica facade, with every manager
+           exposed as a public attribute (fabrica.tools, fabrica.skills,
+           fabrica.memory, fabrica.prompts) -- never hidden exclusively
+           behind CivitasBridge, per the scope note above.
+
+        Idempotency of repeated build() calls on the same CivitasBridge
+        instance is NOT specified here -- see Open items.
+        &quot;&quot;&quot;
+
+    async def request_supervision(
+        self, agent_class: type[GenServer], name: str, config: dict[str, Any] | None = None,
+    ) -&gt; str:
+        &quot;&quot;&quot;Only called during build(), in service mode. Delegates entirely
+        to civitas_runtime.spawn(dynamic_supervisor_name, agent_class, name,
+        config) -- CivitasBridge adds no logic of its own beyond supplying
+        the supervisor name it was configured with. Returns the spawned
+        agent's name (matching Runtime.spawn's real return type).
+
+        Raises:
+            SpawnError: propagated unchanged from civitas_runtime.spawn --
+                name collision, capacity limits, or a governance veto via
+                Civitas's own on_spawn_requested hook.
+        &quot;&quot;&quot;
+
+    async def request_state_persistence(self, component_name: str) -&gt; ComponentStateHandle:
+        &quot;&quot;&quot;Called during build() for PromptManager/MemoryManager in
+        service mode. Returns a ComponentStateHandle wrapping
+        civitas_state_store, pre-bound to component_name -- the manager
+        never sees the raw StateStore or any other component's name. In
+        library mode, this is never called at all -- library-mode
+        managers get a local default store directly, matching
+        system-design.md's existing &quot;no Civitas dependency in library
+        mode&quot; shape.&quot;&quot;&quot;
+</code></pre>
+<hr />
+<h2 id="correction-found-during-implementation-request_supervision-is-real-and-tested-but-fabricas-own-managers-dont-call-it-in-v1">Correction found during implementation: <code>request_supervision</code> is real and tested, but Fabrica's own managers don't call it in v1<a class="headerlink" href="#correction-found-during-implementation-request_supervision-is-real-and-tested-but-fabricas-own-managers-dont-call-it-in-v1" title="Permanent link">&para;</a></h2>
+<p><code>system-design.md</code>'s component matrix (§4) labels <code>ToolManager</code>,
+<code>SkillManager</code>, <code>MemoryManager</code>, <code>PromptManager</code>, <code>Retriever</code>, and
+<code>SandboxPool</code> all as <code>GenServer</code> under service-mode deployment topology,
+and an earlier draft of this contract's <code>build()</code> step 5 said
+<code>request_supervision</code> gets called "once per GenServer-backed manager."
+Reading <code>civitas.runtime.Runtime.spawn</code>'s and <code>DynamicSupervisor</code>'s real
+implementation directly (not just its public signature) during
+implementation found this doesn't fit, for a structural reason, not a
+minor detail:</p>
+<p>Civitas's real dynamic-spawn mechanism reconstructs the agent class <strong>from
+scratch</strong>, by dotted class path, with only <code>agent_class(name=child_name)</code>
+-- no constructor arguments beyond <code>name</code>. Whatever <code>config: dict[str,
+Any]</code> was passed to <code>spawn()</code> is attached to the fresh instance as a plain
+data attribute (<code>agent.config = config</code>) <em>after</em> construction, not passed
+into <code>__init__</code>. There is no way to hand a <code>DynamicSupervisor</code> an
+already-constructed Python object with live references inside it (a
+<code>ToolManager</code> holding a real <code>Retriever</code>, <code>SandboxPool</code>,
+<code>PresidiumClient</code>) and have it spawn <em>that instance</em> -- it can only spawn
+a fresh one, built from nothing but its class path and a plain-data
+config dict.</p>
+<p>That is fundamentally incompatible with how every manager in this
+codebase is actually built: constructor-injected dependencies
+(<code>ToolManager(retriever, sandbox_pool, presidium_client)</code>), assembled
+once by <code>CivitasBridge.build()</code>'s existing object-graph logic. Making a
+manager "GenServer-backed" for real would mean rewriting it to build its
+own dependencies internally inside <code>init()</code>/<code>on_start()</code> from primitive
+config values -- a different shape entirely, not an incidental adapter.</p>
+<p><strong>Resolved:</strong> <code>request_supervision</code> stays in this contract exactly as
+written, and is implemented and tested against Civitas's real <code>Runtime</code>/
+<code>DynamicSupervisor</code> -- it is a real, working mechanism, for whenever a
+genuinely fresh, self-contained <code>GenServer</code> class is the right shape.
+But <strong>no manager in this codebase calls it in v1.</strong> Service mode's actual
+difference from library mode, for what's built today, is narrower than
+<code>system-design.md</code>'s matrix implied: managers stay the same
+constructor-injected plain objects in both modes; only <code>MemoryManager</code>/
+<code>PromptManager</code>'s <em>persistent state</em> moves from a local in-memory default
+to a <code>ComponentStateHandle</code> backed by Civitas's real <code>StateStore</code>, via
+<code>request_state_persistence</code>. <code>system-design.md</code>'s component matrix has
+since been corrected to match this narrower reality, not left as
+directional intent -- see its own "Finding: managers as supervised
+GenServers, investigated but not built" section for the full
+conclusion, reached by walking this through directly with the user
+(Civitas's own maintainer): even setting the <code>spawn()</code> mechanism gap
+aside, none of Fabrica's managers hold state that would actually
+justify the bigger capability the maintainer described wanting
+(real process migration/"teleportation", not just restart-from-config)
+-- <code>SandboxPool</code>'s own warm-handle state is physically host-bound and
+non-transferable regardless; every other manager's state is either
+trivially re-derivable or already delegated to a real external backend.
+Recorded as a documented finding with concrete revisit triggers, not a
+permanent rejection -- this project has no real production experience
+under real failure conditions yet to test the reasoning against.</p>
+<h2 id="second-correction-found-during-implementation-request_state_persistence-is-real-and-tested-but-build-doesnt-call-it-for-managers-yet-either">Second correction found during implementation: <code>request_state_persistence</code> is real and tested, but <code>build()</code> doesn't call it for managers yet either<a class="headerlink" href="#second-correction-found-during-implementation-request_state_persistence-is-real-and-tested-but-build-doesnt-call-it-for-managers-yet-either" title="Permanent link">&para;</a></h2>
+<p>A second, smaller gap of the same shape: <code>request_state_persistence</code>
+returns a <code>ComponentStateHandle</code> -- a name-bound <code>get()</code>/<code>set()</code>/<code>delete()</code>
+over a whole <code>dict[str, Any]</code> blob. Neither <code>contracts/memory.md</code> nor
+<code>contracts/prompts.md</code> designs a <code>MemoryStore</code>/<code>PromptStore</code>
+implementation that actually stores its state as one such blob and knows
+how to serialize/deserialize its own internal structure into and out of
+it -- both contracts only specify <code>InMemoryMemoryStore</code>/<code>InMemoryPromptStore</code>,
+which have no persistence at all.</p>
+<p>Building that adapter for real (deciding a snapshot format, a
+read-modify-write strategy given <code>StateStore</code> has no partial-update
+operation, and testing it against a real <code>StateStore</code>) is a genuine,
+separate unit of work this contract never scoped -- not something to
+bolt on ad hoc while wiring <code>CivitasBridge</code> together.</p>
+<p><strong>Resolved:</strong> <code>request_state_persistence</code> itself is implemented and
+tested for real, against <code>civitas.plugins.state.StateStore</code>'s real shape
+(including <code>InMemoryStateStore</code>) -- proving the name-binding and the
+real call succeed. But <code>build()</code> does not call it for <code>MemoryManager</code>/
+<code>PromptManager</code> in v1, in either mode -- both keep using their in-memory
+default stores regardless of <code>mode</code>. A <code>StateStore</code>-backed <code>MemoryStore</code>/
+<code>PromptStore</code> adapter, and wiring it into <code>build()</code>'s service-mode path,
+is new, explicitly-scoped future work -- not designed here, not silently
+assumed to already work.</p>
+<h2 id="what-this-contract-deliberately-does-not-cover">What this contract deliberately does not cover<a class="headerlink" href="#what-this-contract-deliberately-does-not-cover" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Any registration mechanism beyond <code>spawn</code>/<code>despawn</code></strong> — <code>civitas.runtime.Runtime</code>
+  has a much larger surface (<code>stop_agent</code>, health probing, remote workers,
+  <code>spawn_into</code>, cross-tree authorization via <code>spawner_allowlist</code>); this
+  contract only specifies the subset <code>CivitasBridge</code> actually needs, not a
+  full wrapper of Civitas's runtime API.</li>
+<li><strong><code>DynamicSupervisor</code> construction or configuration</strong> — <code>dynamic_supervisor_name</code>
+  must already exist in Civitas's own deployment topology; <code>CivitasBridge</code>
+  never creates, configures, or tunes restart strategy/capacity limits for it.</li>
+<li><strong>The bounded runtime extension (a smaller scope of "B")</strong> — deliberately
+  left possible via <code>build()</code>'s public-attribute requirement, not designed
+  here. No method for it exists in this contract.</li>
+<li><strong>Backend selection specifics</strong> (which <code>RetrieverBackend</code>, which
+  <code>MemoryStore</code> adapter) — <code>CivitasBridge</code> constructs sensible defaults per
+  the zero-infra philosophy; overriding <em>which</em> adapter, as opposed to
+  <em>which mode</em>, is not exposed by anything in this contract's signature.</li>
+</ul>
+<h2 id="correction-found-during-implementation-sandbox-platform-dispatch-was-claimed-but-not-real-until-now">Correction found during implementation: <code>Sandbox</code> platform dispatch was claimed but not real, until now<a class="headerlink" href="#correction-found-during-implementation-sandbox-platform-dispatch-was-claimed-but-not-real-until-now" title="Permanent link">&para;</a></h2>
+<p>This contract always said <code>build()</code> constructs <code>Sandbox</code> "platform-
+dispatched" (isolation.md). Until <code>FirecrackerSandbox</code> (Tier 2) existed,
+the actual code took a shortcut that happened to look identical from the
+outside on every host anyone tested on: it always constructed
+<code>SubprocessSandbox()</code> directly, full stop. That was never flagged as a
+gap earlier because there was no second real backend to dispatch to yet
+-- a hardcoded choice and a dispatch function with only one real outcome
+are behaviorally indistinguishable until a second outcome exists.</p>
+<p>Once <code>FirecrackerSandbox</code> became real, this stopped being a defensible
+shortcut: <code>Tier 2</code> existed in the codebase but was completely unreachable
+through the one real assembly path (<code>CivitasBridge.build()</code>) that every
+real deployment goes through. Fixed with <code>fabrica.sandbox.dispatch
+.select_sandbox_backend()</code>: real host detection (Linux + <code>/dev/kvm</code> +
+<code>FABRICA_FC_BINARY</code>/<code>FABRICA_FC_KERNEL</code>/<code>FABRICA_FC_ROOTFS</code> all pointing
+at real, existing files) returns a real <code>FirecrackerSandbox</code>; anything
+else returns <code>SubprocessSandbox</code>, honestly reflecting that Tier 1
+(gVisor/<code>srt</code>) and macOS/Windows Tier 2 (libkrun/Hyper-V) remain
+unimplemented -- there are only two real outcomes today, not the full
+five-tier table isolation.md describes in the abstract.</p>
+<p><code>CivitasBridge.__init__</code>'s new <code>sandbox_backend: Sandbox | None = None</code>
+parameter is isolation.md's own "hidden override... for testing/CI
+only" — not a new user-facing knob, and not a contradiction of
+"platform dispatch is auto-detected, not user-configured": real
+deployments never pass it, they get real dispatch.</p>
+<h2 id="real-addition-tracer-di-wired-through-the-whole-object-graph">Real addition: <code>tracer</code> DI, wired through the whole object graph<a class="headerlink" href="#real-addition-tracer-di-wired-through-the-whole-object-graph" title="Permanent link">&para;</a></h2>
+<p><code>CivitasBridge.__init__</code> gained an optional <code>tracer:
+fabrica.observability.Tracer | None = None</code>, defaulting to <code>NullTracer()</code>
+and propagated into every constructed component (<code>Retriever</code>,
+<code>SandboxPool</code>, <code>ToolManager</code>, <code>SkillManager</code>, <code>MemoryManager</code>) so real
+span emission (system-design.md §7) is available end to end from one
+single injection point. <strong>Deliberately not auto-constructing a real
+<code>civitas.observability.tracer.Tracer()</code> by default</strong> -- it has real side
+effects (an OTEL <code>TracerProvider</code>, a console exporter printing every
+span to stdout when no OTLP endpoint is configured) that would silently
+change behavior for every existing caller of <code>build()</code>, this codebase's
+own test suite included. A real deployment passes a real,
+fully-constructed <code>Tracer</code> explicitly -- the same "external dependencies
+are always fully-constructed objects" rule applied to <code>PresidiumClient</code>/
+<code>Summarizer</code>. Full design and the real Civitas-Tracer finding that
+shaped this:
+<a href="../../system-design/#7-observability-spans-this-system-emits">system-design.md §7</a>.</p>
+<h2 id="open-items-for-implementation">Open items for implementation<a class="headerlink" href="#open-items-for-implementation" title="Permanent link">&para;</a></h2>
+<ol>
+<li>~~Whether <code>CivitasBridge</code> should validate that <code>dynamic_supervisor_name</code>
+   actually resolves to a real <code>DynamicSupervisor</code>...~~ <strong>Resolved</strong>:
+   validate upfront, via the real, public <code>civitas.runtime.Runtime
+   .get_agent()</code> lookup (added to the <code>CivitasRuntime</code> Protocol
+   specifically for this) -- raises the new <code>SupervisorNotFoundError</code> at
+   construction time. Deliberately checks existence only, not that the
+   resolved agent is specifically a <code>DynamicSupervisor</code> -- the exact-type
+   check would need a second nominal <code>civitas</code> import beyond <code>GenServer</code>,
+   for marginal benefit over what <code>spawn()</code>'s own <code>SpawnError</code> would
+   surface if the name resolves to the wrong kind of agent. A real,
+   pre-existing test gap found while adding this: one test constructed a
+   service-mode <code>CivitasBridge</code> against an empty <code>Supervisor</code> topology
+   that never actually defined "dyn" -- fixed to match its sibling test's
+   correct, real setup, not loosened to accommodate the gap.</li>
+<li>~~<code>build()</code>'s idempotency on repeated calls...~~ <strong>Resolved</strong>: a second
+   call returns the SAME <code>Fabrica</code> instance, not a second, independent
+   graph -- avoids a second live <code>SandboxPool</code>/warm pool nobody asked for,
+   and, in service mode, a second <code>request_state_persistence()</code> call per
+   component with unclear concurrent-handle semantics. Not safe to call
+   <code>build()</code> concurrently (no internal lock) -- documented as a
+   deliberate scope limit, matching this codebase's own one-call-at-
+   startup usage pattern, not guarded against for a scenario nothing here
+   hits.</li>
+<li>~~Partial-failure behavior during <code>build()</code> if <code>request_supervision</code>
+   succeeds for one manager but fails for another~~ <strong>Moot for v1</strong>: no
+   manager calls <code>request_supervision</code> at all now (see the first
+   "Correction found during implementation" section above) — nothing in
+   <code>build()</code> can partially fail this way today. Revisit if a genuinely
+   fresh, self-contained <code>GenServer</code>-shaped component is ever added.</li>
+<li>Whether <code>overrides</code>' per-component granularity (v2) needs its own
+   validation — e.g., rejecting an override key that doesn't name a real
+   component — is unspecified, since v1 doesn't exercise this path at all.</li>
+<li>~~designing a <code>StateStore</code>-backed <code>MemoryStore</code>/<code>PromptStore</code> adapter~~
+   <strong>Resolved</strong>: <code>PersistedMemoryStore</code>/<code>PersistedPromptStore</code>
+   (<code>contracts/memory.md</code>/<code>contracts/prompts.md</code>'s own "Real addition"
+   sections), write-through on every mutation, loaded once at
+   construction. <code>CivitasBridge.build()</code> now wires these in for service
+   mode (via <code>request_state_persistence</code>), keeping the original in-memory
+   defaults for library mode unchanged. A service-mode <code>Fabrica</code> rebuilt
+   over the same <code>civitas_state_store</code> now genuinely recovers prior
+   memory/prompt state -- tested directly, not just asserted.</li>
+<li><strong>New</strong>: <code>warm_size</code>/<code>max_concurrent</code> for the default <code>SandboxPool</code>
+   <code>build()</code> constructs have no contract-specified default values
+   (<code>contracts/sandbox.md</code> leaves them caller-supplied with no default).
+   <code>CivitasBridge</code> picks <code>warm_size=2, max_concurrent=4</code> as reasonable,
+   zero-infra-quickstart-appropriate values — not validated against any
+   real workload, a placeholder default like every other zero-infra
+   default in this project, not a tuned recommendation.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Apache 2.0 License
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/civitas-io/fabrica" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "navigation.instant", "navigation.indexes", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

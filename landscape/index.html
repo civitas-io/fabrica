@@ -1,0 +1,2396 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The context layer for Python agents">
+      
+      
+      
+        <link rel="canonical" href="https://civitas-io.github.io/fabrica/landscape/">
+      
+      
+        <link rel="prev" href="../civitas-presidium-integration/">
+      
+      
+        <link rel="next" href="../context-layer/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Landscape - Fabrica</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#competitive-landscape" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Fabrica" class="md-header__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Fabrica
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Landscape
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../context-layer/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../contracts/civitas-bridge/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Contracts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../deployment/firecracker-rootfs/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Deployment
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../personas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reflection & Critique
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../PLAN/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plan
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Fabrica" class="md-nav__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Fabrica
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../system-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../civitas-presidium-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas + Presidium Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Landscape
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Landscape
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-tool-retrieval-context-reduction-the-space-moved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Tool retrieval / context reduction — the space moved
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-mcp-gateways-registries-commoditized-do-not-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. MCP gateways / registries — commoditized, do not build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-sandbox-isolation-for-agent-code-the-differentiator-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Sandbox / isolation for agent code — the differentiator space
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Sandbox / isolation for agent code — the differentiator space">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3a-the-hyperscalers-ship-this-too-now-not-just-startups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3a. The hyperscalers ship this too, now -- not just startups
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-memory-mature-wrap-dont-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Memory — mature, wrap don't build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-skills-standardizing-fast-unowned-by-runtimes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Skills — standardizing fast, unowned by runtimes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3a-cross-platform-isolation-the-current-tiers-are-linux-only-and-thats-a-real-gap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3a. Cross-platform isolation — the current tiers are Linux-only, and that's a real gap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-tool-search-retrieval-backends-a-two-tier-market" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Tool search / retrieval backends — a two-tier market
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../context-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tool-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skills-gateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retrieval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fabrica as an MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/civitas-bridge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas Bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/managers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/managed-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managed Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/retriever/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retriever
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/firecracker-rootfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firecracker Rootfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reflection & Critique
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reflection & Critique
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../problem-definition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problem Definition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../self-reflection-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Reflection Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../critique/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Critique: Design vs. Evidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-tool-retrieval-context-reduction-the-space-moved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Tool retrieval / context reduction — the space moved
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-mcp-gateways-registries-commoditized-do-not-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. MCP gateways / registries — commoditized, do not build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-sandbox-isolation-for-agent-code-the-differentiator-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Sandbox / isolation for agent code — the differentiator space
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Sandbox / isolation for agent code — the differentiator space">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3a-the-hyperscalers-ship-this-too-now-not-just-startups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3a. The hyperscalers ship this too, now -- not just startups
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-memory-mature-wrap-dont-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Memory — mature, wrap don't build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-skills-standardizing-fast-unowned-by-runtimes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Skills — standardizing fast, unowned by runtimes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3a-cross-platform-isolation-the-current-tiers-are-linux-only-and-thats-a-real-gap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3a. Cross-platform isolation — the current tiers are Linux-only, and that's a real gap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-tool-search-retrieval-backends-a-two-tier-market" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Tool search / retrieval backends — a two-tier market
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="competitive-landscape">Competitive Landscape<a class="headerlink" href="#competitive-landscape" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Research snapshot · <strong>Captured:</strong> 2026-08 (facts current to ~Dec 2025)
+<strong>Method:</strong> Google Search grounding via Vertex Gemini. Treat vendor claims as vendor
+claims; re-verify before major bets.</p>
+<hr />
+<h2 id="1-tool-retrieval-context-reduction-the-space-moved">1. Tool retrieval / context reduction — the space moved<a class="headerlink" href="#1-tool-retrieval-context-reduction-the-space-moved" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Who</th>
+<th>When</th>
+<th>Bearing on Fabrica</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tool Search Tool</strong> (<code>defer_loading</code>, bm25/regex variants, <code>advanced-tool-use-2025-11-20</code>)</td>
+<td>Anthropic</td>
+<td>24 Nov 2025</td>
+<td><strong>Commoditizes RFC 0001's <code>find_tools</code>.</strong> 190K+ tokens saved. Claude-only.</td>
+</tr>
+<tr>
+<td><strong>Code execution with MCP / Code Mode</strong> (tools as filesystem of code APIs, sandboxed, intermediate results kept out of context)</td>
+<td>Anthropic + Cloudflare</td>
+<td>Nov 2025</td>
+<td><strong>The new frontier.</strong> ~150K→~2K tokens (98.7%). Cloudflare = Workers-locked; Anthropic = Claude-locked. Fabrica's opening: vendor-neutral + self-hosted + runtime-native sandbox.</td>
+</tr>
+<tr>
+<td>RAG-MCP and tool-retrieval research</td>
+<td>academia</td>
+<td>2025</td>
+<td>validates the thesis</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Conclusion:</strong> don't ship <code>find_tools</code> as the headline; ship tools-as-code +
+sandboxed execution, keep <code>find_tools</code> as fallback.</p>
+<h2 id="2-mcp-gateways-registries-commoditized-do-not-build">2. MCP gateways / registries — commoditized, do not build<a class="headerlink" href="#2-mcp-gateways-registries-commoditized-do-not-build" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Product</th>
+<th>Type</th>
+<th>Selective retrieval?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Docker MCP Toolkit/Catalog</td>
+<td>registry + gateway</td>
+<td>dynamic discovery/composition</td>
+</tr>
+<tr>
+<td>IBM ContextForge</td>
+<td>OSS gateway/registry/proxy (MCP+A2A+REST)</td>
+<td>proxy/registry</td>
+</tr>
+<tr>
+<td>Kong AI Gateway</td>
+<td>product gateway</td>
+<td>proxy/governance</td>
+</tr>
+<tr>
+<td>Cloudflare (remote MCP + Code Mode)</td>
+<td>product</td>
+<td>yes (Code Mode)</td>
+</tr>
+<tr>
+<td>Azure API Management (MCP)</td>
+<td>product</td>
+<td>proxy/governance</td>
+</tr>
+<tr>
+<td>Portkey</td>
+<td>AI gateway</td>
+<td>proxy</td>
+</tr>
+<tr>
+<td>LiteLLM</td>
+<td>OSS LLM gateway</td>
+<td>proxy (+MCP bridge planned)</td>
+</tr>
+<tr>
+<td>Smithery / Glama</td>
+<td>registry + gateway</td>
+<td>registry-first</td>
+</tr>
+<tr>
+<td>Composio</td>
+<td>universal MCP gateway</td>
+<td>yes (intent → matching tools)</td>
+</tr>
+<tr>
+<td><strong>agentgateway</strong></td>
+<td>OSS AI-native proxy (LLM+MCP+A2A)</td>
+<td>proxy/governance — <strong>already wrapped by Presidium</strong></td>
+</tr>
+<tr>
+<td>Official <strong>MCP Registry</strong></td>
+<td>OSS catalog/API</td>
+<td>registry (preview 8 Sep 2025)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Conclusion:</strong> a generic MCP gateway has no moat and Presidium already owns the
+<em>governed</em> one. Fabrica does not build this.</p>
+<h2 id="3-sandbox-isolation-for-agent-code-the-differentiator-space">3. Sandbox / isolation for agent code — the differentiator space<a class="headerlink" href="#3-sandbox-isolation-for-agent-code-the-differentiator-space" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Isolation</th>
+<th>Cold start</th>
+<th>AI-sandbox use</th>
+<th>Grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Subprocess</td>
+<td>none/OS</td>
+<td>~0</td>
+<td>dev only</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>gVisor</strong></td>
+<td>user-space kernel</td>
+<td>~100 ms</td>
+<td>Modal, Google Agent Sandbox, Beam</td>
+<td>prod</td>
+</tr>
+<tr>
+<td><strong>Firecracker</strong></td>
+<td>microVM (KVM), own kernel</td>
+<td>125 ms boot; ~4 ms restore</td>
+<td>AWS Lambda, E2B, Fly.io, Vercel Sandbox, Replit</td>
+<td><strong>prod</strong></td>
+</tr>
+<tr>
+<td><strong>Kata Containers</strong></td>
+<td>microVM in k8s</td>
+<td>60–150 ms</td>
+<td>Northflank</td>
+<td>prod</td>
+</tr>
+<tr>
+<td>Cloud Hypervisor</td>
+<td>microVM (Rust VMM)</td>
+<td>~200 ms</td>
+<td>VMM under Kata</td>
+<td>prod</td>
+</tr>
+<tr>
+<td>V8 isolates (Cloudflare)</td>
+<td>JS isolate</td>
+<td>ms</td>
+<td>Dynamic Workers</td>
+<td>prod (JS-centric)</td>
+</tr>
+<tr>
+<td><strong>Managed:</strong> E2B / Modal / Daytona</td>
+<td>Firecracker / gVisor / Kata</td>
+<td>sub-30 ms (E2B snapshots); sub-90 ms (Daytona)</td>
+<td>purpose-built agent sandboxes</td>
+<td>prod</td>
+</tr>
+</tbody>
+</table>
+<p>Firecracker specifics for self-hosting: <code>jailer</code> (cgroups+namespaces+seccomp+chroot),
+REST API over unix socket, <code>vsock</code> host↔guest, snapshot/restore + UFFD lazy loading
+for warm pools, ext4 rootfs + <code>vmlinux</code>. E2B orchestrates with Nomad/Consul; Fly.io
+with <code>flyd</code> + <code>containerd</code>. Requires KVM (bare-metal or nested virt).</p>
+<h3 id="3a-the-hyperscalers-ship-this-too-now-not-just-startups">3a. The hyperscalers ship this too, now -- not just startups<a class="headerlink" href="#3a-the-hyperscalers-ship-this-too-now-not-just-startups" title="Permanent link">&para;</a></h3>
+<p>Researched directly (real docs fetched, not assumed from memory -- this space
+moves fast), since the user's own instinct was right: <strong>enterprises may
+genuinely prefer a hyperscaler-native option over a third-party vendor
+relationship</strong>, for a reason distinct from isolation quality: AWS/Azure/GCP's
+offerings authenticate through the exact same IAM/Entra/Workload-Identity
+systems an enterprise already uses for everything else, where E2B/Modal
+require a separate API-key vendor relationship. That's a procurement/security-
+review axis, not a technical one, and it matters independently of latency or
+isolation strength.</p>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Product</th>
+<th>Shape</th>
+<th>Isolation</th>
+<th>Auth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>AWS</strong></td>
+<td>Bedrock AgentCore Code Interpreter</td>
+<td>Managed sessions, <code>code_session</code> context manager, pre-built per-language runtimes, results as streams. Default 15 min execution, extendable to 8 hours.</td>
+<td>AWS-managed containers</td>
+<td>IAM</td>
+</tr>
+<tr>
+<td><strong>Azure</strong></td>
+<td>Container Apps Dynamic Sessions</td>
+<td>REST API over <code>https://&lt;region&gt;.dynamicsessions.io/...</code>, session-pool based (<code>identifier</code> reused across calls to continue a session), <code>POST .../executions</code> with inline code, prewarmed session pools</td>
+<td><strong>Hyper-V</strong> per session</td>
+<td>Microsoft Entra (OAuth) tokens, <code>aud</code> claim <code>https://dynamicsessions.io</code></td>
+</tr>
+<tr>
+<td><strong>GCP</strong></td>
+<td>Agent Sandbox (GKE)</td>
+<td><strong>Not a simple SaaS call</strong> -- Kubernetes-native: <code>SandboxTemplate</code>/<code>SandboxWarmPool</code> CRDs you deploy into your own GKE cluster, a Python client (<code>k8s-agent-sandbox</code>) that talks to an in-cluster Sandbox Router. Closer to "self-hosted, but on GCP's infrastructure" than to E2B/Modal/Azure's shape.</td>
+<td>gVisor (<code>runtimeClassName: gvisor</code>, enforced by GKE Validating Admission Policies)</td>
+<td>Kubernetes RBAC / Workload Identity Federation</td>
+</tr>
+<tr>
+<td><strong>GCP</strong> (alternative)</td>
+<td>Vertex AI Agent Engine Code Execution</td>
+<td>Fully managed sandbox-as-a-service, closer in shape to AWS/Azure's offerings than GKE Agent Sandbox -- in preview as of late 2025, not yet evaluated in depth here</td>
+<td>Google-managed</td>
+<td>IAM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A real architectural finding, not just a landscape note</strong>: none of these five
+providers (E2B, Modal, AWS, Azure, GCP) can satisfy Fabrica's <em>current</em>
+<code>Sandbox</code> Protocol as written -- <code>execute(handle, code, on_tool_call, timeout)</code>
+assumes <code>on_tool_call</code> is an in-process Python callback reachable over a local
+socket (real ZMQ <code>ipc://</code> for <code>SubprocessSandbox</code>; <code>vsock</code> for a hypothetical
+self-hosted Firecracker backend). A remote managed sandbox runs in someone
+else's cloud with no such local socket path back to Fabrica's own process at
+all. Every one of these providers DOES support outbound network access from
+the sandbox (several with explicit domain/CIDR allowlisting built for exactly
+this kind of callback -- e.g. Modal's <code>outbound_domain_allowlist</code>), so the real
+fix is a network-reachable callback path, not a local one -- see
+<a href="../contracts/managed-sandbox/">contracts/managed-sandbox.md</a> for the actual
+design. This is a genuine contract change, found by trying to plan the
+managed-adapter work concretely, not a minor implementation detail.</p>
+<p><strong>Conclusion:</strong> tier the <code>Sandbox</code> protocol; gVisor as safe default, self-hosted
+Firecracker as the long-term prod target. <strong>Build sequencing, resolved, then
+RE-resolved</strong> (see <a href="../isolation/">isolation.md</a> open question 1 for the full
+reasoning trail): a managed-sandbox adapter was first decided to ship FIRST
+(smaller build, real isolation sooner) -- <strong>then reversed, after direct
+discussion, in favor of self-hosted Firecracker shipping first instead</strong>.
+Deciding factor: self-hosted Firecracker is genuinely FREE per-execution;
+every one of the five managed providers researched bills per API call
+(<code>contracts/managed-sandbox.md</code>'s cost section). Combined with a real, live
+homelab already available for the self-hosted build
+(<code>kodiak@darkenergy</code> -- confirmed still live, with the entire prior
+Firecracker spike environment intact), the original effort-asymmetry
+argument no longer dominates. <strong>Managed provider interfaces are still
+designed now</strong> (<code>ManagedSandboxAdapter</code>, <code>contracts/managed-sandbox.md</code>) --
+only their implementation moves to second priority, after self-hosted
+Firecracker is real. Which specific managed provider ships once that phase
+starts remains open -- see <code>HANDOFF.md</code>.</p>
+<h2 id="4-memory-mature-wrap-dont-build">4. Memory — mature, wrap don't build<a class="headerlink" href="#4-memory-mature-wrap-dont-build" title="Permanent link">&para;</a></h2>
+<p>Mem0 (OSS, widely deployed), Zep (temporal graph; <strong>self-host CE deprecated Apr 2025,
+cloud-only</strong>), Letta/MemGPT (full runtime), Cognee (OSS graph+vector+relational),
+LangMem (LangChain SDK). No single winner → <code>MemoryStore</code> protocol + adapters.</p>
+<h2 id="5-skills-standardizing-fast-unowned-by-runtimes">5. Skills — standardizing fast, unowned by runtimes<a class="headerlink" href="#5-skills-standardizing-fast-unowned-by-runtimes" title="Permanent link">&para;</a></h2>
+<p>Claude Agent Skills (Oct 2025); open cross-platform <code>SKILL.md</code> standard (Dec 2025);
+AGENTS.md under the Linux Foundation Agentic AI Foundation (Anthropic/Google/
+Microsoft/OpenAI). Progressive disclosure is the shared pattern. <strong>No agent runtime
+owns skill loading</strong> → Fabrica's strongest near-term product; conform to <code>SKILL.md</code>.</p>
+<h2 id="3a-cross-platform-isolation-the-current-tiers-are-linux-only-and-thats-a-real-gap">3a. Cross-platform isolation — the current tiers are Linux-only, and that's a real gap<a class="headerlink" href="#3a-cross-platform-isolation-the-current-tiers-are-linux-only-and-thats-a-real-gap" title="Permanent link">&para;</a></h2>
+<p><strong>Reframing, from a direct product conversation:</strong> Fabrica's isolation story
+should not be "we use Firecracker." It should be "users get well-isolated
+sandbox execution on whatever platform they're on" — nobody adopting Fabrica
+cares which specific VMM or sandboxing primitive is underneath, only that
+their problem (safe execution of model-generated/tool code) is solved. The
+<code>Sandbox</code> protocol in <a href="../isolation/">isolation.md</a> is already backend-pluggable
+by design — this section is about what actually plugs in on each OS.</p>
+<p><strong>The uncomfortable finding: Tier 1 (gVisor) is Linux-only too, not just
+Tier 2 (Firecracker).</strong> gVisor reimplements Linux syscalls in a user-space
+application kernel — there is no macOS or Windows syscall surface for it to
+intercept. This means the <em>entire</em> tiered design beyond Tier 0 (bare
+subprocess, no real isolation) is currently Linux-specific. A Priya-persona
+developer on a Mac laptop has no upgrade path today beyond Tier 0 as
+currently written.</p>
+<p><strong>What actually exists per platform</strong> (research, not yet spiked/measured):</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Tier-1-equivalent (lightweight syscall/access control)</th>
+<th>Tier-2-equivalent (microVM-class isolation)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Linux</strong></td>
+<td>gVisor (validated — see landscape §3 above)</td>
+<td>Firecracker (validated — see <a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-firecracker-boot-restore-latency.md">SPIKE-firecracker-boot-restore-latency.md</a>)</td>
+</tr>
+<tr>
+<td><strong>macOS</strong></td>
+<td><code>sandbox-exec</code> / Seatbelt profiles — deny-by-default, VFS-layer interception. <strong>Real precedent</strong>: CrowdStrike already uses Seatbelt specifically for AI-agent code sandboxing. <strong>Concretely validated</strong>: Anthropic's own <code>srt</code> (Sandbox Runtime), built on <code>sandbox-exec</code> — real enforcement confirmed (write/network denial), measured p50 152ms (<a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-macos-isolation-srt-libkrun.md">SPIKE-macos-isolation-srt-libkrun.md</a>). Also ships an untested Windows mode (<code>windows-install</code>), a candidate for the Windows Tier-1 gap below.</td>
+<td><strong>libkrun</strong> (open source, <code>Virtualization.framework</code>-based, explicitly positioned for AI/agent isolation with "VM-level security, container-like footprint") — <strong>confirmed via spike: no snapshot/restore support at all</strong>, a permanent ceiling, not a bug. Or Apple's own <strong>Containerization framework</strong> (untested), described as similar in isolation strength to Kata.</td>
+</tr>
+<tr>
+<td><strong>Windows</strong></td>
+<td>No clean equivalent found. Windows containers/job objects are not in the same isolation class as gVisor/Seatbelt — an open gap.</td>
+<td>Hyper-V isolation / Windows Sandbox — real and hypervisor-backed, but meaningfully heavier/slower to boot than Firecracker or libkrun (seconds-to-minutes, not milliseconds, per earlier research)</td>
+</tr>
+</tbody>
+</table>
+<p>Also relevant: <strong>SlicerVM</strong> — not a new primitive, but proof the underlying
+philosophy (fast, real-Linux-kernel microVMs) is portable: it's built
+directly on Firecracker for Linux, and re-hosted on Apple's
+<code>Virtualization.framework</code> for Mac, and WSL2 for local Windows dev.</p>
+<p><strong>Implication for <code>isolation.md</code> (flagged, not yet applied):</strong> the <code>Sandbox</code>
+protocol's tier table should be reframed as platform-dispatched rather than
+naming Firecracker/gVisor as <em>the</em> Tier &frac12; implementations — e.g. "Tier 2:
+microVM-class isolation (Firecracker on Linux, libkrun on macOS, Hyper-V
+isolation on Windows as the current best-available, unresolved gap for
+a Tier-1 equivalent)." The Windows Tier-1 gap in particular has no answer
+yet and should be named as an open problem, not silently skipped.</p>
+<p><strong>What was NOT explored:</strong> none of the macOS/Windows options above have been
+spiked or measured — this is desk research via search grounding, same
+methodology as the rest of this doc, not hands-on validation like the Linux
+Firecracker spike. Treat as a prioritized list of what to spike next if
+cross-platform isolation becomes a real requirement, not a validated claim.</p>
+<h2 id="6-tool-search-retrieval-backends-a-two-tier-market">6. Tool search / retrieval backends — a two-tier market<a class="headerlink" href="#6-tool-search-retrieval-backends-a-two-tier-market" title="Permanent link">&para;</a></h2>
+<p>Distinct from the "MCP gateway" question (section 2) — this is specifically about
+the <em>retrieval technique</em> behind a <code>find_tools</code>-style meta-tool.</p>
+<p><strong>Tier 1 — mature, but bundled or commercial:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>What</th>
+<th>Backend</th>
+<th>Maintained</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LlamaIndex</strong> <code>ToolRetriever</code>/<code>ObjectIndex</code></td>
+<td>dynamic tool retrieval over a <code>VectorStoreIndex</code></td>
+<td>embeddings</td>
+<td>actively, widely adopted</td>
+</tr>
+<tr>
+<td><strong>LangChain</strong> <code>retriever_tool</code> + <code>EnsembleRetriever</code></td>
+<td>dynamic tool selection</td>
+<td>hybrid BM25 + embeddings</td>
+<td>actively, widely adopted</td>
+</tr>
+<tr>
+<td><strong>Composio</strong> <code>COMPOSIO_SEARCH_TOOLS</code></td>
+<td>hosted meta-tool, discovers tools across a large app ecosystem</td>
+<td>undisclosed</td>
+<td>commercial, active</td>
+</tr>
+</tbody>
+</table>
+<p>All three require adopting a mega-framework (LlamaIndex/LangChain) or a commercial
+hosted platform (Composio) to get this behavior.</p>
+<p><strong>Tier 2 — smaller/standalone repos claiming RAG-over-tools or MCP-native search:</strong>
+several surfaced (RAG-MCP-style projects, various <code>mcp-*-rag</code> servers). <strong>Treat with
+skepticism</strong> — grounding returned generic "actively maintained" claims attached to
+commit dates that read as stale rather than current; none were independently
+verified. Re-check any specific one directly before relying on it.</p>
+<p><strong>The gap:</strong> no small, standalone, <strong>framework-agnostic, MCP-native</strong> library was
+found that does just "one <code>find_tools</code> meta-tool, aggregate multiple sources,
+keyword-first with optional embeddings" — i.e. exactly RFC 0001's shape. The
+<em>technique</em> is commoditized inside mega-frameworks or sold as a hosted product;
+the <em>lightweight, unopinionated building block</em> is not.</p>
+<p><strong>Conclusion:</strong> build the interface/aggregation layer (real gap, low risk of
+redundancy) — but wrap Tier 1's embedding engines as optional backends rather than
+reimplementing vector retrieval. See <a href="../retrieval/#backends-rust-for-the-built-parts-wrap-everything-else-with-one-real-named-v1-exception">retrieval.md</a>
+for the resulting package split — now unified with skill discovery, not tool-only
+as originally scoped here.</p>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<p>Selected grounding sources (via Vertex Gemini Google Search, Aug 2026):
+anthropic.com, cloudflare.com, simonwillison.net, workos.com, docker.com, ibm.com,
+composio.dev, github.com (E2B, firecracker), fly.io, modal.com, northflank.com,
+letta.com, getzep.com, mem0.ai, arxiv.org. Redirect URLs captured in the research
+session log; re-run before publishing any external-facing claim.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Apache 2.0 License
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/civitas-io/fabrica" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "navigation.instant", "navigation.indexes", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

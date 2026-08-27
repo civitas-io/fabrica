@@ -1,0 +1,2440 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The context layer for Python agents">
+      
+      
+      
+        <link rel="canonical" href="https://civitas-io.github.io/fabrica/contracts/memory/">
+      
+      
+        <link rel="prev" href="../retriever/">
+      
+      
+        <link rel="next" href="../prompts/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Memory - Fabrica</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#contract-workingmemorystore-compactorsummarizer-memorystore-memorymanager" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Fabrica" class="md-header__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Fabrica
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Memory
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../context-layer/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../civitas-bridge/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Contracts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../deployment/firecracker-rootfs/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Deployment
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../personas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reflection & Critique
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../PLAN/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plan
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Fabrica" class="md-nav__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Fabrica
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../civitas-presidium-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas + Presidium Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../landscape/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Landscape
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../context-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tool-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../skills-gateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../retrieval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fabrica as an MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../civitas-bridge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas Bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../managers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../managed-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managed Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retriever/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retriever
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workingmemorystore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkingMemoryStore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summarizer-compactor-recencycompactor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summarizer, Compactor, RecencyCompactor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memorystore-long-term" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MemoryStore (long-term)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memorymanager-the-facade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MemoryManager — the facade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-contract-deliberately-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this contract deliberately does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-built-after-contractscivitas-bridgemds-own-open-item-persistedmemorystore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition, built after contracts/civitas-bridge.md's own open item: PersistedMemoryStore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-tracer-di-on-memorymanager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition: tracer DI on MemoryManager
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-items-for-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open items for implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/firecracker-rootfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firecracker Rootfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reflection & Critique
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reflection & Critique
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../problem-definition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problem Definition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../self-reflection-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Reflection Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../critique/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Critique: Design vs. Evidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workingmemorystore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkingMemoryStore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summarizer-compactor-recencycompactor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summarizer, Compactor, RecencyCompactor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memorystore-long-term" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MemoryStore (long-term)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memorymanager-the-facade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MemoryManager — the facade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-contract-deliberately-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this contract deliberately does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-built-after-contractscivitas-bridgemds-own-open-item-persistedmemorystore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition, built after contracts/civitas-bridge.md's own open item: PersistedMemoryStore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-addition-tracer-di-on-memorymanager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real addition: tracer DI on MemoryManager
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-items-for-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open items for implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="contract-workingmemorystore-compactorsummarizer-memorystore-memorymanager">Contract: <code>WorkingMemoryStore</code>, <code>Compactor</code>/<code>Summarizer</code>, <code>MemoryStore</code>, <code>MemoryManager</code><a class="headerlink" href="#contract-workingmemorystore-compactorsummarizer-memorystore-memorymanager" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Contract — implementation-ready · <strong>Last updated:</strong> 2026-08
+<strong>Depends on:</strong> <a href="../../memory/">memory.md</a> (the three-facet design this formalizes),
+<a href="../managers/">contracts/managers.md</a> (<code>Scope</code>, the DI pattern this reuses a third time)</p>
+<p>Four things in one doc, same reasoning as <code>managers.md</code>: <code>MemoryManager</code> is a
+thin facade over the other three, and none of them makes sense read in isolation.</p>
+<hr />
+<h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">@dataclass(frozen=True)
+class MemoryItem:
+    id: str | None            # None before write() assigns one
+    content: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: datetime | None = None
+    score: float | None = None
+</code></pre>
+<p><strong><code>score</code> is kept, deliberately unlike <code>RankedMatch</code>.</strong> <code>Retriever</code>'s
+<code>RankedMatch</code> has no score field on purpose — spike evidence showed tool
+retrieval's correct/incorrect matches share the same low score band, so
+thresholding there is actively misleading. <strong>No equivalent evidence exists for
+memory recall.</strong> Memory search legitimately needs variable-length results (0
+relevant memories some calls, 10 others), which requires <em>some</em> cutoff
+decision — copying the no-score rule here without counter-evidence would be
+applying a pattern by reflex, not by reasoning. Kept until a memory-specific
+spike says otherwise.</p>
+<pre><code class="language-python">@dataclass(frozen=True)
+class Message:
+    &quot;&quot;&quot;Provisional. NOT yet reconciled with whatever Civitas's own runtime
+    loop uses internally for conversation history (memory.md open question
+    8) — defined here only so this contract is concrete enough to implement
+    against. Expect conversion to/from Civitas's real representation before
+    MemoryManager ships.&quot;&quot;&quot;
+    role: Literal[&quot;system&quot;, &quot;user&quot;, &quot;assistant&quot;, &quot;tool&quot;]
+    content: str
+    tokens: int
+    &quot;&quot;&quot;Required, not optional — deliberately. Estimating token counts would
+    require Fabrica to bundle or guess at a model-specific tokenizer
+    (tiktoken is OpenAI-specific, others differ) — a real, avoidable
+    dependency. The harness already has this number from the model
+    provider's own usage reporting on every response; requiring it here
+    costs nothing and avoids inventing a second source of truth.&quot;&quot;&quot;
+
+
+@dataclass(frozen=True)
+class CompactionResult:
+    summary: str
+    preserved: list[Message]
+    tokens_before: int
+    tokens_after: int
+    validation_score: float | None = None  # None: nothing summarized or validate=False
+    degraded: bool = False  # True: validation_score fell below the threshold even after retry
+</code></pre>
+<p><code>Scope</code> is unchanged from <code>contracts/managers.md</code> / <code>memory.md</code> — not
+redefined here.</p>
+<hr />
+<h2 id="errors">Errors<a class="headerlink" href="#errors" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class MemoryError(Exception):
+    &quot;&quot;&quot;Base for all MemoryManager/MemoryStore/WorkingMemoryStore/Compactor
+    errors.&quot;&quot;&quot;
+
+
+class MemoryBackendError(MemoryError):
+    &quot;&quot;&quot;The configured long-term adapter failed (unreachable, malformed
+    response, etc). Wraps whatever the underlying library raised
+    (a Mem0 exception, a Zep SDK error, ...) so callers depend on ONE
+    error type regardless of which adapter is configured. This is the
+    actual point of the protocol+adapters pattern (memory.md) — made a
+    contract guarantee here, not left implicit.&quot;&quot;&quot;
+    def __init__(self, backend: str, cause: Exception) -&gt; None: ...
+
+
+class WorkingMemoryQuotaExceeded(MemoryError):
+    &quot;&quot;&quot;remember() would exceed the per-scope size ceiling. Raised, not
+    silently accepted or truncated — unlike RunResult.stdout
+    (contracts/sandbox.md), key-value data has no natural truncation
+    point, so silently dropping part of it would be worse than
+    rejecting the write outright.&quot;&quot;&quot;
+
+
+class CompactionError(MemoryError):
+    &quot;&quot;&quot;The injected Summarizer raised during compact(). Not swallowed or
+    silently downgraded to naive truncation — the harness already owns
+    its own retry/fallback policy (it called compact() in the first
+    place because it tracks its own token budget); this contract's job
+    is to surface the failure clearly, not decide what happens next.&quot;&quot;&quot;
+    def __init__(self, cause: Exception) -&gt; None: ...
+</code></pre>
+<p><strong><code>recall()</code>, <code>get()</code>, and <code>forget()</code>/<code>clear()</code> on an unknown key/id are <em>not</em>
+errors</strong> — a missing key returns <code>None</code>; forgetting/clearing something absent
+is a no-op. Consistent with the no-op-on-unknown precedent already established
+for <code>Retriever.deregister()</code>.</p>
+<hr />
+<h2 id="workingmemorystore"><code>WorkingMemoryStore</code><a class="headerlink" href="#workingmemorystore" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class WorkingMemoryStore(Protocol):
+    async def remember(self, scope: Scope, key: str, value: Any) -&gt; None:
+        &quot;&quot;&quot;Overwrites any existing value for (scope, key) — last-write-wins,
+        no versioning. Keyed by the FULL Scope tuple, not just
+        session_id, even though session_id is the dominant discriminator
+        in practice — avoids leaking working memory across agents that
+        happen to share a session_id in some deployment shape.
+
+        Raises:
+            WorkingMemoryQuotaExceeded: this write would exceed the
+                per-scope size ceiling (default implementation:
+                configurable, e.g. 256KB serialized).
+        &quot;&quot;&quot;
+
+    async def recall(self, scope: Scope, key: str) -&gt; Any | None:
+        &quot;&quot;&quot;None if (scope, key) was never remembered or has been
+        cleared — not an error.&quot;&quot;&quot;
+
+    async def snapshot(self, scope: Scope) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Everything currently stored for scope. The only sanctioned
+        way to move something into long-term memory (memory.md: no
+        promote() bridge) — a harness reads via snapshot()/recall() and
+        writes into MemoryStore itself, explicitly.&quot;&quot;&quot;
+
+    async def clear(self, scope: Scope) -&gt; None:
+        &quot;&quot;&quot;Wipes everything for scope. No-op if scope has nothing
+        stored.&quot;&quot;&quot;
+</code></pre>
+<p>Default implementation: an in-process dict keyed by <code>(scope-tuple, key)</code> —
+zero infra, matching the platform-wide default philosophy. Does not survive a
+process restart on its own; survives only via Civitas's <code>StateStore</code>
+checkpointing (<code>memory.md</code>'s Integration section) — this contract does not
+implement that checkpointing itself.</p>
+<hr />
+<h2 id="summarizer-compactor-recencycompactor"><code>Summarizer</code>, <code>Compactor</code>, <code>RecencyCompactor</code><a class="headerlink" href="#summarizer-compactor-recencycompactor" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class Summarizer(Protocol):
+    &quot;&quot;&quot;Injected dependency — Fabrica never constructs one itself, never
+    holds model credentials. The harness supplies this at MemoryManager
+    construction time, wrapping whichever model connection it already
+    has (or a smaller/cheaper model dedicated to summarization).&quot;&quot;&quot;
+    async def summarize(self, messages: list[Message], *, target_tokens: int) -&gt; str: ...
+
+
+class Compactor(Protocol):
+    async def compact(self, messages: list[Message], *, budget_tokens: int) -&gt; CompactionResult:
+        &quot;&quot;&quot;Raises CompactionError if the injected Summarizer raises.&quot;&quot;&quot;
+
+
+class RecencyCompactor:
+    &quot;&quot;&quot;Default Compactor. Preserves the most recent messages verbatim,
+    folds everything older into one summary via the injected Summarizer,
+    then validates that summary and optionally retries (added 2026-08-26,
+    see &quot;Real addition: the validation gate&quot; below).
+
+    Algorithm: walk backward from the newest message, preserving each
+    one verbatim while (a) fewer than preserve_last_n have been kept,
+    and (b) their cumulative tokens stay under budget_tokens.
+    preserve_last_n is a ceiling, not a guarantee — if the last
+    preserve_last_n messages alone already exceed budget_tokens, fewer
+    are preserved, not more dropped from the summary side.
+
+    Remaining (older) messages are summarized with
+    target_tokens = budget_tokens - (tokens consumed by preserved messages).
+    &quot;&quot;&quot;
+    def __init__(
+        self,
+        summarizer: Summarizer,
+        *,
+        preserve_last_n: int = 6,
+        validate: bool = True,
+        validation_threshold: float = DEFAULT_VALIDATION_THRESHOLD,  # 0.55
+        retry_summarizer: Summarizer | None = None,
+    ) -&gt; None: ...
+
+
+def score_compaction(source_messages: list[Message], summary: str) -&gt; float:
+    &quot;&quot;&quot;Cheap, non-LLM validation score in [0, 1] -- 0.6 * numeric-token
+    overlap + 0.4 * content-word overlap between source_messages and
+    summary. Deliberately not another LLM call (would reintroduce the
+    same untrusted-inference risk one level up).&quot;&quot;&quot;
+
+
+class CompactionUnavailableError(MemoryError):
+    &quot;&quot;&quot;Raised by NullCompactor.compact() -- compaction was invoked, but
+    CivitasBridge was constructed with summarizer=None, so no model
+    connection was ever configured to perform it.&quot;&quot;&quot;
+
+
+class NullCompactor:
+    &quot;&quot;&quot;What CivitasBridge wires into MemoryManager when summarizer=None
+    at construction (a decision walked through before this contract was
+    written -- HANDOFF.md). Implements the Compactor protocol like any
+    other implementation -- a Null Object, not a special case.
+
+    This matters for a concrete reason, not just tidiness: MemoryManager's
+    constructor requires a Compactor (contracts/memory.md's facade
+    section) -- making it Optional instead would push an `if self._compactor
+    is None` branch into every call site inside MemoryManager that touches
+    compaction. Standard Null Object pattern instead: MemoryManager always
+    receives A Compactor, full stop; NullCompactor just always raises
+    CompactionUnavailableError the moment compact() is actually invoked.
+    The 'is compaction configured?' question is answered once, at
+    CivitasBridge construction time, not repeatedly at every call site.&quot;&quot;&quot;
+    async def compact(self, messages: list[Message], *, budget_tokens: int) -&gt; CompactionResult:
+        raise CompactionUnavailableError(
+            &quot;No Summarizer was configured -- construct CivitasBridge with &quot;
+            &quot;summarizer=... to enable compaction.&quot;
+        )
+</code></pre>
+<p><strong>Resolved: fold it into the summary, like any other message that doesn't
+fit the recency window.</strong> If a <em>single</em> message's <code>tokens</code> already exceeds
+<code>budget_tokens</code> (a pathological but possible input), <code>_select_preserved</code>
+preserves zero messages -- a literal, mechanical extension of the stated
+algorithm, not a special case bolted on to paper over the gap -- and that
+message joins everything else headed to the injected <code>Summarizer</code>.
+Deliberately NOT truncated (would need a tokenizer dependency
+<code>Message.tokens</code> was specifically designed to avoid, and could cut meaning
+arbitrarily mid-sentence) and NOT dropped silently (would lose information
+without signaling that happened). <code>CompactionResult.preserved == []</code> is
+itself the observable signal a caller needs -- no separate flag was added,
+since the existing shape already communicates "nothing survived verbatim
+this round" to anyone who checks it. Whether the Summarizer's own
+underlying model can actually compress a message that large is outside
+Fabrica's visibility or control -- <code>Summarizer</code> is an injected dependency
+with no model connection Fabrica constructs or credentials Fabrica holds,
+so this genuinely is not Fabrica's problem to solve here.</p>
+<hr />
+<h2 id="memorystore-long-term"><code>MemoryStore</code> (long-term)<a class="headerlink" href="#memorystore-long-term" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class MemoryStore(Protocol):
+    async def write(self, scope: Scope, item: MemoryItem) -&gt; str:
+        &quot;&quot;&quot;Returns the assigned id. Raises MemoryBackendError on adapter
+        failure.&quot;&quot;&quot;
+
+    async def search(self, scope: Scope, query: str, limit: int = 5) -&gt; list[MemoryItem]:
+        &quot;&quot;&quot;Raises MemoryBackendError on adapter failure. Returns []
+        (not an error) if scope has no memories at all — an empty
+        scope is a normal state, not a failure.&quot;&quot;&quot;
+
+    async def get(self, scope: Scope, id: str) -&gt; MemoryItem | None: ...
+
+    async def forget(self, scope: Scope, id: str) -&gt; None: ...
+</code></pre>
+<p>Unchanged in shape from <code>memory.md</code>'s sketch — this section exists to attach
+the error contract (<code>MemoryBackendError</code>, empty-result-is-not-an-error), not
+to redesign the interface.</p>
+<hr />
+<h2 id="memorymanager-the-facade"><code>MemoryManager</code> — the facade<a class="headerlink" href="#memorymanager-the-facade" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class MemoryManager:
+    def __init__(
+        self, working: WorkingMemoryStore, long_term: MemoryStore, compactor: Compactor,
+    ) -&gt; None: ...
+
+    # working memory — thin delegation
+    async def remember(self, scope: Scope, key: str, value: Any) -&gt; None: ...
+    async def recall(self, scope: Scope, key: str) -&gt; Any | None: ...
+
+    # compaction — thin delegation; MemoryManager stays ignorant of
+    # summarization mechanics entirely, per memory.md's Civitas-decides-
+    # when / Fabrica-decides-how split
+    async def compact(self, messages: list[Message], *, budget_tokens: int) -&gt; CompactionResult: ...
+
+    # long-term memory — thin delegation
+    async def write(self, scope: Scope, item: MemoryItem) -&gt; str: ...
+    async def search(self, scope: Scope, query: str, limit: int = 5) -&gt; list[MemoryItem]: ...
+    async def get(self, scope: Scope, id: str) -&gt; MemoryItem | None: ...
+    async def forget(self, scope: Scope, id: str) -&gt; None: ...
+</code></pre>
+<p><code>MemoryManager</code> adds no logic of its own beyond construction-time composition
+— every method is a direct pass-through to one of the three injected
+backends. This is intentional: unlike <code>execute_in_sandbox</code> (real shared
+orchestration logic across <code>ToolManager</code>/<code>SkillManager</code>), there is no
+cross-facet orchestration here to centralize. The facade exists purely so a
+harness holds one object, not three.</p>
+<hr />
+<h2 id="what-this-contract-deliberately-does-not-cover">What this contract deliberately does not cover<a class="headerlink" href="#what-this-contract-deliberately-does-not-cover" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><code>fabrica-contrib[mem0|zep|letta|cognee|langmem]</code> adapter internals</strong> —
+  each adapter's job is to implement <code>MemoryStore</code> and translate its own
+  failures into <code>MemoryBackendError</code>; this contract specifies the boundary,
+  not each adapter's implementation.</li>
+<li><strong>Civitas's <code>StateStore</code> checkpointing</strong> of working memory and the default
+  long-term store — referenced as a dependency (<code>memory.md</code>'s Integration
+  section), mediated through <code>CivitasBridge.request_state_persistence</code>
+  (<code>system-design.md §1</code>'s correction), not specified here.</li>
+<li><strong>Whether <code>CivitasBridge</code> was constructed with a <code>Summarizer</code></strong> — out of
+  scope for this contract; <code>NullCompactor</code> documents the behavior when it
+  wasn't, but the decision of whether/how a harness supplies one belongs to
+  <code>CivitasBridge</code>'s own contract, not yet written.</li>
+<li><strong><code>Message</code> ↔ Civitas's runtime-loop representation conversion</strong> — flagged
+  above as unreconciled, not assumed away.</li>
+</ul>
+<h2 id="real-addition-built-after-contractscivitas-bridgemds-own-open-item-persistedmemorystore">Real addition, built after <code>contracts/civitas-bridge.md</code>'s own open item: <code>PersistedMemoryStore</code><a class="headerlink" href="#real-addition-built-after-contractscivitas-bridgemds-own-open-item-persistedmemorystore" title="Permanent link">&para;</a></h2>
+<p><code>civitas-bridge.md</code>'s "Correction found during implementation" section
+flagged a real gap: <code>CivitasBridge.request_state_persistence</code> returns a
+<code>ComponentStateHandle</code>, but no <code>MemoryStore</code> implementation existed to
+receive it. <code>PersistedMemoryStore</code> (<code>fabrica/memory/store.py</code>) closes this.</p>
+<p><strong>Shape, decided through implementation</strong>: a <code>BlobStore</code> Protocol (<code>get()</code>/
+<code>set()</code> over a whole <code>dict[str, Any]</code>) is defined LOCALLY in
+<code>fabrica.memory.store</code> -- not an import of
+<code>fabrica.civitas_bridge.state.ComponentStateHandle</code> -- for two reasons, one
+architectural and one structural. Architecturally: <code>fabrica.memory</code>
+depending on <code>fabrica.civitas_bridge</code> would invert the dependency direction
+<code>architecture.md §1a</code> establishes (only <code>CivitasBridge</code> integrates tightly;
+every other component stays independently usable). Structurally: it would
+also be a genuine circular import, since <code>fabrica.civitas_bridge</code> already
+imports <code>fabrica.memory</code> for <code>MemoryManager</code>. <code>ComponentStateHandle</code>
+already satisfies <code>BlobStore</code>'s shape today -- <code>CivitasBridge.build()</code>
+passes one in without <code>fabrica.memory</code> ever needing to know that type
+exists, the same "depend on shapes, not packages" pattern used for
+<code>PresidiumClient</code>/<code>Summarizer</code>/<code>CivitasRuntime</code>.</p>
+<p><strong>Write-through, not lazy, and load-once, not per-read</strong>: <code>BlobStore</code> has
+no partial-update operation -- every <code>write()</code>/<code>forget()</code> persists the
+ENTIRE current snapshot immediately (<code>_memory_snapshot</code>/
+<code>_restore_memory_snapshot</code>), and the full state is loaded exactly once, at
+construction (<code>PersistedMemoryStore.create()</code>, an async factory --
+<code>__init__</code> itself stays synchronous, same pattern as
+<code>MCPToolNamespace.create()</code>). This is correct, not just simple: a
+<code>ComponentStateHandle</code> has exactly one owning writer per <code>component_name</code>
+by construction (<code>CivitasBridge</code> binds one per manager), never a fanned-out
+reader that could miss another process's concurrent update.</p>
+<p><strong>Reuses <code>InMemoryMemoryStore</code> internally via composition</strong>, not
+duplicated matching/scoring logic -- <code>PersistedMemoryStore</code> delegates
+<code>write()</code>/<code>search()</code>/<code>get()</code>/<code>forget()</code> to a real <code>InMemoryMemoryStore</code>
+instance, intercepting only the mutating calls to persist afterward. The
+two implementations' actual behavior can never silently drift apart.</p>
+<p>Tested against both a minimal <code>BlobStore</code> test double (isolating this
+class's own logic) AND a real <code>civitas.plugins.state.InMemoryStateStore</code> +
+<code>ComponentStateHandle</code> (proving the duck-typing genuinely works against
+the real class, not just an idealized one) -- including a real
+"restart" scenario: a second, independent <code>PersistedMemoryStore.create()</code>
+over the same underlying store sees everything the first one wrote.</p>
+<h2 id="real-addition-tracer-di-on-memorymanager">Real addition: <code>tracer</code> DI on <code>MemoryManager</code><a class="headerlink" href="#real-addition-tracer-di-on-memorymanager" title="Permanent link">&para;</a></h2>
+<p><code>MemoryManager</code> now accepts an optional <code>tracer: fabrica.observability
+.Tracer | None = None</code> (defaults to <code>NullTracer()</code>). <code>write()</code>/<code>search()</code>
+each emit a real <code>fabrica.memory.write</code>/<code>fabrica.memory.search</code> span
+carrying <code>Scope</code> fields (<code>user_id</code>/<code>session_id</code>/<code>agent_id</code>/<code>team_id</code>) and
+the backend class name as attributes -- standalone spans, not nested
+under anything else, since no caller flow established a parent context
+for them in this pass. Full design:
+<a href="../../system-design/#7-observability-spans-this-system-emits">system-design.md §7</a>.</p>
+<h2 id="open-items-for-implementation">Open items for implementation<a class="headerlink" href="#open-items-for-implementation" title="Permanent link">&para;</a></h2>
+<ol>
+<li>~~The single-message-exceeds-budget edge case in <code>RecencyCompactor</code>...~~
+   <strong>Resolved above, in <code>RecencyCompactor</code>'s own section</strong> -- found
+   already implemented and tested
+   (<code>test_single_message_exceeding_budget_preserves_nothing_verbatim</code>),
+   just previously left marked "unresolved" here even though the code's
+   own docstring already stated the mechanical answer plainly. Pure
+   documentation fix -- no code change needed.</li>
+<li>~~<code>WorkingMemoryQuotaExceeded</code>'s default ceiling...~~ <strong>Resolved: 256KB,
+   shipped as <code>DEFAULT_QUOTA_BYTES</code></strong> (<code>working_memory.py</code>), with its own
+   docstring stating plainly it's a placeholder, not validated against
+   any real working-memory usage pattern -- no spike exists for what a
+   realistic session's scratchpad actually accumulates. <code>quota_bytes</code> is
+   a real, overridable constructor parameter on <code>InMemoryWorkingMemoryStore</code>,
+   not a hardcoded constant -- a deployment with real data can override
+   it today without waiting for that spike. Revisit the DEFAULT (not the
+   mechanism, which is already real and tested) if real usage data ever
+   shows 256KB too small or too generous.</li>
+<li>
+<p>~~Per <code>memory.md</code> open question 9: the whole preserve-verbatim-plus-summarize
+   strategy has zero empirical backing~~ <strong>Resolved for the strategy, not the
+   number.</strong> <a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-recency-compactor-validation.md">SPIKE-recency-compactor-validation.md</a>
+   validated the summarize-vs-truncate mechanism directly (5/5 grounded-correct
+   vs. 0/5), the same rigor <code>SPIKE-code-mode-execution.md</code> applied elsewhere.
+   ~~<code>preserve_last_n=6</code> itself is still an unvalidated guess~~ <strong>Narrowed,
+   not fully closed.</strong>
+   <a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-recency-compactor-n-value.md">SPIKE-recency-compactor-n-value.md</a>
+   varied <code>preserve_last_n</code> (2, 6, 10) against a REAL, deliberately tight
+   <code>budget_tokens</code> boundary (unlike the first spike's "plenty of room"
+   scenario) — calling the actual <code>RecencyCompactor</code>/<code>_select_preserved</code>
+   code, not a reimplementation. The real budget-clipping mechanism
+   engaged exactly as coded (<code>preserve_last_n=10</code>'s request was correctly
+   honored down to 6, the most the budget allowed, in every run), and all
+   three N values scored 5/5 grounded-correct — <code>preserve_last_n</code>'s exact
+   value made no observable difference in this scenario. Was still open,
+   precisely scoped rather than broadly: multiple competing facts needing
+   simultaneous preservation, and a summary itself losing a fact under
+   real token pressure -- <strong>now closed by a third spike, below.</strong></p>
+</li>
+<li>
+<p>~~<code>RecencyCompactor</code> has zero validation of its own summary output~~
+   <strong>Resolved, 2026-08-26</strong> -- real code, not just a proposal. Triggered
+   by a 5-advisor LLM council (peer-reviewed, 5/5 independent convergence)
+   run against a cited SOTA survey's own sharpest claim (arXiv:2607.21503):
+   unvalidated compaction can drop task accuracy BELOW the no-context
+   baseline. <code>RecencyCompactor</code> now scores every summary with a cheap,
+   non-LLM heuristic (<code>score_compaction()</code> -- numeric-token overlap +
+   content-word overlap between the source messages and the summary,
+   weighted 0.6/0.4) and exposes the result via two new
+   <code>CompactionResult</code> fields: <code>validation_score: float | None</code> (<code>None</code>
+   when nothing was summarized) and <code>degraded: bool</code> (below
+   <code>validation_threshold</code>, default 0.55). Retry is opt-in, not automatic
+   -- a caller supplies a <code>retry_summarizer: Summarizer | None</code> (typically
+   the same model, a stricter, more fact-explicit prompt); the identical
+   summarizer is never blindly retried with the identical prompt, since
+   that specific configuration was never validated and has no principled
+   reason to help. The retry always uses the SAME <code>target_tokens</code> as the
+   first attempt, never a larger one -- a caller's <code>budget_tokens</code> is a
+   real ceiling (e.g. a model's context window), not a suggestion.</p>
+</li>
+</ol>
+<p><strong><a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-recency-compactor-validation-gate.md">SPIKE-recency-compactor-validation-gate.md</a></strong>
+   validated this directly, real <code>RecencyCompactor</code> calls, real Gemini
+   2.5 Flash via Vertex AI, extending the scenario to three competing
+   hard facts (financial, medical/safety, scheduling) under a tight
+   <code>budget_tokens</code> with a genuinely generic (non-fact-aware) summarizer
+   prompt -- the exact condition the first two spikes' own fact-aware
+   prompt never exercised. Real result: naive (today's shipped, unvalidated
+   behavior) preserved both critical facts in only 3/6 runs; the same
+   scenario with the validation gate hit 6/6, with the exact missing fact
+   named by the validation detail every time. A confirmatory run using the
+   SAME <code>budget_tokens</code> on retry (not a larger one, isolating the
+   prompt-only effect) still held 6/6.</p>
+<p>Named as still open, not silently glossed over: the retry-exhaustion
+   path (what happens when the retry also fails validation -- currently
+   <code>degraded=True</code> is surfaced honestly, no third attempt is invented) was
+   never empirically exercised, since every retry in the spike happened to
+   succeed; the exact threshold (0.55) and weighting (0.6/0.4) are a
+   reasonable starting point given the wide separating gap observed, not
+   independently tuned against a broader dataset.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Apache 2.0 License
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/civitas-io/fabrica" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "navigation.instant", "navigation.indexes", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

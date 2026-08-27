@@ -1,0 +1,2230 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The context layer for Python agents">
+      
+      
+      
+        <link rel="canonical" href="https://civitas-io.github.io/fabrica/contracts/mcp-server/">
+      
+      
+        <link rel="prev" href="../mcp-integration/">
+      
+      
+        <link rel="next" href="../../deployment/firecracker-rootfs/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>MCP Server - Fabrica</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#contract-fabricamcpserver" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Fabrica" class="md-header__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Fabrica
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MCP Server
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../context-layer/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../civitas-bridge/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Contracts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../deployment/firecracker-rootfs/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Deployment
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../personas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reflection & Critique
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../PLAN/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plan
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Fabrica" class="md-nav__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Fabrica
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../civitas-presidium-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas + Presidium Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../landscape/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Landscape
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../context-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tool-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../skills-gateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../retrieval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fabrica as an MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../civitas-bridge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas Bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../managers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../managed-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managed Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retriever/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retriever
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#correction-found-during-implementation-http-transport-reuses-the-mcp-librarys-own-real-auth-support-not-hand-rolled-asgi-middleware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correction found during implementation: HTTP transport reuses the mcp library's OWN real auth support, not hand-rolled ASGI middleware
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fabricamcpserver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FabricaMCPServer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-handlers-five-fixed-tools-deliberately-never-more" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool handlers — five fixed tools, deliberately never more
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prompts-mcps-native-primitive-not-a-custom-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prompts — MCP's native primitive, not a custom tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-contract-deliberately-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this contract deliberately does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-items-for-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open items for implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/firecracker-rootfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firecracker Rootfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reflection & Critique
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reflection & Critique
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../problem-definition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problem Definition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../self-reflection-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Reflection Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../critique/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Critique: Design vs. Evidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#correction-found-during-implementation-http-transport-reuses-the-mcp-librarys-own-real-auth-support-not-hand-rolled-asgi-middleware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correction found during implementation: HTTP transport reuses the mcp library's OWN real auth support, not hand-rolled ASGI middleware
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fabricamcpserver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FabricaMCPServer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-handlers-five-fixed-tools-deliberately-never-more" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool handlers — five fixed tools, deliberately never more
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prompts-mcps-native-primitive-not-a-custom-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prompts — MCP's native primitive, not a custom tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-contract-deliberately-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this contract deliberately does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-items-for-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open items for implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="contract-fabricamcpserver">Contract: <code>FabricaMCPServer</code><a class="headerlink" href="#contract-fabricamcpserver" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Implemented (<code>src/fabrica/mcp/server.py</code>), both stdio and HTTP
+transports real · <strong>Last updated:</strong> 2026-08
+<strong>Depends on:</strong> <a href="../../mcp-server/">mcp-server.md</a> (the design this formalizes),
+<a href="../civitas-bridge/">contracts/civitas-bridge.md</a> (<code>Fabrica</code>, the facade this
+wraps), <a href="../managers/">contracts/managers.md</a> (<code>execute_in_sandbox</code>, reused
+unchanged underneath every tool handler)</p>
+<hr />
+<h2 id="correction-found-during-implementation-http-transport-reuses-the-mcp-librarys-own-real-auth-support-not-hand-rolled-asgi-middleware">Correction found during implementation: HTTP transport reuses the <code>mcp</code> library's OWN real auth support, not hand-rolled ASGI middleware<a class="headerlink" href="#correction-found-during-implementation-http-transport-reuses-the-mcp-librarys-own-real-auth-support-not-hand-rolled-asgi-middleware" title="Permanent link">&para;</a></h2>
+<p>The original sketch above implied <code>FabricaMCPServer</code> would need its own
+ASGI app assembly and its own bearer-token extraction. Reading
+<code>mcp.server.lowlevel.Server</code>'s real, current API during implementation
+found this already exists, built-in: <code>Server.streamable_http_app(auth=...,
+token_verifier=...)</code> returns a real <code>Starlette</code> app with
+<code>AuthenticationMiddleware</code>/<code>BearerAuthBackend</code> (extracts the bearer token,
+calls <code>token_verifier.verify_token</code>) and <code>RequireAuthMiddleware</code> (rejects
+any request with no authenticated user) already wired in -- confirmed
+working end to end (a real <code>uvicorn</code> server, a real
+<code>mcp.client.streamable_http</code> client, real accept/reject) before writing
+any of <code>FabricaMCPServer</code>'s own code, not assumed from the library's docs.</p>
+<p><code>TokenAuthenticator</code> (this contract's own DI boundary) is adapted onto the
+real <code>mcp.server.auth.provider.TokenVerifier</code> Protocol via a small
+<code>_TokenVerifierAdapter</code> -- <code>agent_id</code> is carried in the real
+<code>AccessToken.subject</code> field (not <code>client_id</code>, which means something
+different in OAuth: the calling application, not the resolved end-user
+identity) and retrieved per-request via <code>get_access_token()</code>'s contextvar
+inside <code>_on_call_tool</code>, exactly where <code>stdio_agent_id</code> is used for stdio.</p>
+<p>Two required-but-otherwise-unused fields on the real <code>AuthSettings</code>
+pydantic model, <code>issuer_url</code> and <code>resource_server_url</code>, must both be
+supplied even though no real OAuth authorization-server flow is used here
+-- confirmed directly (not from docs) that <code>streamable_http_app</code> only adds
+OAuth discovery <em>routes</em> when <code>auth_server_provider</code> is ALSO set, which it
+never is in this contract; <code>issuer_url</code> is a required placeholder value in
+that configuration, not a real identity this server asserts.</p>
+<p><strong>A real gap found and fixed at the same time</strong>: this contract's
+<code>ServerTransportConfig</code> never actually enforced "authenticator: Required
+if kind == 'http'" -- it was stated in the docstring only.
+<code>ServerTransportConfig.__post_init__</code> now raises <code>ValueError</code> for
+<code>kind="http"</code> missing any of <code>host</code>/<code>port</code>/<code>authenticator</code>, matching
+<code>MCPServerConfig</code>'s own validation pattern (<code>contracts/mcp-integration.md</code>).</p>
+<p><strong><code>AuthenticationError</code> is no longer constructed or raised anywhere in
+this module</strong> -- <code>RequireAuthMiddleware</code> rejects unauthenticated requests
+with a real HTTP 401 response, not a Python exception <code>FabricaMCPServer</code>
+could catch and re-raise. Kept in the public error hierarchy for a caller
+who wants one <code>FabricaMCPServerError</code> subtree to catch, but nothing in
+<code>src/fabrica/mcp/server.py</code> raises it.</p>
+<p><strong><code>UnsupportedTransportError</code> (originally sketched for an unimplemented
+HTTP path) no longer exists</strong> -- both transports are real now, so there
+is nothing left for it to guard.</p>
+<h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class TokenAuthenticator(Protocol):
+    &quot;&quot;&quot;Injected dependency -- resolves a bearer token to an agent_id, or
+    None if invalid/unrecognized. FabricaMCPServer never stores or
+    validates tokens itself; that's an operator-supplied concern (a
+    lookup table, a database, an external auth service). Same DI shape
+    as Summarizer/PresidiumClient -- external dependencies are always
+    fully-constructed objects, never raw config this contract would
+    translate itself (architecture.md §1a).&quot;&quot;&quot;
+    async def authenticate(self, token: str) -&gt; str | None: ...
+
+
+@dataclass(frozen=True)
+class ServerTransportConfig:
+    kind: Literal[&quot;stdio&quot;, &quot;http&quot;]
+    host: str | None = None           # required if kind == &quot;http&quot;
+    port: int | None = None           # required if kind == &quot;http&quot;
+    authenticator: TokenAuthenticator | None = None
+    &quot;&quot;&quot;Required if kind == &quot;http&quot; -- HTTP connections need bearer-token
+    resolution to an agent_id (mcp-server.md's resolved auth layer). None
+    for stdio -- see stdio_agent_id below.&quot;&quot;&quot;
+    stdio_agent_id: str = &quot;mcp-stdio-client&quot;
+
+    def __post_init__(self) -&gt; None:
+        &quot;&quot;&quot;Real gap found and fixed during implementation: this contract's
+        first draft stated &quot;required if kind == 'http'&quot; only in a
+        docstring, never enforced it. Enforced now -- raises ValueError
+        for kind=&quot;http&quot; missing any of host/port/authenticator, matching
+        MCPServerConfig's own __post_init__ validation pattern
+        (contracts/mcp-integration.md).&quot;&quot;&quot;
+    &quot;&quot;&quot;The agent_id assigned to every stdio connection. Only one trusted
+    local caller exists per stdio session (implicit trust via process
+    spawn, same as every local MCP server) -- no per-connection identity
+    to resolve, so a single configured default suffices.&quot;&quot;&quot;
+</code></pre>
+<hr />
+<h2 id="errors">Errors<a class="headerlink" href="#errors" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class FabricaMCPServerError(Exception):
+    &quot;&quot;&quot;Base for FabricaMCPServer-specific errors.&quot;&quot;&quot;
+
+
+class WeakIsolationError(FabricaMCPServerError):
+    &quot;&quot;&quot;Raised at construction time when the underlying SandboxPool's tier
+    is below Tier 2 and allow_weak_isolation_for_external_callers is
+    False (the default) -- mcp-server.md's resolved isolation rule,
+    fourth confirmed instance of the fail-closed-by-default,
+    explicit-opt-in-to-bypass pattern (NullPresidiumClient.allow_ungoverned,
+    MCPClient.allow_unsandboxed, this).&quot;&quot;&quot;
+
+
+class AuthenticationError(FabricaMCPServerError):
+    &quot;&quot;&quot;Raised when an HTTP/SSE connection presents a token that
+    authenticator.authenticate() resolves to None. This is a
+    connection-level rejection -- it happens BEFORE any check_grant call,
+    a layer that doesn't exist anywhere else in this platform's design
+    (mcp-server.md's two-layer authorization model).&quot;&quot;&quot;
+</code></pre>
+<hr />
+<h2 id="fabricamcpserver"><code>FabricaMCPServer</code><a class="headerlink" href="#fabricamcpserver" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">class FabricaMCPServer:
+    def __init__(
+        self,
+        fabrica: Fabrica,
+        transport: ServerTransportConfig,
+        *,
+        allow_weak_isolation_for_external_callers: bool = False,
+    ) -&gt; None:
+        &quot;&quot;&quot;
+        Raises:
+            WeakIsolationError: fabrica's underlying SandboxPool tier is
+                below Tier 2 and allow_weak_isolation_for_external_callers
+                is False.
+
+        Wraps an ALREADY-BUILT Fabrica facade (the output of
+        CivitasBridge.build()) -- this is an additional front door, never
+        a replacement for direct in-process use. FabricaMCPServer holds no
+        object graph of its own; every tool handler below delegates
+        directly to fabrica's existing managers.&quot;&quot;&quot;
+
+    async def start(self) -&gt; None:
+        &quot;&quot;&quot;Begins listening (stdio: reads from stdin; http: binds
+        host:port). Blocks until stop() is called or the process ends.&quot;&quot;&quot;
+
+    async def stop(self) -&gt; None:
+        &quot;&quot;&quot;Closes the listener and any open connections.&quot;&quot;&quot;
+</code></pre>
+<h2 id="tool-handlers-five-fixed-tools-deliberately-never-more">Tool handlers — five fixed tools, deliberately never more<a class="headerlink" href="#tool-handlers-five-fixed-tools-deliberately-never-more" title="Permanent link">&para;</a></h2>
+<p>Per <code>mcp-server.md</code>'s central finding: the tool list must stay fixed-size
+regardless of how many <code>ToolNamespace</code> tools or skills are registered
+underneath, or this would reintroduce the exact O(N) schema-dump cost the
+whole platform exists to eliminate — just moved onto the external caller.</p>
+<pre><code class="language-python"># MCP tool: fabrica_find
+async def _handle_find(self, agent_id: str, query: str, kind: str | None = None) -&gt; list[RankedMatch]:
+    &quot;&quot;&quot;Delegates to fabrica.tools.find(query) / fabrica.skills.find(query)
+    depending on kind (None searches both, matching contracts/retriever.md's
+    optional-kind behavior). No check_grant call here -- discovery/search
+    was never gated by Presidium anywhere else in this platform either.&quot;&quot;&quot;
+
+# MCP tool: fabrica_run_code
+async def _handle_run_code(self, agent_id: str, code: str) -&gt; RunResult:
+    &quot;&quot;&quot;Delegates to fabrica.tools.run_code(code, agent_id=agent_id,
+    scope=Scope(agent_id=agent_id)). check_grant, execute_in_sandbox, and
+    every existing governance/observability mechanism apply completely
+    unchanged -- this handler adds nothing beyond resolving the MCP
+    connection's agent_id and passing it through.&quot;&quot;&quot;
+
+# MCP tool: fabrica_run_skill
+async def _handle_run_skill(self, agent_id: str, name: str, args: dict[str, Any]) -&gt; RunResult:
+    &quot;&quot;&quot;Delegates to fabrica.skills.run(name, args, agent_id=agent_id,
+    scope=Scope(agent_id=agent_id)). Same governance pass-through as
+    fabrica_run_code.&quot;&quot;&quot;
+
+# MCP tool: fabrica_memory_write / fabrica_memory_search
+async def _handle_memory_write(self, agent_id: str, content: str, metadata: dict | None = None) -&gt; str:
+    &quot;&quot;&quot;Delegates to fabrica.memory.write(Scope(agent_id=agent_id),
+    MemoryItem(content=content, metadata=metadata or {})).&quot;&quot;&quot;
+
+async def _handle_memory_search(self, agent_id: str, query: str, limit: int = 5) -&gt; list[MemoryItem]:
+    &quot;&quot;&quot;Delegates to fabrica.memory.search(Scope(agent_id=agent_id), query, limit).&quot;&quot;&quot;
+</code></pre>
+<p><strong><code>agent_id</code> in every handler above is resolved by the connection layer, not
+passed by the caller</strong> — an external MCP client cannot claim to be a
+different <code>agent_id</code> than the one its token (or stdio session) resolved to.
+This is the connection-auth layer's entire job: establish <code>agent_id</code> once,
+trust it for the lifetime of the connection, let every downstream call use
+it exactly like a native Civitas agent's own identity.</p>
+<h2 id="prompts-mcps-native-primitive-not-a-custom-tool">Prompts — MCP's native primitive, not a custom tool<a class="headerlink" href="#prompts-mcps-native-primitive-not-a-custom-tool" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">async def _handle_prompts_list(self) -&gt; list[PromptTemplate]:
+    &quot;&quot;&quot;Delegates to fabrica.prompts.list_names(), then get(name) for each
+    -- list_names() was ADDED to contracts/prompts.md's PromptStore/
+    PromptManager specifically because writing this handler surfaced that
+    no such method existed (real gap, closed immediately, not left
+    dangling as an open item).&quot;&quot;&quot;
+
+async def _handle_prompts_get(self, name: str, version: int | None = None) -&gt; PromptTemplate:
+    &quot;&quot;&quot;Delegates directly to fabrica.prompts.get(name, version) -- the
+    closest thing to a zero-translation mapping in this whole contract.&quot;&quot;&quot;
+</code></pre>
+<h2 id="what-this-contract-deliberately-does-not-cover">What this contract deliberately does not cover<a class="headerlink" href="#what-this-contract-deliberately-does-not-cover" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>The MCP protocol/transport implementation itself</strong> (JSON-RPC framing,
+  wire details) — comes from the real <code>mcp</code> library (<code>Server.run</code>,
+  <code>Server.streamable_http_app</code>), not reimplemented here.</li>
+<li><strong>The legacy SSE transport</strong> (distinct from the modern "streamable HTTP"
+  transport implemented here) — streamable HTTP is the currently-
+  recommended transport in the real <code>mcp</code> SDK; building the deprecated
+  transport first would be backwards.</li>
+<li><strong>Token issuance, rotation, or revocation</strong> — <code>TokenAuthenticator</code> is the
+  boundary; how an operator actually mints/manages tokens is out of scope,
+  per <code>mcp-server.md</code> open question 1.</li>
+<li><strong>Rate limiting</strong> — deliberately absent; inherited from <code>SandboxPool</code>'s
+  existing bounded-overflow protection, per the design doc's stated reuse.</li>
+</ul>
+<h2 id="open-items-for-implementation">Open items for implementation<a class="headerlink" href="#open-items-for-implementation" title="Permanent link">&para;</a></h2>
+<ol>
+<li>~~<code>fabrica_prompts_list</code> has no backing method~~ <strong>Resolved</strong>: <code>list_names()</code>
+   added directly to <code>contracts/prompts.md</code>'s <code>PromptStore</code>/<code>PromptManager</code>
+   while writing this handler, rather than left as a dangling gap.</li>
+<li>~~<code>WeakIsolationError</code>'s real tier check cannot run at all yet~~
+   <strong>Resolved</strong>: <code>contracts/sandbox.md</code> now specifies a real, queryable
+   <code>Sandbox.tier</code>/<code>SandboxPool.tier</code> (its own "Real addition" section) --
+   <code>FabricaMCPServer.__init__</code> checks <code>fabrica.tools.tier &lt; 2</code> for real
+   and raises <code>WeakIsolationError</code> when true and
+   <code>allow_weak_isolation_for_external_callers</code> is false, tested directly
+   against a real <code>CivitasBridge</code>-built <code>Fabrica</code>. <strong>Still genuinely
+   open, a DIFFERENT, smaller gap than before</strong>: the check runs once, at
+   construction -- if a service-mode deployment's tier changed live
+   after <code>FabricaMCPServer</code> is already running, there is still no
+   re-check. Also honestly worth restating: only Tier 0
+   (<code>SubprocessSandbox</code>) exists anywhere in this codebase today, so every
+   real HTTP deployment must currently pass
+   <code>allow_weak_isolation_for_external_callers=True</code> to construct at all
+   -- the fail-closed default working as intended, not a bug.</li>
+<li>~~Multi-tenant HTTP deployments… doesn't stress-test MANY simultaneous
+   distinct <code>agent_id</code>s against shared <code>SandboxPool</code>/<code>Retriever</code> state
+   under real concurrent load.~~ <strong>Resolved</strong>:
+   <code>tests/mcp/test_server_stress.py</code> -- a real <code>uvicorn</code> server, 10
+   simultaneous agents (distinct bearer tokens, distinct <code>agent_id</code>s,
+   each opening its OWN real <code>mcp.client.streamable_http</code> connection via
+   <code>asyncio.gather</code>, not sequential calls) contending for the same
+   <code>SandboxPool</code>/<code>Retriever</code>. Three real findings, not just "it didn't
+   crash": (1) concurrent <code>fabrica_memory_write</code>/<code>fabrica_memory_search</code>
+   across 10 agents at once -- each agent's search saw EXACTLY its own
+   item, proving <code>Scope</code> isolation holds under genuine concurrent
+   write/search pressure, not just the sequential case already covered
+   elsewhere; (2) 10 agents running code-mode concurrently against
+   <code>max_concurrent=4</code> -- the bounded-overflow queue correctly served all
+   10 with each agent's own distinct computed result intact (no
+   cross-talk between queued/overflowed executions sharing the pool);
+   (3) the extreme case, <code>max_concurrent=1</code> forcing full serialization of
+   all 10 -- completed correctly within a bounded overall wait, proving
+   the failure mode under maximum contention is queuing, never a
+   deadlock or hang. All three tests pass consistently across repeated
+   runs, no flakiness observed.</li>
+<li>Zero spike coverage — carried forward unchanged. Real, working tests
+   exist (<code>tests/mcp/test_server.py</code>) proving correctness; a spike would
+   be about production-scale characteristics (latency, concurrent
+   connection limits under <code>uvicorn</code>), which is a different question.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Apache 2.0 License
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/civitas-io/fabrica" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "navigation.instant", "navigation.indexes", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

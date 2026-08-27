@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF"/>
+    </marker>
+  </defs>
+
+  <text x="350" y="24" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">One Request, Start to Finish</text>
+
+  <!-- Participants -->
+  <rect x="10" y="40" width="90" height="38" rx="6" fill="#374151"/>
+  <text x="55" y="63" text-anchor="middle" font-size="10" font-weight="600" fill="white">User</text>
+
+  <rect x="140" y="40" width="120" height="38" rx="6" fill="#1E3A5F"/>
+  <text x="200" y="55" text-anchor="middle" font-size="10" font-weight="600" fill="white">Agent</text>
+  <text x="200" y="69" text-anchor="middle" font-size="7" fill="#BFDBFE">Civitas AgentProcess</text>
+
+  <rect x="300" y="40" width="110" height="38" rx="6" fill="#4C1D95"/>
+  <text x="355" y="63" text-anchor="middle" font-size="10" font-weight="600" fill="white">Presidium</text>
+
+  <rect x="450" y="40" width="110" height="38" rx="6" fill="#92400E"/>
+  <text x="505" y="63" text-anchor="middle" font-size="10" font-weight="600" fill="white">Fabrica</text>
+
+  <rect x="600" y="40" width="95" height="38" rx="6" fill="#111827" stroke="#D97706" stroke-width="1.5"/>
+  <text x="647" y="63" text-anchor="middle" font-size="10" font-weight="600" fill="#FBBF24">Sandbox</text>
+
+  <!-- Lifelines -->
+  <line x1="55" y1="78" x2="55" y2="390" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="200" y1="78" x2="200" y2="390" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="355" y1="78" x2="355" y2="390" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="505" y1="78" x2="505" y2="390" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="647" y1="78" x2="647" y2="390" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <!-- step numbers -->
+  <text x="0" y="103" font-size="9" font-weight="700" fill="#6B7280">1</text>
+  <text x="0" y="138" font-size="9" font-weight="700" fill="#6B7280">2</text>
+  <text x="0" y="175" font-size="9" font-weight="700" fill="#6B7280">3</text>
+  <text x="0" y="212" font-size="9" font-weight="700" fill="#6B7280">4</text>
+  <text x="0" y="252" font-size="9" font-weight="700" fill="#6B7280">5</text>
+  <text x="0" y="292" font-size="9" font-weight="700" fill="#6B7280">6</text>
+  <text x="0" y="325" font-size="9" font-weight="700" fill="#6B7280">7</text>
+  <text x="0" y="360" font-size="9" font-weight="700" fill="#6B7280">8</text>
+
+  <!-- 1: User -> Agent -->
+  <line x1="55" y1="98" x2="192" y2="98" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="127" y="92" text-anchor="middle" font-size="8" fill="#374151">task requiring a tool + data processing</text>
+
+  <!-- 2: Agent -> Presidium -->
+  <line x1="200" y1="133" x2="347" y2="133" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="277" y="127" text-anchor="middle" font-size="8" fill="#374151">allowed to run code-mode?</text>
+
+  <!-- 3: Presidium -> Agent (ALLOW) -->
+  <line x1="355" y1="170" x2="208" y2="170" stroke="#9CA3AF" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+  <text x="277" y="164" text-anchor="middle" font-size="8" fill="#374151">ALLOW (grant + budget check)</text>
+
+  <!-- 4: Agent -> Fabrica -->
+  <line x1="200" y1="207" x2="497" y2="207" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="350" y="201" text-anchor="middle" font-size="8" fill="#374151">writes code against ToolNamespace</text>
+
+  <!-- 5: Fabrica -> Sandbox -->
+  <line x1="505" y1="247" x2="639" y2="247" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="572" y="241" text-anchor="middle" font-size="8" fill="#374151">Sandbox.run() — platform tier</text>
+
+  <!-- 6: Sandbox -> Fabrica -->
+  <line x1="647" y1="287" x2="513" y2="287" stroke="#9CA3AF" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+  <text x="580" y="281" text-anchor="middle" font-size="8" fill="#374151">small final result only</text>
+
+  <!-- 7: Fabrica -> Presidium -->
+  <line x1="505" y1="320" x2="363" y2="320" stroke="#9CA3AF" stroke-width="1.3" marker-end="url(#arr)"/>
+  <text x="430" y="314" text-anchor="middle" font-size="8" fill="#374151">usage event (cpu-seconds, calls)</text>
+
+  <!-- 8: Fabrica -> Agent -> User -->
+  <line x1="497" y1="355" x2="208" y2="355" stroke="#9CA3AF" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+  <text x="350" y="349" text-anchor="middle" font-size="8" fill="#374151">result</text>
+
+  <line x1="192" y1="355" x2="63" y2="355" stroke="#9CA3AF" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+  <text x="127" y="374" text-anchor="middle" font-size="8" fill="#374151">answer</text>
+
+  <!-- Footer -->
+  <rect x="30" y="393" width="640" height="24" rx="5" fill="#111827"/>
+  <text x="350" y="409" text-anchor="middle" font-size="9" fill="#A78BFA">Presidium meters + can throttle — Fabrica never decides ALLOW/DENY itself.</text>
+</svg>

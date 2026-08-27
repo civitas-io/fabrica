@@ -1,0 +1,65 @@
+<svg viewBox="0 0 700 440" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF"/>
+    </marker>
+  </defs>
+
+  <text x="350" y="28" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Two Ways a Model Gets a Capability</text>
+
+  <!-- Model node -->
+  <rect x="290" y="45" width="120" height="40" rx="20" fill="#111827"/>
+  <text x="350" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="white">Model</text>
+
+  <!-- decision diamond -->
+  <line x1="330" y1="85" x2="270" y2="120" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="370" y1="85" x2="430" y2="120" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="200" y="105" font-size="9" fill="#6B7280">host can write &amp; execute code?</text>
+
+  <!-- Headline box (amber, larger — it's the featured path) -->
+  <rect x="70" y="125" width="270" height="130" rx="8" fill="#111827" stroke="#D97706" stroke-width="2.5"/>
+  <text x="205" y="150" text-anchor="middle" font-size="13" font-weight="700" fill="#FBBF24">HEADLINE: code-mode</text>
+  <text x="205" y="170" text-anchor="middle" font-size="9" fill="#FDE68A">writes code against ToolNamespace</text>
+  <text x="205" y="184" text-anchor="middle" font-size="9" fill="#FDE68A">executes in a Sandbox</text>
+  <text x="205" y="198" text-anchor="middle" font-size="9" fill="#FDE68A">only the result returns to context</text>
+  <rect x="90" y="208" width="230" height="35" rx="5" fill="#92400E"/>
+  <text x="205" y="222" text-anchor="middle" font-size="8" font-weight="700" fill="white">validated: ~79% cheaper AND</text>
+  <text x="205" y="235" text-anchor="middle" font-size="8" font-weight="700" fill="white">more correct (3/3 test runs)</text>
+
+  <!-- Fallback box (neutral gray — the compatibility floor) -->
+  <rect x="360" y="125" width="270" height="130" rx="8" fill="#111827" stroke="#6B7280" stroke-width="2"/>
+  <text x="495" y="150" text-anchor="middle" font-size="13" font-weight="700" fill="#D1D5DB">FALLBACK: find()</text>
+  <text x="495" y="170" text-anchor="middle" font-size="9" fill="#D1D5DB">one meta-tool, server-side match</text>
+  <text x="495" y="184" text-anchor="middle" font-size="9" fill="#D1D5DB">returns matched schemas directly</text>
+  <text x="495" y="198" text-anchor="middle" font-size="9" fill="#D1D5DB">for hosts that can't run code</text>
+  <rect x="380" y="208" width="230" height="35" rx="5" fill="#374151"/>
+  <text x="495" y="222" text-anchor="middle" font-size="8" font-weight="700" fill="#D1D5DB">validated: near-flat token cost</text>
+  <text x="495" y="235" text-anchor="middle" font-size="8" font-weight="700" fill="#D1D5DB">regardless of registry size</text>
+
+  <!-- Comparison table -->
+  <text x="350" y="280" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">Why code-mode wins — measured, not asserted</text>
+
+  <rect x="70" y="298" width="560" height="126" rx="6" fill="#F9FAFB" stroke="#E5E7EB"/>
+  <!-- column dividers -->
+  <line x1="290" y1="298" x2="290" y2="424" stroke="#E5E7EB"/>
+  <line x1="460" y1="298" x2="460" y2="424" stroke="#E5E7EB"/>
+  <!-- row dividers: header(298-325), row1(325-357), row2(357-391), row3(391-424) -->
+  <line x1="70" y1="325" x2="630" y2="325" stroke="#E5E7EB"/>
+  <line x1="70" y1="357" x2="630" y2="357" stroke="#E5E7EB"/>
+  <line x1="70" y1="391" x2="630" y2="391" stroke="#E5E7EB"/>
+
+  <text x="375" y="316" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">Traditional tool-calling</text>
+  <text x="545" y="316" text-anchor="middle" font-size="9" font-weight="700" fill="#B45309">Code-mode</text>
+
+  <text x="80" y="345" font-size="9" fill="#374151">Filtering / counting</text>
+  <text x="375" y="345" text-anchor="middle" font-size="8" fill="#6B7280">model estimates from read text</text>
+  <text x="545" y="345" text-anchor="middle" font-size="8" font-weight="600" fill="#92400E">real Python arithmetic, in-sandbox</text>
+
+  <text x="80" y="378" font-size="9" fill="#374151">Measured correctness</text>
+  <text x="375" y="378" text-anchor="middle" font-size="8" font-weight="700" fill="#DC2626">wrong in 3/3 runs (16–48% off)</text>
+  <text x="545" y="378" text-anchor="middle" font-size="8" font-weight="700" fill="#059669">exact in 3/3 runs</text>
+
+  <text x="80" y="411" font-size="9" fill="#374151">Token cost (same task)</text>
+  <text x="375" y="411" text-anchor="middle" font-size="8" fill="#6B7280">23,392–23,592</text>
+  <text x="545" y="411" text-anchor="middle" font-size="8" font-weight="700" fill="#92400E">4,826–4,904 (~79% less)</text>
+</svg>

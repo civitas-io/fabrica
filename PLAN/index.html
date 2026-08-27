@@ -1,0 +1,2670 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The context layer for Python agents">
+      
+      
+      
+        <link rel="canonical" href="https://civitas-io.github.io/fabrica/PLAN/">
+      
+      
+        <link rel="prev" href="../critique/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Plan - Fabrica</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Fabrica" class="md-header__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Fabrica
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../context-layer/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../contracts/civitas-bridge/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Contracts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../deployment/firecracker-rootfs/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Deployment
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../personas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reflection & Critique
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plan
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Fabrica" class="md-nav__button md-logo" aria-label="Fabrica" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Fabrica
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/civitas-io/fabrica" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    civitas-io/fabrica
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../system-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../civitas-presidium-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas + Presidium Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../landscape/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Landscape
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../context-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tool-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skills-gateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retrieval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fabrica as an MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/civitas-bridge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civitas Bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/managers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/managed-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managed Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/retriever/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retriever
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/mcp-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/firecracker-rootfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firecracker Rootfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reflection & Critique
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reflection & Critique
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../problem-definition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problem Definition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../self-reflection-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Reflection Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../critique/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Critique: Design vs. Evidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#phase-1-reflection-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1 — Reflection fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2-remaining-backlog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2 — Remaining backlog
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 2 — Remaining backlog">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#easy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Easy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#medium" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Medium
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complex
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-mid-session-not-part-of-the-original-backlog-costingbilling-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added mid-session, not part of the original backlog -- costing/billing data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-post-phase-2-documentation-reliability-audit-llm-council-2026-08-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added post-Phase-2 — documentation reliability audit (LLM council, 2026-08-27)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blocked-not-sequenced-by-complexity-simply-not-actionable-right-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blocked — not sequenced by complexity, simply not actionable right now
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deliberately-out-of-scope-for-this-plan-already-correctly-deferred-revisit-only-if-forced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deliberately out of scope for this plan — already correctly deferred, revisit only if forced
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#phase-1-reflection-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1 — Reflection fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2-remaining-backlog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2 — Remaining backlog
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 2 — Remaining backlog">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#easy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Easy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#medium" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Medium
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complex
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-mid-session-not-part-of-the-original-backlog-costingbilling-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added mid-session, not part of the original backlog -- costing/billing data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-post-phase-2-documentation-reliability-audit-llm-council-2026-08-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added post-Phase-2 — documentation reliability audit (LLM council, 2026-08-27)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blocked-not-sequenced-by-complexity-simply-not-actionable-right-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blocked — not sequenced by complexity, simply not actionable right now
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deliberately-out-of-scope-for-this-plan-already-correctly-deferred-revisit-only-if-forced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deliberately out of scope for this plan — already correctly deferred, revisit only if forced
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="plan">Plan<a class="headerlink" href="#plan" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Active tracking doc · <strong>Last updated:</strong> 2026-08
+<strong>Purpose:</strong> the single ordered work queue. Phase 1 (reflection fixes) ships
+first, in full, before Phase 2 (remaining backlog) starts. Within each phase,
+items are sorted <strong>easiest first, most complex last</strong> — not by importance.
+Detail for any item lives in the doc it links to; this doc tracks order and
+status only, it does not re-derive reasoning already written down elsewhere.</p>
+<p>Mark items <code>[x]</code> as they land, with the commit/PR they landed in.</p>
+<hr />
+<h2 id="phase-1-reflection-fixes">Phase 1 — Reflection fixes<a class="headerlink" href="#phase-1-reflection-fixes" title="Permanent link">&para;</a></h2>
+<p><strong>Status: complete (all six items, including the 6a/6b split).</strong></p>
+<p>From <a href="../self-reflection-report/"><code>self-reflection-report.md</code></a>. Fixed these
+before anything else because two of them are actively misleading docs, one
+was a decision left in limbo, and the last two were real product gaps
+against named success metrics — all found by checking the code against the
+vision, not invented fresh. Two items (4, 6a) were, as planned, walked
+through directly rather than decided unilaterally. Two items (5, 6b) turned
+out smaller in scope than originally written, once real investigation
+replaced the original assumption -- both corrected inline rather than
+quietly matching the original estimate. Phase 2 (the remaining backlog)
+starts next.</p>
+<ol class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Rewrite <code>README.md</code></strong> to reflect actual current state — all six
+   object-model contracts done, <code>FirecrackerSandbox</code>/platform dispatch real,
+   both MCP directions built, real test counts (195 local + 14 real-hardware),
+   twelve spikes. Pure rewrite, no decisions required. <em>(§3.6)</em> — also fixed
+   the "interface-first, <code>fabrica</code>/<code>fabrica-contrib</code>" claim and the "spans and
+   audit events" claim to state honestly that both are designed, not built.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Correct <code>context-layer.md</code> and <code>docs/retrieval.md</code>'s <code>KeywordBackend</code>
+   claim</strong> — both currently assert Rust+PyO3 in the present tense; the real
+   code is pure-Python <code>rank-bm25</code>. Restate as the real, deliberate v1
+   decision ("ship the default, revisit if forced," no performance evidence
+   yet justifies the tooling cost) instead of leaving the false claim
+   standing. Pure doc correction, no code change. <em>(§3.2)</em> — also fixed the
+   same stale claim in <code>contracts/retriever.md</code>, <code>architecture.md</code> (prose
+   and image alt-text), and the baked-in <code>&lt;text&gt;</code> labels inside
+   <code>assets/package-structure.svg</code> itself, found while checking for other
+   stragglers rather than stopping at the two files named.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Add MCP client/server to <code>context-layer.md</code>'s "Scope: what Fabrica
+   owns" table</strong> — <code>mcp-server.md</code> already correctly re-checked and passed
+   the "not a generic MCP proxy" boundary test; this is just making the
+   scope table match what was already decided elsewhere. Pure doc addition.
+   <em>(§3.5)</em> — also added a note distinguishing scope item 6 from the
+   rejected "generic MCP proxy" row in the "does NOT own" table, and an
+   honesty caveat next to the pre-existing "emits spans and audit events"
+   claim (design intent, largely unbuilt — same finding as §3.3).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Decide on the <code>fabrica</code>/<code>fabrica-contrib</code> package split</strong> —
+   discussed directly rather than resolved unilaterally. <strong>Decision:
+   deliberately deferred until closer to a real release, not built now
+   and not abandoned.</strong> Reasoning: no external user yet for the
+   zero-infra-install property to matter to in practice, and building the
+   split before Tier 1 isolation, managed-sandbox adapters, and real
+   memory-backend adapters exist would mean guessing its final shape
+   before there's anything real to validate it against — each of those
+   would otherwise need to retroactively fit a split decided too early.
+   Documented in <code>context-layer.md</code> and <code>README.md</code> as a decided
+   deferral, not left in limbo. Revisit before/at a real release, or the
+   moment a real user's install footprint becomes a genuine complaint,
+   whichever comes first. <em>(§3.1)</em></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Build real OTEL span emission across the nine spans named in
+   <code>system-design.md §7</code></strong> — all nine real now (<code>src/fabrica/observability.py</code>).
+   <strong>Turned out to need no new dependency at all</strong> (correcting the
+   assumption this item was written with): <code>Tracer</code>/<code>Span</code> are structural
+   Protocols matching <code>civitas.observability.tracer.Tracer</code>'s real,
+   public shape exactly -- a real, important finding while building this:
+   Civitas does NOT use OpenTelemetry's global <code>TracerProvider</code> registry,
+   it propagates <code>trace_id</code>/<code>parent_span_id</code> explicitly via its own
+   message-envelope fields, so a plain <code>opentelemetry.trace.get_tracer()</code>
+   call would not have actually routed through Civitas's own span
+   pipeline. <code>fabrica.observability</code> imports neither <code>opentelemetry</code> nor
+   <code>civitas</code> -- real OTEL flows transitively through <code>civitas</code> itself
+   (already a hard dependency) only once a caller supplies a real
+   <code>Tracer</code>. Every component defaults to <code>NullTracer()</code> (real no-op,
+   matching <code>NullPresidiumClient</code>/<code>NullCompactor</code>); <code>CivitasBridge</code> gained
+   a <code>tracer</code> constructor parameter, deliberately NOT auto-constructing a
+   real <code>civitas.observability.tracer.Tracer()</code> by default (real side
+   effects -- an OTEL provider, a console exporter -- that would silently
+   change every existing caller's behavior, this codebase's own test
+   suite included). Real nested trace trees, not disconnected same-
+   prefix spans: <code>fabrica.tool.code_mode.run</code>/<code>fabrica.skill.run</code> are the
+   real parent of <code>fabrica.presidium.check_grant</code>,
+   <code>fabrica.sandbox.acquire</code>, and <code>fabrica.sandbox.run</code>;
+   <code>fabrica.tool.find</code>/<code>fabrica.skill.find</code> nest <code>fabrica.retriever.search</code>
+   underneath. 15 new tests (6 unit, 5 full-object-graph integration
+   tests via a real <code>CivitasBridge</code>-built <code>Fabrica</code>, including one denied-
+   grant test proving <code>traced()</code> records and re-raises errors correctly
+   without swallowing them, and one proving a REAL
+   <code>civitas.observability.tracer.Tracer</code> satisfies the Protocol
+   structurally with zero adapter code -- not just a hand-rolled fake).
+   Two small real bugs found and fixed while wiring this up, not just
+   assumed correct: <code>check_grant</code>'s span was missing its own documented
+   <code>latency_ms</code> attribute; <code>None</code>-valued attributes (e.g. <code>Retriever
+   .search()</code>'s optional <code>kind</code>) would have silently triggered per-call
+   warnings against a real OTEL-backed span, now filtered in <code>traced()</code>
+   before reaching the <code>Tracer</code>. <em>(§3.3, first half)</em>
+6a. [x] <strong>Credential injection into <code>Sandbox</code></strong> — walked through directly,
+   as planned, before any code. <strong>Resolved as a decision, not a build</strong>:
+   Fabrica builds no credential-injection mechanism into <code>Sandbox</code> at all.
+   Investigated Tessera (<code>tsr</code>, a real, separately-built agent-blind
+   credential broker already part of the Civitas toolchain) first, rather
+   than designing from scratch. Real finding: Tessera's own interpreter/
+   exec-wrapper denylist structurally refuses to inject a secret into a
+   Python interpreter running caller-supplied code -- exactly what
+   <code>Sandbox.execute()</code> is. Two independently-built systems agree
+   credentials must never reach an interpreter about to run untrusted
+   code. Validated end to end, not just argued: Fabrica's real, unmodified
+   <code>MCPClient</code>/<code>MCPToolNamespace</code>/<code>ToolManager</code> stack composed with a
+   real, unmodified <code>tsr mcp</code> process with <strong>zero new Fabrica code</strong> --
+   model-generated code running inside a real <code>SubprocessSandbox</code> called
+   a Tessera-backed tool, with only the redacted result crossing back
+   (<a href="https://github.com/civitas-io/fabrica/blob/main/specs/archive/spikes/SPIKE-tessera-credential-integration.md">SPIKE-tessera-credential-integration.md</a>,
+   <a href="../credentials/"><code>docs/credentials.md</code></a>). Honest gap named, not
+   Fabrica's to fix: Tessera's approval model requires a human present
+   (<code>/dev/tty</code>/Touch ID) and refuses unattended/service-mode use -- a real
+   limitation for Marcus's production persona, tracked as Tessera's own
+   roadmap item, not Fabrica work.
+6b. [x] <strong>Real usage/budget metering</strong> (<code>civitas-presidium-integration.md</code>'s
+   metering-vs-enforcement design) -- <strong>turned out to need no new
+   integration point at all</strong>, correcting this item's own original
+   assumption. The consumption events ARE the item-5 spans -- this doc's
+   own "emits standardized consumption events" language, taken literally:
+   added the two real, missing attributes (<code>latency_ms</code> on
+   <code>fabrica.tool.find</code>/<code>fabrica.skill.find</code>, <code>volume_bytes</code> -- real
+   content byte length, not an item count -- on <code>fabrica.memory.write</code>/
+   <code>search</code>). Proved the "checks before executing" enforcement half needs
+   zero new code too: a real <code>PresidiumClient</code> returning <code>deny</code> for an
+   over-budget scope already refuses the run before <code>SandboxPool.acquire()</code>
+   via the existing <code>check_grant()</code> gate, proven directly (a dedicated
+   test asserting zero <code>fabrica.sandbox.*</code> spans exist when denied for an
+   explicitly budget-shaped reason, not just that an exception was
+   raised).</li>
+</ol>
+<p><strong>One real, honest measurement gap found and deliberately left
+   unmeasured, not papered over</strong>: <code>Sandbox</code>'s "memory bytes" dimension.
+   Measured empirically before attempting to add it: <code>resource.getrusage
+   (RUSAGE_CHILDREN).ru_maxrss</code> is a monotonically non-decreasing
+   high-water-mark across the WHOLE PARENT PROCESS's lifetime, not a
+   per-call delta -- confirmed directly (a 20MB child run measured
+   <em>after</em> a 200MB one reports the 200MB figure, not its own). Reporting
+   this naively as a per-run number would have been silently wrong, not
+   just imprecise -- worse than the honest gap it's left as, matching the
+   same standard already applied to <code>FirecrackerSandbox.cpu_seconds=0.0</code>.
+   A correct fix needs real per-process sampling (<code>/proc/&lt;pid&gt;/status</code>
+   polling or a <code>psutil</code> dependency), not attempted here.</p>
+<p>4 new tests. <em>(§3.3, second half)</em></p>
+<hr />
+<h2 id="phase-2-remaining-backlog">Phase 2 — Remaining backlog<a class="headerlink" href="#phase-2-remaining-backlog" title="Permanent link">&para;</a></h2>
+<p>Everything catalogued in the "what's remaining" evaluation, re-sorted here
+by complexity. Detail and full reasoning for each item lives in the contract
+doc it's already named in — not repeated here.</p>
+<h3 id="easy">Easy<a class="headerlink" href="#easy" title="Permanent link">&para;</a></h3>
+<p><strong>Status: complete (all six items, 7–12).</strong></p>
+<ol class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>civitas-bridge.md</code> open item 2: <code>build()</code>'s idempotency —
+   <strong>decided: cached, a second call returns the same <code>Fabrica</code> instance</strong>
+   (avoids a second live <code>SandboxPool</code>/warm pool, and, in service mode, a
+   second <code>request_state_persistence()</code> call per component with unclear
+   concurrent-handle semantics). Updated the one existing test that had
+   documented the opposite as "current behavior" back when this was
+   genuinely undecided.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>civitas-bridge.md</code> open item 1: validate <code>dynamic_supervisor_name</code>
+   upfront — <strong>decided: yes</strong>, via the real, public
+   <code>civitas.runtime.Runtime.get_agent()</code> lookup (added to the
+   <code>CivitasRuntime</code> Protocol), raising a new <code>SupervisorNotFoundError</code> at
+   construction. Found and fixed a real, pre-existing test gap while
+   adding this: one test used a service-mode <code>CivitasBridge</code> against a
+   topology that never actually defined the named supervisor.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>managers.md</code> open item 1: <code>find()</code>'s <code>kind</code> override — <strong>decided:
+   no override, stays fixed per manager.</strong> A caller genuinely needing
+   "search everything" already has a real way to get it --
+   <code>Retriever.search(query, kind=None)</code> directly. No code change: this
+   was already the implemented behavior.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>sandbox.md</code> open item 3: <code>on_tool_call</code>'s own timeout — <strong>decided:
+    yes</strong>, a new optional <code>tool_call_timeout</code> on <code>Sandbox.execute()</code>/
+    <code>SandboxPool.run()</code>, threaded through both managers, raising a new
+    <code>SandboxToolCallTimeoutError</code> when it fires. Found and fixed two real
+    bugs in <code>SubprocessSandbox</code> while implementing this, not assumed
+    correct on the first pass: (1) a hung tool call was never actually
+    observed by <code>execute()</code> at all before this, silently consuming the
+    entire overall timeout budget first; (2) a genuinely nasty cleanup
+    bug where awaiting an already-exception-holding task in <code>finally</code>
+    re-raised that same exception a second time, silently skipping every
+    remaining cleanup statement -- invisible in normal test runs because
+    the re-raised exception happened to match what the test already
+    expected, only surfacing as a real process hang during garbage
+    collection at shutdown (confirmed via a real stack dump). 5 new tests
+    across both backends plus <code>SandboxPool</code>'s pass-through.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>prompts.md</code> open items 3–4: <code>PromptTemplate.content</code> size ceiling
+    (256KB, <code>MAX_PROMPT_CONTENT_BYTES</code>) and <code>cache_boundary</code> validation --
+    <strong>decided: reject, don't silently pass through or truncate</strong>, both
+    enforced in <code>PromptTemplate.__post_init__</code> so every construction path
+    gets the guarantee for free. New <code>PromptTooLargeError</code>/
+    <code>InvalidCacheBoundaryError</code>. Real bug found and fixed alongside this:
+    <code>InMemoryPromptStore.put()</code>'s broad <code>except Exception</code> was swallowing
+    these into a generic <code>PromptBackendError</code>, indistinguishable from an
+    actual storage failure -- fixed to let them propagate unwrapped. 3
+    existing tests used deliberately out-of-range <code>cache_boundary</code> values
+    (valid before this validation existed) -- fixed to use real, in-range
+    values rather than loosened to accommodate the old fixtures. 5 new
+    tests.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>memory.md</code> open item 2: <code>WorkingMemoryQuotaExceeded</code>'s default
+    ceiling -- <strong>found already resolved in code</strong>, just not marked as
+    such in the contract: <code>DEFAULT_QUOTA_BYTES = 256 * 1024</code> already
+    ships with an honest "placeholder, not validated" docstring, and
+    <code>quota_bytes</code> is already a real, overridable constructor parameter,
+    already tested. Pure documentation fix -- no code change needed.</li>
+</ol>
+<h3 id="medium">Medium<a class="headerlink" href="#medium" title="Permanent link">&para;</a></h3>
+<ol class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>retriever.md</code> open item 1: eager-cache invalidation strategy when
+    an eager item is deregistered mid-flight -- <strong>decided: invalidate
+    immediately.</strong> <code>deregister()</code> now pops from <code>Retriever</code>'s own
+    bookkeeping (<code>list_eager()</code>'s real data source) BEFORE attempting
+    either backend's best-effort removal, not after -- closes the
+    mid-flight staleness window the contract named, without touching
+    <code>search()</code>'s separate (and unchanged) eventual-consistency behavior.
+    2 new tests.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>retriever.md</code> open item 2: decide batch atomicity
+    (all-or-nothing vs. best-effort) for large <code>register</code>/<code>deregister</code>
+    calls -- <strong>decided: two different guarantees at two different
+    stages</strong>, not one blanket answer. Duplicate-id checking across the
+    WHOLE batch happens before either backend is touched (real
+    all-or-nothing there); each backend's own <code>add()</code> call for the whole
+    list is best-effort per item past that point, since
+    <code>RetrieverBackend.add() -&gt; None</code> has no way to report which items in
+    a batch succeeded -- matches what the only real backend
+    (<code>KeywordBackend</code>) already does. 1 new test proving the duplicate
+    check's own all-or-nothing guarantee specifically.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>memory.md</code> open item 1: the single-message-exceeds-budget edge case
+    in <code>RecencyCompactor</code> -- <strong>found already resolved in code</strong>, same
+    shape as item 12: <code>_select_preserved</code> already folds an oversized
+    single message into the summarized set (zero preserved verbatim),
+    already tested
+    (<code>test_single_message_exceeding_budget_preserves_nothing_verbatim</code>).
+    Decided and documented explicitly rather than left "unresolved":
+    fold into the summary (relying on the injected <code>Summarizer</code> to
+    compress it, its actual designed job), not truncate (would need a
+    tokenizer dependency this project deliberately avoids) or drop
+    silently (loses information without signaling). <code>CompactionResult
+    .preserved == []</code> is itself the observable signal, no new field
+    needed. Pure documentation fix -- no code change needed.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>prompts.md</code> open item 1: <code>PromptManager</code>'s cache eviction policy
+    (size ceiling, TTL, or unbounded) -- <strong>found already resolved in
+    code</strong>, same shape as items 12 and 15: <code>PromptManager</code>'s own
+    docstring already stated "unbounded in-process cache" as a real,
+    reasoned decision (prompt catalogs expected to be small and curated,
+    unlike tool/skill catalogs or memory), just never reflected in the
+    contract's own open-items list. Pure documentation fix -- no code
+    change, no new test (there is no meaningful way to test the absence
+    of an eviction mechanism beyond what <code>test_get_is_cached_avoids
+    _backend_round_trip</code> already proves about the cache itself).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>FirecrackerSandbox</code> real per-VM CPU accounting -- <strong>resolved, but
+    NOT via Firecracker's own metrics API as originally framed</strong>:
+    checked directly against the real, bundled OpenAPI spec first --
+    <code>/metrics</code> is write-only (configures a periodic-dump named pipe, not
+    a queryable CPU-seconds value) -- so that mechanism was never
+    actually going to work. Real fix: read <code>/proc/&lt;firecracker_pid&gt;
+    /stat</code> from the host (same technique <code>libvirt</code>/<code>virsh domstats</code>
+    use), since Firecracker's vCPU(s) run as threads within one process,
+    not separate children -- that process's aggregate utime+stime
+    already includes all real guest CPU execution. Reported as a delta
+    against the same process's own reading at execute()'s start, not a
+    lifetime total (unlike the memory-bytes dimension, which stayed
+    deliberately unmeasured for exactly that reason -- this metric
+    doesn't have that problem). Verified for real on the homelab before
+    writing permanent tests: a CPU-bound guest loop measured ~2.81s
+    delta CPU time closely matching its own ~2.81s wall-clock duration;
+    a trivial task measured ~0.000s. 2 new tests, verified stable 3x on
+    real hardware alongside the existing 18 hardware-gated tests,
+    filesystem confirmed clean afterward.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> A real, minimal, purpose-built Firecracker rootfs image --
+    <strong>done</strong>, no new <code>sudo</code> scope needed. Ubuntu 24.04 + <code>python3</code> only
+    (no systemd, no other packages), built via a real <code>docker build</code>
+    /<code>export</code> + <code>mke2fs -t ext4 -d</code> (entirely userspace -- no mount, no
+    loop device, no root for the base-image-creation step itself; only
+    the existing, already-scoped mount/cp step for baking the guest
+    shim in afterward). New: <code>scripts/build_firecracker_minimal_base.sh</code>,
+    <code>scripts/firecracker-minimal-base.Dockerfile</code>.
+    <strong>A real dead end tried and rejected first, not assumed correct</strong>:
+    the obvious choice, the official <code>python:3.12-slim</code> Docker image,
+    installs Python at <code>/usr/local/bin/python3.12</code>, not the fixed
+    <code>/usr/bin/python3</code> <code>FirecrackerSandbox</code>'s kernel boot args require --
+    confirmed via a real kernel panic on real hardware (<code>Requested init
+    /usr/bin/python3 failed (error -2)</code>), not caught by inspection.
+    Plain <code>ubuntu:24.04</code> + <code>apt-get install python3</code> installs the
+    standard distro way instead, matching the fixed boot args with zero
+    code change.
+    <strong>Real, measured result</strong> (homelab, real KVM/Firecracker): apparent
+    image size 1.0G -&gt; 300M; actual on-disk size 170M -&gt; 60M; the
+    per-instance rootfs copy <code>boot_clean()</code> does for every sandbox
+    instance dropped from a consistent ~945-955ms to ~265-268ms (3 runs
+    each, same session/disk) -- ~3.5x faster, roughly proportional to
+    file size since <code>shutil.copyfile()</code> doesn't preserve sparseness.
+    End-to-end <code>boot_clean()</code> (fair back-to-back comparison, 3 runs
+    each): ~1910ms avg -&gt; ~1205ms avg, a real ~37% reduction.
+    <strong>Stated honestly, not oversold</strong>: guest kernel BOOT TIME itself did
+    NOT meaningfully improve (dominated by kernel init/<code>devtmpfs</code>/Python
+    interpreter startup, not rootfs size) -- a real disk-footprint/copy-
+    time win, not a boot-latency win; the commonly-cited "~125ms boot"
+    figures likely need eliminating CPython's own interpreter-startup
+    cost as PID 1 entirely (a compiled/static init), separate, uncounted
+    work not done here.
+    Verified end to end on real hardware before any script/Dockerfile
+    existed: real stdlib imports (<code>re</code>/<code>hashlib</code>/<code>datetime</code>/<code>json</code>/
+    <code>base64</code>/<code>itertools</code>/<code>collections</code>/<code>math</code>/<code>random</code>/<code>uuid</code>/<code>urllib
+    .parse</code>), <code>/dev/null</code>/<code>/dev/urandom</code> both exist and are readable
+    (<code>devtmpfs</code> auto-mount, confirmed via console log, not assumed).
+    The full existing 16-test <code>test_firecracker_backend.py</code> suite (CPU
+    accounting, network isolation, timeout handling, the real tool-call
+    boundary crossing) then re-run against a base image built by the
+    FINAL script itself, not just the manual steps that found it first --
+    16/16 passed. Documented in <code>docs/deployment/firecracker-rootfs.md</code>
+    (new "Building a minimal base image" section with full numbers),
+    <code>docs/contracts/sandbox.md</code>, <code>docs/isolation.md</code>.</li>
+</ol>
+<h3 id="complex">Complex<a class="headerlink" href="#complex" title="Permanent link">&para;</a></h3>
+<ol class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Tier 1 isolation backend — <strong>done, via <code>srt</code>, not <code>gVisor</code></strong>
+    (<code>SrtSandbox</code>, e79f51e, done directly by the user in a parallel
+    session, reviewed and one real bug fixed afterward — see item 19a
+    below). Real, OS-level, default-deny network enforcement
+    (Seatbelt/bubblewrap+netns/WFP per platform), live-verified on macOS
+    (allowlisted domain reachable, non-allowlisted domain gets a real
+    proxy-level 403, <code>~/.ssh</code> read denied, guest-shim ZMQ bridge still
+    works through the restriction) — Linux/Windows untested, <code>srt</code>
+    documents support for both but neither exercised here, stated
+    honestly rather than assumed. One gVisor-shaped implementation
+    avoided entirely: <code>srt</code> also covers Linux (bubblewrap+netns), so a
+    second, separate Tier 1 backend for that platform is deferred until
+    <code>srt</code>'s own Linux support is verified, not built reflexively.
+19a. [x] Reviewed the SrtSandbox work end to end (user's own request,
+    "double check the srt work") and found one real, confirmed bug:
+    <code>SrtSandbox.__init__</code> allocates a <code>/tmp</code> directory shared across
+    every handle an instance ever produces, and <code>terminate()</code> (per-
+    handle) could never safely remove it — 460+ leaked directories
+    confirmed accumulated in <code>/tmp</code> from ordinary dev/test iteration
+    before the fix. Resolved: <code>Sandbox</code> gained a fourth lifecycle
+    method, <code>close()</code>, for backend-instance-level cleanup, documented on
+    the Protocol itself per the user's explicit request so future
+    backends pick up the rule by construction, not by rediscovering the
+    same leak. A second instance of the same bug class was found and
+    fixed across 7 more test call sites in the same pass
+    (<code>fabrica.close()</code> never called, harmless under Tier 0, a real leak
+    once dispatch could select <code>SrtSandbox</code>). Verified concretely: zero
+    leaked directories after 3 clean full-suite runs, where 460+ existed
+    before. Full detail: <code>docs/contracts/sandbox.md</code>'s own "Real
+    addition: <code>close()</code> on <code>Sandbox</code>" section, commit b11d484.
+19b. [x] <code>FirecrackerSandbox</code> network isolation -- <strong>verified for real,
+    not just implied.</strong> User's own question ("does the sandbox
+    implementations also have network isolation?") surfaced a real gap:
+    <code>FirecrackerSandbox</code> never calls Firecracker's <code>/network-interfaces</code>
+    API, so the guest boots with no network device at all -- always the
+    design intent (<code>isolation.md</code>'s vsock rationale), but never actually
+    tested the way <code>SrtSandbox</code>'s network denial was. Tested for real on
+    the homelab (<code>kodiak@darkenergy</code>): a raw socket connect fails
+    immediately with <code>OSError: [Errno 101] Network is unreachable</code>; DNS
+    resolution fails immediately with <code>socket.gaierror: [Errno -3]
+    Temporary failure in name resolution</code>. Structurally stronger than
+    <code>SrtSandbox</code>'s policy-based allow-only enforcement -- no interface to
+    misconfigure at all, not a firewall rule to bypass. 2 new tests
+    (<code>test_execute_has_no_network_path_at_all</code>,
+    <code>test_execute_dns_resolution_also_has_no_path</code>), verified 3x stable
+    on real hardware alongside the existing 16 hardware-gated tests,
+    filesystem confirmed clean afterward (no leftover <code>/tmp/fc-*</code> files).
+    Documented in <code>docs/contracts/sandbox.md</code> and <code>docs/isolation.md</code>'s
+    tier table.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>FirecrackerSandbox</code> snapshot/restore -- <strong>spike done, real
+    implementation is a separate follow-up (20a).</strong> Two real, concrete
+    findings on real hardware, not inference: (1) Firecracker's own
+    vsock device binds a Unix socket at the base <code>uds_path</code> -- <code>SIGKILL</code>
+    never cleans it up, so restoring into a fresh process fails
+    immediately with <code>EADDRINUSE</code> unless that stale file is deleted
+    first; (2) the guest kernel-panics on resume as shipped, but for a
+    real, understood, FIXABLE reason: the guest's blocked <code>recv()</code>
+    correctly gets a real <code>ConnectionResetError</code> (the old peer genuinely
+    doesn't exist anymore), and <code>_firecracker_guest_shim.py</code> has zero
+    error handling around it, so the unhandled exception kills PID 1 and
+    Linux panics. <strong>Verified the fix actually works, not just diagnosed
+    the problem</strong>: a throwaway patched shim with a real reconnect loop
+    (catch <code>OSError</code>, open a fresh vsock socket, retry) successfully
+    reconnected and re-signaled <code>ready</code> to a fresh process's fresh
+    listener after a real snapshot/restore cycle -- no panic, no manual
+    intervention. The combination is real and buildable; it just needs
+    guest-shim hardening that was never built (the shim was never
+    designed against restore in the first place -- finding that out was
+    this spike's whole job). Full detail, including the exact console
+    log excerpts: <code>specs/archive/spikes/SPIKE-firecracker-snapshot-
+    restore-vsock-combination.md</code>.
+20a. [x] Real implementation -- <strong>done</strong>. Ported real, production
+    reconnect logic into <code>_firecracker_guest_shim.py</code> itself (bounded --
+    200 attempts, no sleep for the first few, then a real but small
+    backoff -- not the spike's placeholder). <code>FirecrackerSandbox</code> gained
+    <code>use_snapshot_restore: bool = False</code> (opt-in, default preserves v1's
+    exact cold-boot behavior, zero change for any existing caller): the
+    FIRST <code>boot_clean()</code> lazily cold-boots ONE throwaway instance purely
+    to create a reusable golden snapshot (paying the cold-boot cost
+    exactly once, protected by a double-checked lock against concurrent
+    racing callers), then every restore -- including that very first
+    served instance -- uses <code>/snapshot/load</code> instead.
+    <strong>No <code>SandboxPool</code> changes needed at all</strong> -- it just calls
+    <code>backend.boot_clean()</code>; the whole mechanism is internal to
+    <code>FirecrackerSandbox</code>.
+    <strong>One more real unknown found and resolved before writing any
+    "real" code, not assumed</strong>: does the golden snapshot's embedded,
+    fixed vsock path force every restored instance to collide? No --
+    checked the real, bundled OpenAPI spec and found <code>vsock_override</code>,
+    a real, documented <code>/snapshot/load</code> parameter letting every restored
+    instance get its own vsock path. Verified on real hardware: two
+    concurrent instances, same snapshot, distinct <code>vsock_override</code>
+    paths, both restored in ~8.5-8.8ms, both correctly reconnected.
+    <strong>A second, more serious unknown also found and resolved, not
+    glossed over</strong>: no equivalent override exists for the ROOTFS block
+    device (confirmed against the same spec) -- every restored instance
+    references the SAME golden rootfs file. Tested this directly for
+    real, not assumed safe: two concurrent restored instances each wrote
+    a distinct, deliberately-chosen file to their own guest filesystem
+    and read it back -- both correct, no cross-contamination. Documented
+    precisely WHY this holds for Fabrica's actual usage (each restored
+    instance is used for exactly one <code>execute()</code> then terminated, so
+    nothing ever depends on the shared file's own on-disk state
+    afterward) rather than claimed as generally safe.
+    8 new tests (a working restored handle; the second <code>boot_clean()</code>
+    call measurably faster than the first, proving restore is really
+    happening; concurrent-instance isolation; a real tool-call round
+    trip on a restored instance; <code>terminate()</code> never deleting the shared
+    golden rootfs; <code>close()</code> removing the golden snapshot files;
+    <code>close()</code> safe with no snapshot ever created; the
+    <code>use_snapshot_restore=False</code> default provably unchanged). All 24
+    tests in the file (16 existing + 8 new) verified passing on real
+    hardware, stable across repeated runs, filesystem confirmed clean
+    afterward (0 leftover <code>/tmp/fc-*</code> files).
+    Only the pre-request "blocked waiting for <code>code</code>" state is covered
+    -- a guest snapshotted mid-tool-call would need the same treatment
+    if that's ever wanted, named as real, separate, not-yet-needed
+    future work, not silently assumed covered.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>jailer</code> integration for <code>FirecrackerSandbox</code> -- <strong>DONE, real,
+    shipped, opt-in (<code>use_jailer=True</code>), cold-boot only.</strong> Decided
+    directly with the user: not combined with <code>use_snapshot_restore</code>
+    ("security over optimization") -- raises <code>SandboxConfigurationError</code>
+    at construction time if both are set.
+    Real infra set up and validated on the homelab: a dedicated
+    <code>fc-jail</code> user/group (uid=gid=61000), <code>/srv/jailer</code> chroot base
+    (<code>711</code>, traverse-only), and FOUR real, scoped sudoers rules
+    (start/terminate/stage/cleanup), installed via a real, idempotent
+    bootstrap script (<code>scripts/setup_firecracker_jailer.sh</code>).
+    <strong>The hard problem -- vsock inside a directory jailer locks to
+    <code>700 fc-jail:fc-jail</code> -- is SOLVED and validated end to end on real
+    hardware, with a real guest booting through the real jail boundary</strong>:
+    bind+listen the vsock socket as the invoking user BEFORE jailer
+    runs (while the directory is still writable), explicitly
+    <code>chmod(0o777)</code> it, then rely on the already-open file descriptor
+    surviving jailer's subsequent lockdown. No sudo rule was needed for
+    this specifically. <strong>The second problem (the API socket, bound by
+    firecracker itself as fc-jail) is resolved via Firecracker's own
+    <code>--config-file</code> mechanism</strong> -- schema confirmed directly against
+    Firecracker v1.16.1's own source, empirically validated end to end:
+    boot configuration (including vsock) goes into one static JSON file
+    written before <code>jailer</code> runs, eliminating the need for any runtime
+    API call, and therefore any further sudo grant, for boot itself. A
+    real, previously-unanticipated 4<sup>th</sup> sudo rule WAS needed for cleanup
+    (removing a terminated jail's on-disk footprint) -- scoped via 32
+    repetitions of the <code>[0-9a-f]</code> character class against the real
+    <code>uuid4().hex</code> instance-id format, not a <code>*</code> wildcard (which
+    sudoers' fnmatch-style globbing would treat as path-traversal-
+    permissive).
+    <strong>Full research trail, every empirical finding, the confirmed
+    schema, and the real implementation</strong>:
+    <code>specs/archive/spikes/SPIKE-firecracker-jailer-vsock-integration.md</code>.
+    Implemented in <code>src/fabrica/sandbox/firecracker_backend.py</code>
+    (<code>_boot_jailed_instance</code>, <code>_terminate_jailed_instance</code>), 5 new tests
+    in <code>tests/sandbox/test_firecracker_backend.py</code> (hardware-gated) plus
+    5 pure construction/health-check tests in the new
+    <code>tests/sandbox/test_firecracker_jailer_config.py</code> (found and fixed a
+    real test-authoring bug along the way: the main test file's own
+    module-level skip-if-no-hardware marker was silently skipping tests
+    that needed no hardware at all -- moved to a separate file so they
+    actually run everywhere). Verified 3x stable on real hardware, zero
+    leaked processes or files each time. <code>docs/contracts/sandbox.md</code> and
+    <code>docs/isolation.md</code> both updated with the full mechanism.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Managers as supervised <code>GenServer</code>s ("self-healing pool") --
+    <strong>walked through directly with the user (Civitas's own maintainer),
+    resolved as a documented finding, not built.</strong> Confirmed the
+    technical blocker against real Civitas source first: <code>spawn()</code>
+    reconstructs a class from a dotted path via <code>agent_class(name=
+    child_name)</code> only, no path for a manager holding live constructor-
+    injected dependencies to survive it, and <code>spawn()</code> itself never
+    returns a reference to inject them afterward either.
+    Then went further than the technical blocker: the maintainer
+    revealed <code>class_path</code>/<code>name</code>/<code>config</code> was never meant as a
+    permanent contract -- an early stand-in for a much bigger,
+    genuinely unresolved idea (real process-state migration/
+    "teleportation" across nodes, not just restart-from-config). Tested
+    Fabrica's own managers against whether they're a good motivating
+    case for THAT bigger capability, and concluded they aren't:
+    <code>SandboxPool</code>'s only genuinely interesting state (live warm handles
+    -- real VMs/subprocess PIDs/sockets) is physically host-bound and
+    cannot be migrated regardless of technology; every other manager's
+    state is either trivially re-derivable from an external source of
+    truth or already delegated to a real durable backend. Fabrica's
+    real, narrower need (<code>SandboxPool</code>'s bookkeeping wedging from an
+    undiscovered bug) is a process-crash-recovery problem, already
+    substantially addressed if the embedding process sits under
+    ordinary Civitas supervision (a plain static child, no dynamic
+    spawn needed) -- ordinary restart already cold-boots a fresh
+    <code>Fabrica</code>/<code>SandboxPool</code>.
+    <strong>A real, separate, stale-doc finding surfaced along the way</strong>:
+    <code>system-design.md</code>'s own component matrix (§4) still labeled every
+    manager "GenServer" under service mode -- silently contradicting
+    <code>contracts/civitas-bridge.md</code>'s own, already-correct account of the
+    same finding, which had never actually been back-ported to the
+    matrix. Fixed: the matrix now states the real, current shape
+    (plain constructor-injected objects in both modes) directly.
+    <strong>Not closed as "unneeded", recorded as a documented finding with
+    concrete revisit triggers</strong> -- this project has no real production
+    experience under real failure conditions yet: revisit if (a) real
+    production shows process-level restart granularity is genuinely too
+    coarse, or (b) Civitas's own migration/"teleportation" concept gets
+    built for a better-motivated use case elsewhere. Full reasoning:
+    <code>system-design.md</code>'s own "Finding: managers as supervised
+    GenServers, investigated but not built" section.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Managed-provider adapters (E2B/Modal/AWS/Azure/GCP) — interfaces
+    already designed (<code>managed-sandbox.md</code>); real implementation work once
+    started.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>TunnelProvider</code> concrete backends -- <strong>DONE for priorities 1
+    and 2 (Tailscale Funnel, Cloudflare Tunnel), both real, shipped,
+    credential-free, validated end to end on real hardware</strong> (real
+    public URLs, real curl round trips, real access logs proving
+    requests crossed the tunnel). <code>src/fabrica/tunnel/</code> -- new package,
+    <code>TunnelProvider</code> Protocol, <code>TailscaleTunnelProvider</code>,
+    <code>CloudflareTunnelProvider</code>, <code>select_tunnel_provider()</code> dispatch
+    (mirrors <code>select_sandbox_backend()</code>'s own shape). A real Protocol
+    addition found necessary during implementation: <code>is_available()</code>,
+    alongside <code>start()</code>/<code>stop()</code> -- lets priority-ordered selection pick
+    the first backend that will actually work, not just the first one
+    merely installed. <code>NgrokTunnelProvider</code> (priority 3) NOT
+    implemented -- needs a paid/free-tier account for anything beyond a
+    very short session, per this contract's own already-stated
+    adoption-friction note; not revisited unless a real deployment needs
+    it and the first two are both unavailable. Real findings from
+    <code>CloudflareTunnelProvider</code>'s implementation (four rounds of genuine
+    end-to-end testing, not assumed from --help text): cloudflared's own
+    "may take some time to be reachable" warning is real, not a hedge;
+    the reachable-vs-not gap is itself variable and can exceed 30s; a
+    specific quick-tunnel subdomain can sometimes never become reachable
+    at all (matches Cloudflare's own "no uptime guarantee" disclaimer
+    for account-less tunnels) -- fixed with a bounded retry using a
+    fresh subdomain, not a longer wait against one already-degraded
+    attempt; and a real bug where any non-connection-error curl status
+    was wrongly treated as "reachable" (Cloudflare's own edge returns a
+    real 530 when the tunnel-to-origin path itself isn't working yet).
+    12 new tests (<code>tests/tunnel/</code>), full mechanism and every finding in
+    <code>docs/contracts/managed-sandbox.md</code>'s own "real, shipped
+    implementation" section.</li>
+</ol>
+<h3 id="added-mid-session-not-part-of-the-original-backlog-costingbilling-data">Added mid-session, not part of the original backlog -- costing/billing data<a class="headerlink" href="#added-mid-session-not-part-of-the-original-backlog-costingbilling-data" title="Permanent link">&para;</a></h3>
+<p>User question after item 17 ("should we consider other costing
+parameters to track? This may help with billing and profit?") -- walked
+through directly rather than decided unilaterally, per this project's
+own established norm for market-positioning-relevant decisions. Landed
+scope: <strong>Fabrica captures and emits real numbers; billing, pricing, and
+policy stay Presidium's job entirely</strong> (<code>system-design.md §7</code>'s
+existing "Fabrica emits, Presidium/Civitas consumes" boundary,
+reaffirmed, not a new one invented for this).</p>
+<ol class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Context-footprint metering (<code>civitas-presidium-integration.md</code>'s
+    usage/budget dimension) extended from <code>MemoryManager</code> (already real)
+    to <code>ToolManager.find()</code>/<code>SkillManager.find()</code> and <code>PromptManager</code>.
+    <code>fabrica.tool.find</code>/<code>fabrica.skill.find</code> gained <code>volume_bytes</code> (real
+    <code>Indexable.description</code> bytes returned -- the field <code>retriever
+    /types.py</code> itself calls "the only field actually embedded/matched",
+    not a full serialized object). <code>PromptManager</code> gained <code>tracer</code> DI
+    entirely -- a bigger gap than a missing attribute, since it emitted
+    NOTHING before this (<code>system-design.md §7</code>'s span table never listed
+    it at all): <code>fabrica.prompt.get</code>/<code>fabrica.prompt.put</code>, with
+    <code>volume_bytes</code>, a real <code>cache_hit</code> boolean (mirroring <code>SandboxPool
+    .acquire()</code>'s <code>warm_hit</code>), <code>prompt_name</code>, <code>version</code>.
+    <strong>Two real things found while implementing, not assumed correct</strong>:
+    (1) <code>traced()</code>'s own second positional parameter is itself called
+    <code>name</code> (the span's name) -- passing the prompt's <code>name</code> as a keyword
+    attribute collided with it, caught by mypy AND a failing test on the
+    first attempt, fixed by using <code>prompt_name</code> instead; (2) a genuinely
+    correct existing behavior, not a bug: <code>get(name)</code> right after
+    <code>put(name, ...)</code> is a real cache MISS, not a hit -- <code>put()</code> only
+    populates the specific version's cache entry, explicitly popping
+    <code>(name, None)</code>'s "latest" alias rather than repopulating it. Also
+    found and fixed: <code>CivitasBridge.build()</code> was wiring <code>tracer</code> through
+    to <code>MemoryManager</code> but NOT <code>PromptManager</code> -- fixed alongside this,
+    not a separate follow-up. 11 new tests across unit and integration
+    levels. <strong>Deliberately NOT done in this pass, named as bigger,
+    separate work</strong>: measuring <code>ToolNamespace.stubs()</code>'s own real context
+    footprint (needs a new <code>ToolManager</code> capability, not just an
+    instrumentation add -- <code>stubs()</code> isn't exposed through <code>ToolManager</code>
+    at all today); a real "tokens saved vs. a naive full-catalog dump"
+    number (needs a counterfactual baseline measurement in addition to
+    what's actually returned -- a real feature built on top of this,
+    not a rename of it).</li>
+</ol>
+<h3 id="added-post-phase-2-documentation-reliability-audit-llm-council-2026-08-27">Added post-Phase-2 — documentation reliability audit (LLM council, 2026-08-27)<a class="headerlink" href="#added-post-phase-2-documentation-reliability-audit-llm-council-2026-08-27" title="Permanent link">&para;</a></h3>
+<p>Same council-reviewed documentation-reliability exercise already run on <code>python-civitas</code> and
+<code>presidium</code> (see those repos' own <code>docs/milestones.md</code>/<code>docs/log.md</code>), extended here. The
+council's own verdict on Fabrica specifically: the single highest-leverage gap across all three
+repos audited is that Fabrica had <strong>no <code>AGENTS.md</code> at all</strong> — worse than python-civitas's
+910-line bloated one, since a bloated file at least gives an agent a signal to push back against;
+zero file means every session starts from scratch. Full council transcript not persisted; verdict
+acted on directly.</p>
+<ol class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Wrote <code>AGENTS.md</code></strong> — a 102-line pure router (repo map, the Design/Contract
+    precedence rule, pointers to <code>HANDOFF.md</code>/<code>PLAN.md</code>/the two self-audit docs), not reference
+    content, per the council's explicit warning against re-deriving SDK reference material here.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Closed the Design→Contract naming-collision gap the council flagged as a real risk,
+    not cosmetic.</strong> Verified directly: <code>docs/contracts/{mcp-integration,mcp-server,memory,
+    prompts}.md</code> all already linked back to their Design doc ("Depends on: <code>X.md</code> (<code>../X.md</code>)"),
+    but none of the four Design docs linked forward to their Contract counterpart — an agent
+    reading <code>docs/memory.md</code> cold had no signal a more current, implementation-ready
+    <code>docs/contracts/memory.md</code> existed. Added a <code>**Formalized by:**</code> pointer to all four Design
+    docs. Backed with a mechanical check, not just prose, per the council's explicit finding that
+    every fix on the table was a soft convention identical to the one that caused presidium's
+    staleness problem: new <code>tests/test_docs_structure.py</code> asserts both directions of the link
+    for every same-named <code>docs/X.md</code>/<code>docs/contracts/X.md</code> pair, so this can't silently rot again.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Verified, not trusted, the two things the council flagged as claims rather than proof</strong>:
+    (1) the README's "~79% cheaper" code-mode claim — confirmed against
+    <code>specs/archive/spikes/SPIKE-code-mode-execution.md</code>'s real 3-run token counts (79.5%/79.2%/
+    79.0% reduction, honestly caveated against a larger, non-comparable published figure). (2) A
+    sampled <code>docs/critique.md</code> "Resolved" item (A1, the Firecracker boot-time figure) — confirmed
+    the fix actually landed in <code>docs/isolation.md</code> with the real measured numbers, not just
+    marked Resolved in the audit doc itself.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Real, adjacent bug found and fixed while writing <code>AGENTS.md</code>'s source-layout section</strong>:
+    <code>src/fabrica/__init__.py</code>'s <code>__version__</code> was a hardcoded <code>"0.1.0"</code> literal, never updated
+    since 2026-08-21's first release — <code>pyproject.toml</code> has been at <code>0.6.0</code> for multiple releases.
+    <code>import fabrica; fabrica.__version__</code> reported the wrong version to any real caller. Fixed to
+    read from installed package metadata (<code>importlib.metadata.version("fabrica-context")</code>), the
+    same mechanical-not-prose fix philosophy as item 27 — this can't drift again either, since
+    there's no second literal to forget to update.</li>
+</ol>
+<p><strong>Deliberately not done</strong>, per the council's own recommendation to not let this turn into new,
+unrelated work: no CI enforcement for <code>docs/critique.md</code>/<code>docs/self-reflection-report.md</code>'s
+"Resolved" claims going forward (an AGENTS.md note asking to spot-check on touch is the interim
+answer); no mkdocs/docs site (the council explicitly ruled this out — no site exists to protect,
+building one is a separate project); no org-wide RFC proposing Fabrica's Design/Contract or
+self-reflection conventions to the other repos (a real idea, raised and explicitly rejected by
+every peer reviewer in the council as scope creep ahead of verifying the thing being exported).</p>
+<h3 id="blocked-not-sequenced-by-complexity-simply-not-actionable-right-now">Blocked — not sequenced by complexity, simply not actionable right now<a class="headerlink" href="#blocked-not-sequenced-by-complexity-simply-not-actionable-right-now" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> ~~<code>PresidiumClient</code>'s real REST+mTLS client~~ <strong>DONE, 2026-08-23/24,
+  v0.2.0.</strong> <code>civitas-io/presidium</code> shipped a real M7 server; the blocker is
+  resolved. <code>fabrica.presidium.rest_client.RestPresidiumClient</code> -- real
+  REST+mTLS, circuit-breaker protected, fail-closed, verified against
+  <code>httpx.MockTransport</code> (24 tests) and a real end-to-end running Presidium
+  server (real certs, not mocks). New <code>fabrica[presidium]</code> extra. Published
+  to PyPI as <code>fabrica-context</code> v0.2.0, confirmed live via a real fresh-venv
+  install. See <code>HANDOFF.md</code>'s own item 6 for the full writeup.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Managed-provider adapters' real credentials (E2B/Modal/AWS/Azure/GCP)
+  -- also deliberately deprioritized behind self-hosted Tier 2 regardless.</li>
+</ul>
+<h3 id="deliberately-out-of-scope-for-this-plan-already-correctly-deferred-revisit-only-if-forced">Deliberately out of scope for this plan — already correctly deferred, revisit only if forced<a class="headerlink" href="#deliberately-out-of-scope-for-this-plan-already-correctly-deferred-revisit-only-if-forced" title="Permanent link">&para;</a></h3>
+<p>Third-party skill trust/signing, log tamper-evidence, other memory backends
+beyond Mem0, <code>SKILL.md</code> optional fields/bundled resources, Windows Tier 1,
+macOS/Windows Tier 2 <code>vsock</code> equivalents (<code>VZVirtioSocketDevice</code>/<code>AF_HYPERV</code>).
+Named in <code>problem-definition.md</code>/<code>HANDOFF.md</code> already — not re-litigated here.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Apache 2.0 License
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/civitas-io/fabrica" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "navigation.instant", "navigation.indexes", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

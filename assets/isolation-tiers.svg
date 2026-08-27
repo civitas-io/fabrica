@@ -1,0 +1,77 @@
+<svg viewBox="0 0 740 490" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF"/>
+    </marker>
+  </defs>
+
+  <text x="370" y="24" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Isolation: One Protocol, Platform-Detected at Runtime</text>
+
+  <!-- Sandbox factory node -->
+  <rect x="275" y="38" width="190" height="42" rx="21" fill="#111827"/>
+  <text x="370" y="56" text-anchor="middle" font-size="10" font-weight="700" fill="white">select_sandbox_backend()</text>
+  <text x="370" y="70" text-anchor="middle" font-size="8" fill="#9CA3AF">picks the best tier THIS host can prove it runs</text>
+
+  <line x1="370" y1="80" x2="370" y2="103" stroke="#9CA3AF" stroke-width="1.3" marker-end="url(#arr)"/>
+
+  <!-- Tier 0 row -->
+  <rect x="45" y="106" width="650" height="40" rx="6" fill="#111827" stroke="#4B5563" stroke-width="1.5"/>
+  <text x="65" y="122" font-size="10" font-weight="700" fill="#D1D5DB">Tier 0 — SubprocessSandbox</text>
+  <text x="65" y="136" font-size="8" fill="#9CA3AF">Fallback everywhere. No isolation at all — trusted code / local dev only.</text>
+
+  <line x1="370" y1="146" x2="370" y2="163" stroke="#9CA3AF" stroke-width="1.3" marker-end="url(#arr)"/>
+
+  <!-- Tier 1 row -->
+  <rect x="45" y="166" width="650" height="90" rx="6" fill="#111827" stroke="#D97706" stroke-width="2"/>
+  <text x="65" y="184" font-size="10" font-weight="700" fill="#FBBF24">Tier 1 — SrtSandbox (wraps `srt`, Anthropic's Sandbox Runtime)</text>
+  <text x="65" y="199" font-size="8" fill="#FDE68A">ONE implementation, not one per platform — selected wherever the `srt` binary is on PATH.</text>
+
+  <rect x="60" y="207" width="200" height="40" rx="4" fill="#92400E"/>
+  <text x="160" y="221" text-anchor="middle" font-size="8" font-weight="700" fill="white">macOS — validated, real</text>
+  <text x="160" y="233" text-anchor="middle" font-size="7" fill="#FDE68A">p50 152ms; write/network denial confirmed</text>
+  <text x="160" y="243" text-anchor="middle" font-size="7" fill="#FDE68A">live end-to-end incl. vsock-equivalent bridge</text>
+
+  <rect x="270" y="207" width="200" height="40" rx="4" fill="#78350F"/>
+  <text x="370" y="221" text-anchor="middle" font-size="8" font-weight="700" fill="white">Linux — untested by Fabrica</text>
+  <text x="370" y="233" text-anchor="middle" font-size="7" fill="#FDE68A">`srt` itself documents bubblewrap+netns</text>
+  <text x="370" y="243" text-anchor="middle" font-size="7" fill="#FDE68A">support here — not yet exercised</text>
+
+  <rect x="480" y="207" width="200" height="40" rx="4" fill="#78350F"/>
+  <text x="580" y="221" text-anchor="middle" font-size="8" font-weight="700" fill="white">Windows — untested, deferred</text>
+  <text x="580" y="233" text-anchor="middle" font-size="7" fill="#FDE68A">`srt` claims a WFP-based mode —</text>
+  <text x="580" y="243" text-anchor="middle" font-size="7" fill="#FDE68A">small segment, spike only if forced</text>
+
+  <line x1="370" y1="256" x2="370" y2="273" stroke="#9CA3AF" stroke-width="1.3" marker-end="url(#arr)"/>
+
+  <!-- Tier 2 row -->
+  <rect x="45" y="276" width="650" height="128" rx="6" fill="#111827" stroke="#2563EB" stroke-width="2"/>
+  <text x="65" y="294" font-size="10" font-weight="700" fill="#60A5FA">Tier 2 — FirecrackerSandbox — Linux + real KVM only</text>
+  <text x="65" y="309" font-size="8" fill="#93C5FD">Untrusted agent code, production. Cold-boot is the default; two hardenings are real and opt-in:</text>
+
+  <rect x="60" y="317" width="200" height="76" rx="4" fill="#1E3A5F"/>
+  <text x="160" y="333" text-anchor="middle" font-size="8" font-weight="700" fill="white">cold-boot (default)</text>
+  <text x="160" y="347" text-anchor="middle" font-size="7" fill="#BFDBFE">VMM-ready ~10.5ms measured</text>
+  <text x="160" y="359" text-anchor="middle" font-size="7" fill="#BFDBFE">on real bare-metal hardware</text>
+  <text x="160" y="373" text-anchor="middle" font-size="7" fill="#BFDBFE">fresh per-instance rootfs,</text>
+  <text x="160" y="385" text-anchor="middle" font-size="7" fill="#BFDBFE">no reuse ever</text>
+
+  <rect x="270" y="317" width="200" height="76" rx="4" fill="#1E3A5F"/>
+  <text x="370" y="333" text-anchor="middle" font-size="8" font-weight="700" fill="white">use_snapshot_restore=True</text>
+  <text x="370" y="347" text-anchor="middle" font-size="7" fill="#BFDBFE">restore 8–11ms measured</text>
+  <text x="370" y="359" text-anchor="middle" font-size="7" fill="#BFDBFE">real bare-metal hardware</text>
+  <text x="370" y="373" text-anchor="middle" font-size="7" fill="#BFDBFE">golden snapshot created once,</text>
+  <text x="370" y="385" text-anchor="middle" font-size="7" fill="#BFDBFE">every boot restores from it</text>
+
+  <rect x="480" y="317" width="200" height="76" rx="4" fill="#1E3A5F"/>
+  <text x="580" y="333" text-anchor="middle" font-size="8" font-weight="700" fill="white">use_jailer=True</text>
+  <text x="580" y="347" text-anchor="middle" font-size="7" fill="#BFDBFE">chroot + cgroups + uid/gid drop</text>
+  <text x="580" y="359" text-anchor="middle" font-size="7" fill="#BFDBFE">on top of the KVM boundary</text>
+  <text x="580" y="373" text-anchor="middle" font-size="7" fill="#BFDBFE">cold-boot only — not combined</text>
+  <text x="580" y="385" text-anchor="middle" font-size="7" fill="#BFDBFE">with snapshot/restore (unvalidated)</text>
+
+  <!-- Footer -->
+  <rect x="45" y="414" width="650" height="66" rx="6" fill="#1F2937"/>
+  <text x="370" y="433" text-anchor="middle" font-size="9" font-weight="700" fill="#FBBF24">Two real, deliberate gaps, named not hidden:</text>
+  <text x="370" y="450" text-anchor="middle" font-size="8" fill="#D1D5DB">macOS Tier 2 (libkrun) — not built at all, "great to have, not a must"</text>
+  <text x="370" y="465" text-anchor="middle" font-size="8" fill="#D1D5DB">Windows — small segment, deliberately under-invested unless a real gap forces it</text>
+</svg>
