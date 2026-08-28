@@ -2563,10 +2563,24 @@ acted on directly.</p>
 <p><strong>Deliberately not done</strong>, per the council's own recommendation to not let this turn into new,
 unrelated work: no CI enforcement for <code>docs/critique.md</code>/<code>docs/self-reflection-report.md</code>'s
 "Resolved" claims going forward (an AGENTS.md note asking to spot-check on touch is the interim
-answer); no mkdocs/docs site (the council explicitly ruled this out — no site exists to protect,
-building one is a separate project); no org-wide RFC proposing Fabrica's Design/Contract or
-self-reflection conventions to the other repos (a real idea, raised and explicitly rejected by
-every peer reviewer in the council as scope creep ahead of verifying the thing being exported).</p>
+answer); no org-wide RFC proposing Fabrica's Design/Contract or self-reflection conventions to the
+other repos (a real idea, raised and explicitly rejected by every peer reviewer in the council as
+scope creep ahead of verifying the thing being exported).</p>
+<ol class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Public mkdocs site — done, 2026-08-28</strong>, explicitly requested separately (outside the
+    council's own scope decision above, which had ruled this out for the doc-reliability audit
+    specifically): new <code>docs/index.md</code> (this repo had none — adapted from <code>README.md</code>),
+    <code>mkdocs.yml</code> (nav covering every real doc, Design vs. Contract distinguished the same way
+    <code>AGENTS.md</code> does), <code>.github/workflows/docs.yml</code> (<code>mkdocs build --strict</code> then <code>gh-deploy</code>,
+    mirroring <code>python-civitas</code>). Reused the 11 existing SVG diagrams under <code>docs/assets/</code> — no new
+    diagrams needed, the content gap was purely the missing site to publish them through. Ran
+    <code>mkdocs build --strict</code> locally first and fixed every real warning before wiring in the CI
+    gate: ~50 links across 16 files pointed at <code>specs/archive/spikes/*.md</code>/<code>scripts/*.sh</code> using
+    relative paths that only work inside the repo tree, not inside mkdocs's <code>docs_dir</code> — real
+    dead links on any deployed site, not strict-mode nitpicks — plus a dozen broken anchor slugs
+    (heading em-dashes don't survive the slugifier the way the doc authors assumed). Strict build
+    is clean: zero warnings, zero infos.</li>
+</ol>
 <h3 id="blocked-not-sequenced-by-complexity-simply-not-actionable-right-now">Blocked — not sequenced by complexity, simply not actionable right now<a class="headerlink" href="#blocked-not-sequenced-by-complexity-simply-not-actionable-right-now" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> ~~<code>PresidiumClient</code>'s real REST+mTLS client~~ <strong>DONE, 2026-08-23/24,
