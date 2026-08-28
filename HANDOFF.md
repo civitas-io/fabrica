@@ -10,6 +10,19 @@ queue** -- everything from a self-reflection audit
 point-in-time check of the real code/docs against the founding vision) plus
 the full remaining backlog, sorted easiest first, most complex last.
 
+## Public mkdocs site, 2026-08-28 (no package release, docs-only)
+
+Explicitly requested separately from the docs-reliability audit below. Fabrica already had 11
+real, rich SVG diagrams under `docs/assets/` -- the gap was purely the missing site to publish
+them through, not missing content. Added `docs/index.md` (new landing page, this repo had none),
+`mkdocs.yml` (nav covering every real doc, distinguishing Design vs. Contract the way `AGENTS.md`
+already does), `.github/workflows/docs.yml` (`mkdocs build --strict` then `gh-deploy`, mirroring
+`python-civitas`), and a `docs` extra in `pyproject.toml`. Ran `mkdocs build --strict` locally
+first and fixed every real warning before wiring in CI: ~50 links across 16 files pointed at
+`specs/archive/spikes/*.md`/`scripts/*.sh` with paths that only work inside the repo tree, not
+inside mkdocs's `docs_dir` -- real dead links on any deployed site -- plus a dozen broken anchor
+slugs. Build is clean: zero warnings, zero infos. See `docs/PLAN.md` item 30.
+
 ## Docs reliability fix, 2026-08-27 (LLM council, no package release)
 
 Same council-reviewed documentation-reliability exercise already run on `python-civitas` and

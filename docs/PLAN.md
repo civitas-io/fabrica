@@ -649,10 +649,23 @@ acted on directly.
 **Deliberately not done**, per the council's own recommendation to not let this turn into new,
 unrelated work: no CI enforcement for `docs/critique.md`/`docs/self-reflection-report.md`'s
 "Resolved" claims going forward (an AGENTS.md note asking to spot-check on touch is the interim
-answer); no mkdocs/docs site (the council explicitly ruled this out — no site exists to protect,
-building one is a separate project); no org-wide RFC proposing Fabrica's Design/Contract or
-self-reflection conventions to the other repos (a real idea, raised and explicitly rejected by
-every peer reviewer in the council as scope creep ahead of verifying the thing being exported).
+answer); no org-wide RFC proposing Fabrica's Design/Contract or self-reflection conventions to the
+other repos (a real idea, raised and explicitly rejected by every peer reviewer in the council as
+scope creep ahead of verifying the thing being exported).
+
+30. [x] **Public mkdocs site — done, 2026-08-28**, explicitly requested separately (outside the
+    council's own scope decision above, which had ruled this out for the doc-reliability audit
+    specifically): new `docs/index.md` (this repo had none — adapted from `README.md`),
+    `mkdocs.yml` (nav covering every real doc, Design vs. Contract distinguished the same way
+    `AGENTS.md` does), `.github/workflows/docs.yml` (`mkdocs build --strict` then `gh-deploy`,
+    mirroring `python-civitas`). Reused the 11 existing SVG diagrams under `docs/assets/` — no new
+    diagrams needed, the content gap was purely the missing site to publish them through. Ran
+    `mkdocs build --strict` locally first and fixed every real warning before wiring in the CI
+    gate: ~50 links across 16 files pointed at `specs/archive/spikes/*.md`/`scripts/*.sh` using
+    relative paths that only work inside the repo tree, not inside mkdocs's `docs_dir` — real
+    dead links on any deployed site, not strict-mode nitpicks — plus a dozen broken anchor slugs
+    (heading em-dashes don't survive the slugifier the way the doc authors assumed). Strict build
+    is clean: zero warnings, zero infos.
 
 ### Blocked — not sequenced by complexity, simply not actionable right now
 
